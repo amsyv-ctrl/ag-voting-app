@@ -1,5 +1,4 @@
 import type { Handler } from '@netlify/functions'
-import bcrypt from 'bcryptjs'
 import { supabaseAdmin } from './_supabase'
 
 type Body = {
@@ -59,7 +58,7 @@ export const handler: Handler = async (event) => {
     generated.push(pin)
     insertRows.push({
       event_id: eventId,
-      code: bcrypt.hashSync(pin, 10),
+      code: pin,
       is_active: true
     })
   }
