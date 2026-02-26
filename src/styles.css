@@ -1,0 +1,165 @@
+:root {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #10213b;
+  background: linear-gradient(180deg, #f7fbff 0%, #e8f2ff 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.page,
+.vote-page,
+.display-page {
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.page {
+  display: grid;
+  gap: 1rem;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.card,
+.vote-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid #d0deef;
+  box-shadow: 0 8px 20px rgba(16, 33, 59, 0.08);
+}
+
+.vote-page {
+  display: grid;
+  place-items: center;
+}
+
+.vote-card {
+  width: min(560px, 100%);
+}
+
+.stack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.inline {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  padding: 0.65rem;
+  border-radius: 8px;
+  border: 1px solid #b7c8df;
+}
+
+button {
+  cursor: pointer;
+  background: #174a96;
+  border: none;
+  color: #fff;
+}
+
+button.secondary {
+  background: #67758a;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error {
+  color: #ad1325;
+}
+
+.muted {
+  color: #506580;
+}
+
+.success-box {
+  border: 1px solid #6bc48c;
+  background: #ebfff1;
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.winner {
+  font-weight: 700;
+  color: #0d5f2b;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid #d0deef;
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.radio-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.code-block {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border-bottom: 1px solid #d0deef;
+  text-align: left;
+  padding: 0.5rem;
+}
+
+.display-page {
+  background: linear-gradient(120deg, #0f1830, #203b70);
+  color: #fff;
+}
+
+.display-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.75rem 0;
+}
+
+@media (max-width: 640px) {
+  .display-row {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+}
