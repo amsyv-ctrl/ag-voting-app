@@ -31,6 +31,7 @@ export function AdminBallotPage() {
   const [newChoice, setNewChoice] = useState('')
   const [voteQrDataUrl, setVoteQrDataUrl] = useState<string | null>(null)
   const [showRoundActionModal, setShowRoundActionModal] = useState(false)
+  const [secondsToClose, setSecondsToClose] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const appBase = useMemo(() => window.location.origin, [])
@@ -117,13 +118,30 @@ export function AdminBallotPage() {
       .catch(() => setVoteQrDataUrl(null))
   }, [ballot?.slug])
 
-  async function closeBallot() {
-    if (!ballot) return
-    if (!window.confirm(`Close ${roundLabel(ballot.vote_round)} vote for this ballot?`)) {
+  useEffect(() => {
+    if (!ballot?.closes_at) {
+      setSecondsToClose(null)
       return
     }
-    const nowIso = new Date().toISOString()
-    const patch = { status: 'CLOSED', closes_at: nowIso }
+
+    const tick = () => {
+      const ms = new Date(ballot.closes_at as string).getTime() - Date.now()
+      const sec = Math.ceil(ms / 1000)
+      setSecondsToClose(sec > 0 ? sec : 0)
+    }
+
+    tick()
+    const timer = window.setInterval(tick, 250)
+    return () => window.clearInterval(timer)
+  }, [ballot?.closes_at])
+
+  async function closeBallot() {
+    if (!ballot) return
+    if (!window.confirm(`Close ${roundLabel(ballot.vote_round)} vote for this ballot with a 10-second delay?`)) {
+      return
+    }
+    const closeAtIso = new Date(Date.now() + 10_000).toISOString()
+    const patch = { status: 'OPEN', closes_at: closeAtIso }
 
     const { error: updateError } = await supabase.from('ballots').update(patch).eq('id', ballot.id)
     if (updateError) {
@@ -193,6 +211,9 @@ export function AdminBallotPage() {
         <p>{ballot.description || 'No description'}</p>
         <p>Status: <strong>{ballot.status}</strong></p>
         <p><strong>Vote Round:</strong> {roundLabel(ballot.vote_round)} vote</p>
+        {secondsToClose !== null && (
+          <p><strong>Closing in: {secondsToClose}s</strong></p>
+        )}
         <p>Vote URL: {appBase}/vote/{ballot.slug}</p>
         <p>Display URL: {appBase}/display/{ballot.slug}</p>
         {voteQrDataUrl && <img src={voteQrDataUrl} alt="Ballot QR code" width={180} height={180} />}

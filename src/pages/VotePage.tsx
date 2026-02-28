@@ -67,6 +67,7 @@ export function VotePage() {
   return (
     <main className="vote-page">
       <section className="vote-card">
+        <p><strong>Ballot Number:</strong> #{Math.max(1, ballot.vote_round || 1)}</p>
         <p><strong>Event:</strong> {ballot.event_name}</p>
         <h1>{ballot.title}</h1>
         <p><strong>Vote Round:</strong> {roundLabel(ballot.vote_round)} vote</p>

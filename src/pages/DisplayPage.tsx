@@ -13,6 +13,7 @@ export function DisplayPage() {
   const [ballot, setBallot] = useState<PublicBallot | null>(null)
   const [results, setResults] = useState<BallotResults | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [secondsToClose, setSecondsToClose] = useState<number | null>(null)
 
   useEffect(() => {
     fetchBallotPublic(ballotSlug).then(setBallot).catch((e: Error) => setError(e.message))
@@ -23,6 +24,12 @@ export function DisplayPage() {
     if (!ballot) return
 
     const poll = window.setInterval(() => {
+      fetchBallotPublic(ballotSlug)
+        .then((data) => setBallot(data))
+        .catch(() => {
+          // Keep last known ballot for final display when closure expires.
+        })
+
       fetchBallotResults(ballotSlug)
         .then((r) => setResults(computeWinner(r)))
         .catch((e: Error) => setError(e.message))
@@ -47,6 +54,23 @@ export function DisplayPage() {
     }
   }, [ballot?.ballot_id, ballotSlug])
 
+  useEffect(() => {
+    if (!ballot?.closes_at) {
+      setSecondsToClose(null)
+      return
+    }
+
+    const tick = () => {
+      const ms = new Date(ballot.closes_at as string).getTime() - Date.now()
+      const sec = Math.ceil(ms / 1000)
+      setSecondsToClose(sec > 0 ? sec : 0)
+    }
+
+    tick()
+    const timer = window.setInterval(tick, 250)
+    return () => window.clearInterval(timer)
+  }, [ballot?.closes_at])
+
   if (error) return <main className="display-page"><p className="error">{error}</p></main>
   if (!ballot || !results) return <main className="display-page"><p>Loading...</p></main>
 
@@ -58,6 +82,9 @@ export function DisplayPage() {
         <h1>{ballot.event_name}</h1>
         <p>{ballot.title}</p>
         <p>Vote Round: {roundLabel(results.vote_round)} vote</p>
+        {secondsToClose !== null && (
+          <p><strong>Closing in: {secondsToClose}s</strong></p>
+        )}
         <p>Total Votes: {results.total_votes}</p>
         {results.winner_label ? (
           <p className="winner">Winner: {results.winner_label}</p>
