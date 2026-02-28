@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { roundLabel } from '../lib/roundLabel'
@@ -30,9 +30,9 @@ export function AdminBallotPage() {
   const [results, setResults] = useState<BallotResults | null>(null)
   const [newChoice, setNewChoice] = useState('')
   const [voteQrDataUrl, setVoteQrDataUrl] = useState<string | null>(null)
-  const [showRoundActionModal, setShowRoundActionModal] = useState(false)
   const [secondsToClose, setSecondsToClose] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const closeFinalizeInFlight = useRef(false)
 
   const appBase = useMemo(() => window.location.origin, [])
 
@@ -135,6 +135,24 @@ export function AdminBallotPage() {
     return () => window.clearInterval(timer)
   }, [ballot?.closes_at])
 
+  useEffect(() => {
+    if (!ballot || ballot.status !== 'OPEN' || secondsToClose !== 0 || closeFinalizeInFlight.current) return
+    closeFinalizeInFlight.current = true
+    supabase
+      .from('ballots')
+      .update({ status: 'CLOSED' })
+      .eq('id', ballot.id)
+      .then(async ({ error: updateError }) => {
+        if (updateError) {
+          setError(updateError.message)
+        }
+        await load()
+      })
+      .finally(() => {
+        closeFinalizeInFlight.current = false
+      })
+  }, [ballot, secondsToClose])
+
   async function closeBallot() {
     if (!ballot) return
     if (!window.confirm(`Close ${roundLabel(ballot.vote_round)} vote for this ballot with a 10-second delay?`)) {
@@ -151,23 +169,10 @@ export function AdminBallotPage() {
     await load()
   }
 
-  async function openCurrentRound() {
+  async function openNewVoteRound() {
     if (!ballot) return
-    const nowIso = new Date().toISOString()
-    const patch = { status: 'OPEN', opens_at: ballot.opens_at ?? nowIso, closes_at: null as string | null }
-    const { error: updateError } = await supabase.from('ballots').update(patch).eq('id', ballot.id)
-    if (updateError) {
-      setError(updateError.message)
-      return
-    }
-    setShowRoundActionModal(false)
-    await load()
-  }
-
-  async function startNextRound() {
-    if (!ballot) return
-    const nextRound = (ballot.vote_round ?? 1) + 1
-    if (!window.confirm(`Start ${roundLabel(nextRound)} vote for this ballot now?`)) {
+    const nextRound = ballot.status === 'DRAFT' ? 1 : (ballot.vote_round ?? 1) + 1
+    if (!window.confirm(`Open ${roundLabel(nextRound)} vote for this ballot?`)) {
       return
     }
     const nowIso = new Date().toISOString()
@@ -177,7 +182,6 @@ export function AdminBallotPage() {
       setError(updateError.message)
       return
     }
-    setShowRoundActionModal(false)
     await load()
   }
 
@@ -210,7 +214,7 @@ export function AdminBallotPage() {
         <h2>{ballot.title}</h2>
         <p>{ballot.description || 'No description'}</p>
         <p>Status: <strong>{ballot.status}</strong></p>
-        <p><strong>Vote Round:</strong> {roundLabel(ballot.vote_round)} vote</p>
+        <p><strong>Current Vote:</strong> #{ballot.vote_round} ({roundLabel(ballot.vote_round)} vote)</p>
         {secondsToClose !== null && (
           <p><strong>Closing in: {secondsToClose}s</strong></p>
         )}
@@ -218,22 +222,14 @@ export function AdminBallotPage() {
         <p>Display URL: {appBase}/display/{ballot.slug}</p>
         {voteQrDataUrl && <img src={voteQrDataUrl} alt="Ballot QR code" width={180} height={180} />}
         <div className="inline">
-          <button onClick={() => setShowRoundActionModal(true)}>Open / Reopen ballot</button>
-          <button className="secondary" onClick={closeBallot}>Close ballot</button>
+          {ballot.status === 'OPEN' ? (
+            <button className="secondary" onClick={closeBallot}>Close current vote (10s delay)</button>
+          ) : (
+            <button onClick={openNewVoteRound}>
+              {ballot.status === 'DRAFT' ? 'Open Vote #1' : `Open Vote #${(ballot.vote_round ?? 1) + 1}`}
+            </button>
+          )}
         </div>
-        {showRoundActionModal && (
-          <div className="card">
-            <h3>Ballot Opening Confirmation</h3>
-            <p>Choose whether to open the current vote or move this ballot to the next vote round.</p>
-            <div className="inline">
-              <button onClick={openCurrentRound}>Open current ({roundLabel(ballot.vote_round)}) vote</button>
-              <button className="secondary" onClick={startNextRound}>
-                Close current and start {roundLabel((ballot.vote_round ?? 1) + 1)} vote
-              </button>
-              <button className="secondary" onClick={() => setShowRoundActionModal(false)}>Cancel</button>
-            </div>
-          </div>
-        )}
         <Link to={`/admin/events/${ballot.event_id}`}>Back to event</Link>
         {error && <p className="error">{error}</p>}
       </section>
@@ -253,7 +249,7 @@ export function AdminBallotPage() {
 
       <section className="card">
         <h2>Live results</h2>
-        <p><strong>Showing:</strong> {roundLabel(results?.vote_round ?? ballot.vote_round)} vote</p>
+        <p><strong>Showing Vote:</strong> #{results?.vote_round ?? ballot.vote_round}</p>
         {!results || results.total_votes === 0 ? (
           <p>No votes yet.</p>
         ) : (

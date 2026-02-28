@@ -81,7 +81,7 @@ export function DisplayPage() {
       <header>
         <h1>{ballot.event_name}</h1>
         <p>{ballot.title}</p>
-        <p>Vote Round: {roundLabel(results.vote_round)} vote</p>
+        <p>Current Vote: #{results.vote_round} ({roundLabel(results.vote_round)} vote)</p>
         {secondsToClose !== null && (
           <p><strong>Closing in: {secondsToClose}s</strong></p>
         )}
