@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { fetchBallotPublic, submitVote } from '../lib/api'
+import { roundLabel } from '../lib/roundLabel'
 import type { PublicBallot } from '../types'
 
 const RESET_MS = 3000
@@ -66,7 +67,9 @@ export function VotePage() {
   return (
     <main className="vote-page">
       <section className="vote-card">
+        <p><strong>Event:</strong> {ballot.event_name}</p>
         <h1>{ballot.title}</h1>
+        <p><strong>Vote Round:</strong> {roundLabel(ballot.vote_round)} vote</p>
         {ballot.description && <p>{ballot.description}</p>}
 
         {confirmation ? (

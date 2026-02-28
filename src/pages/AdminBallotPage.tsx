@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import QRCode from 'qrcode'
+import { roundLabel } from '../lib/roundLabel'
 import { supabase } from '../lib/supabase'
 import { computeWinner } from '../lib/winner'
 import type { BallotResults } from '../types'
@@ -8,6 +9,7 @@ import type { BallotResults } from '../types'
 type BallotData = {
   id: string
   event_id: string
+  event_name: string
   slug: string
   title: string
   description: string | null
@@ -15,6 +17,7 @@ type BallotData = {
   majority_rule: 'SIMPLE' | 'TWO_THIRDS'
   opens_at: string | null
   closes_at: string | null
+  vote_round: number
 }
 
 export function AdminBallotPage() {
@@ -27,6 +30,7 @@ export function AdminBallotPage() {
   const [results, setResults] = useState<BallotResults | null>(null)
   const [newChoice, setNewChoice] = useState('')
   const [voteQrDataUrl, setVoteQrDataUrl] = useState<string | null>(null)
+  const [showRoundActionModal, setShowRoundActionModal] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const appBase = useMemo(() => window.location.origin, [])
@@ -40,7 +44,7 @@ export function AdminBallotPage() {
 
     const { data: ballotData, error: ballotError } = await supabase
       .from('ballots')
-      .select('id,event_id,slug,title,description,status,majority_rule,opens_at,closes_at')
+      .select('id,event_id,slug,title,description,status,majority_rule,opens_at,closes_at,vote_round,events(name)')
       .eq('id', ballotId)
       .single()
 
@@ -60,7 +64,19 @@ export function AdminBallotPage() {
       return
     }
 
-    setBallot(ballotData)
+    setBallot({
+      id: ballotData.id,
+      event_id: ballotData.event_id,
+      event_name: ballotData.events?.name ?? 'Event',
+      slug: ballotData.slug,
+      title: ballotData.title,
+      description: ballotData.description,
+      status: ballotData.status,
+      majority_rule: ballotData.majority_rule,
+      opens_at: ballotData.opens_at,
+      closes_at: ballotData.closes_at,
+      vote_round: ballotData.vote_round ?? 1
+    })
     setChoices(choiceData ?? [])
     await loadResults(ballotData.slug)
   }
@@ -101,19 +117,49 @@ export function AdminBallotPage() {
       .catch(() => setVoteQrDataUrl(null))
   }, [ballot?.slug])
 
-  async function setStatus(status: 'OPEN' | 'CLOSED') {
+  async function closeBallot() {
     if (!ballot) return
+    if (!window.confirm(`Close ${roundLabel(ballot.vote_round)} vote for this ballot?`)) {
+      return
+    }
     const nowIso = new Date().toISOString()
-    const patch =
-      status === 'OPEN'
-        ? { status, opens_at: ballot.opens_at ?? nowIso }
-        : { status, closes_at: ballot.closes_at ?? nowIso }
+    const patch = { status: 'CLOSED', closes_at: nowIso }
 
     const { error: updateError } = await supabase.from('ballots').update(patch).eq('id', ballot.id)
     if (updateError) {
       setError(updateError.message)
       return
     }
+    await load()
+  }
+
+  async function openCurrentRound() {
+    if (!ballot) return
+    const nowIso = new Date().toISOString()
+    const patch = { status: 'OPEN', opens_at: ballot.opens_at ?? nowIso, closes_at: null as string | null }
+    const { error: updateError } = await supabase.from('ballots').update(patch).eq('id', ballot.id)
+    if (updateError) {
+      setError(updateError.message)
+      return
+    }
+    setShowRoundActionModal(false)
+    await load()
+  }
+
+  async function startNextRound() {
+    if (!ballot) return
+    const nextRound = (ballot.vote_round ?? 1) + 1
+    if (!window.confirm(`Start ${roundLabel(nextRound)} vote for this ballot now?`)) {
+      return
+    }
+    const nowIso = new Date().toISOString()
+    const patch = { status: 'OPEN', vote_round: nextRound, opens_at: nowIso, closes_at: null as string | null }
+    const { error: updateError } = await supabase.from('ballots').update(patch).eq('id', ballot.id)
+    if (updateError) {
+      setError(updateError.message)
+      return
+    }
+    setShowRoundActionModal(false)
     await load()
   }
 
@@ -142,16 +188,31 @@ export function AdminBallotPage() {
   return (
     <main className="page">
       <section className="card">
-        <h1>{ballot.title}</h1>
+        <h1>{ballot.event_name}</h1>
+        <h2>{ballot.title}</h2>
         <p>{ballot.description || 'No description'}</p>
         <p>Status: <strong>{ballot.status}</strong></p>
+        <p><strong>Vote Round:</strong> {roundLabel(ballot.vote_round)} vote</p>
         <p>Vote URL: {appBase}/vote/{ballot.slug}</p>
         <p>Display URL: {appBase}/display/{ballot.slug}</p>
         {voteQrDataUrl && <img src={voteQrDataUrl} alt="Ballot QR code" width={180} height={180} />}
         <div className="inline">
-          <button onClick={() => setStatus('OPEN')}>Open ballot</button>
-          <button className="secondary" onClick={() => setStatus('CLOSED')}>Close ballot</button>
+          <button onClick={() => setShowRoundActionModal(true)}>Open / Reopen ballot</button>
+          <button className="secondary" onClick={closeBallot}>Close ballot</button>
         </div>
+        {showRoundActionModal && (
+          <div className="card">
+            <h3>Ballot Opening Confirmation</h3>
+            <p>Choose whether to open the current vote or move this ballot to the next vote round.</p>
+            <div className="inline">
+              <button onClick={openCurrentRound}>Open current ({roundLabel(ballot.vote_round)}) vote</button>
+              <button className="secondary" onClick={startNextRound}>
+                Close current and start {roundLabel((ballot.vote_round ?? 1) + 1)} vote
+              </button>
+              <button className="secondary" onClick={() => setShowRoundActionModal(false)}>Cancel</button>
+            </div>
+          </div>
+        )}
         <Link to={`/admin/events/${ballot.event_id}`}>Back to event</Link>
         {error && <p className="error">{error}</p>}
       </section>
@@ -171,6 +232,7 @@ export function AdminBallotPage() {
 
       <section className="card">
         <h2>Live results</h2>
+        <p><strong>Showing:</strong> {roundLabel(results?.vote_round ?? ballot.vote_round)} vote</p>
         {!results || results.total_votes === 0 ? (
           <p>No votes yet.</p>
         ) : (

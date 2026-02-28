@@ -19,6 +19,7 @@ export type PublicBallot = {
   status: BallotStatus
   opens_at: string | null
   closes_at: string | null
+  vote_round: number
   choices: BallotChoice[]
 }
 
@@ -31,6 +32,7 @@ export type BallotResultRow = {
 
 export type BallotResults = {
   ballot_id: string
+  vote_round: number
   total_votes: number
   rows: BallotResultRow[]
   winner_choice_id: string | null

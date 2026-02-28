@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { fetchBallotPublic, fetchBallotResults } from '../lib/api'
+import { roundLabel } from '../lib/roundLabel'
 import { computeWinner } from '../lib/winner'
 import { supabase } from '../lib/supabase'
 import type { BallotResults, PublicBallot } from '../types'
@@ -54,8 +55,9 @@ export function DisplayPage() {
   return (
     <main className="display-page">
       <header>
-        <h1>{ballot.title}</h1>
-        <p>{ballot.event_name}</p>
+        <h1>{ballot.event_name}</h1>
+        <p>{ballot.title}</p>
+        <p>Vote Round: {roundLabel(results.vote_round)} vote</p>
         <p>Total Votes: {results.total_votes}</p>
         {results.winner_label ? (
           <p className="winner">Winner: {results.winner_label}</p>
