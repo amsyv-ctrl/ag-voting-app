@@ -20,14 +20,23 @@ type BallotData = {
   vote_round: number
 }
 
+type ChoiceRow = { id: string; label: string; sort_order: number }
+type RoundHistory = {
+  round: number
+  total_votes: number
+  winner_label: string | null
+  rows: Array<{ choice_id: string; label: string; votes: number; pct: number }>
+}
+
 export function AdminBallotPage() {
   const { id } = useParams()
   const ballotId = id as string
   const navigate = useNavigate()
 
   const [ballot, setBallot] = useState<BallotData | null>(null)
-  const [choices, setChoices] = useState<Array<{ id: string; label: string; sort_order: number }>>([])
+  const [choices, setChoices] = useState<ChoiceRow[]>([])
   const [results, setResults] = useState<BallotResults | null>(null)
+  const [roundHistory, setRoundHistory] = useState<RoundHistory[]>([])
   const [newChoice, setNewChoice] = useState('')
   const [voteQrDataUrl, setVoteQrDataUrl] = useState<string | null>(null)
   const [secondsToClose, setSecondsToClose] = useState<number | null>(null)
@@ -98,6 +107,7 @@ export function AdminBallotPage() {
     })
     setChoices(choiceData ?? [])
     await loadResults(ballotData.slug)
+    await loadRoundHistory(ballotData.id, choiceData ?? [], ballotData.majority_rule, ballotData.vote_round ?? 1)
     setLoading(false)
   }
 
@@ -108,6 +118,69 @@ export function AdminBallotPage() {
       return
     }
     setResults(computeWinner(data as BallotResults))
+  }
+
+  async function loadRoundHistory(
+    currentBallotId: string,
+    currentChoices: ChoiceRow[],
+    majorityRule: 'SIMPLE' | 'TWO_THIRDS',
+    currentRound: number
+  ) {
+    const { data, error: votesError } = await supabase
+      .from('votes')
+      .select('vote_round,choice_id')
+      .eq('ballot_id', currentBallotId)
+
+    if (votesError) {
+      setError(votesError.message)
+      return
+    }
+
+    const rows = data ?? []
+    const choiceLabel = new Map(currentChoices.map((c) => [c.id, c.label]))
+    const grouped = new Map<number, Map<string, number>>()
+
+    for (const vote of rows) {
+      const round = Math.max(1, Number(vote.vote_round ?? 1))
+      const byChoice = grouped.get(round) ?? new Map<string, number>()
+      byChoice.set(vote.choice_id, (byChoice.get(vote.choice_id) ?? 0) + 1)
+      grouped.set(round, byChoice)
+    }
+
+    const history: RoundHistory[] = []
+    for (const [round, counts] of grouped.entries()) {
+      if (round === currentRound) continue
+      const total = Array.from(counts.values()).reduce((a, b) => a + b, 0)
+      const resultLike: BallotResults = {
+        ballot_id: currentBallotId,
+        vote_round: round,
+        total_votes: total,
+        rows: currentChoices.map((c) => {
+          const votesForChoice = counts.get(c.id) ?? 0
+          return {
+            choice_id: c.id,
+            label: choiceLabel.get(c.id) ?? c.label,
+            votes: votesForChoice,
+            pct: total > 0 ? votesForChoice / total : 0
+          }
+        }),
+        winner_choice_id: null,
+        winner_label: null,
+        top_pct: null,
+        has_tie: false,
+        majority_rule: majorityRule
+      }
+      const computed = computeWinner(resultLike)
+      history.push({
+        round,
+        total_votes: computed.total_votes,
+        winner_label: computed.winner_label,
+        rows: [...computed.rows].sort((a, b) => b.votes - a.votes)
+      })
+    }
+
+    history.sort((a, b) => b.round - a.round)
+    setRoundHistory(history)
   }
 
   useEffect(() => {
@@ -121,14 +194,17 @@ export function AdminBallotPage() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'votes', filter: `ballot_id=eq.${ballot.id}` },
-        () => loadResults(ballot.slug)
+        async () => {
+          await loadResults(ballot.slug)
+          await loadRoundHistory(ballot.id, choices, ballot.majority_rule, ballot.vote_round)
+        }
       )
       .subscribe()
 
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [ballot?.id])
+  }, [ballot?.id, choices, ballot?.majority_rule, ballot?.vote_round])
 
   useEffect(() => {
     if (!ballot) return
@@ -156,6 +232,7 @@ export function AdminBallotPage() {
 
   useEffect(() => {
     if (!ballot || ballot.status !== 'OPEN' || secondsToClose !== 0 || closeFinalizeInFlight.current) return
+    if (!ballot.closes_at || new Date(ballot.closes_at).getTime() > Date.now()) return
     closeFinalizeInFlight.current = true
     ;(async () => {
       try {
@@ -312,6 +389,36 @@ export function AdminBallotPage() {
           </>
         )}
       </section>
+
+      {roundHistory.length > 0 && (
+        <section className="card">
+          <h2>Previous Vote Rounds</h2>
+          {roundHistory.map((round) => (
+            <div key={round.round} className="card">
+              <p><strong>Vote #{round.round}</strong> · Total votes: {round.total_votes}</p>
+              {round.winner_label ? (
+                <p className="winner">Winner: {round.winner_label}</p>
+              ) : (
+                <p className="muted">No winner reached in this vote.</p>
+              )}
+              <table>
+                <thead>
+                  <tr><th>Choice</th><th>Votes</th><th>%</th></tr>
+                </thead>
+                <tbody>
+                  {round.rows.map((row) => (
+                    <tr key={`${round.round}-${row.choice_id}`}>
+                      <td>{row.label}</td>
+                      <td>{row.votes}</td>
+                      <td>{(row.pct * 100).toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </section>
+      )}
     </main>
   )
 }

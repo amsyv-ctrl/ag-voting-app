@@ -16,7 +16,7 @@ export function DisplayPage() {
   const [secondsToClose, setSecondsToClose] = useState<number | null>(null)
 
   useEffect(() => {
-    fetchBallotPublic(ballotSlug).then(setBallot).catch((e: Error) => setError(e.message))
+    fetchBallotPublic(ballotSlug).then(setBallot).catch(() => null)
     fetchBallotResults(ballotSlug).then((r) => setResults(computeWinner(r))).catch((e: Error) => setError(e.message))
   }, [ballotSlug])
 
@@ -32,7 +32,7 @@ export function DisplayPage() {
 
       fetchBallotResults(ballotSlug)
         .then((r) => setResults(computeWinner(r)))
-        .catch((e: Error) => setError(e.message))
+        .catch(() => null)
     }, 2000)
 
     const channel = supabase
@@ -43,7 +43,7 @@ export function DisplayPage() {
         () => {
           fetchBallotResults(ballotSlug)
             .then((r) => setResults(computeWinner(r)))
-            .catch((e: Error) => setError(e.message))
+            .catch(() => null)
         }
       )
       .subscribe()
@@ -71,7 +71,6 @@ export function DisplayPage() {
     return () => window.clearInterval(timer)
   }, [ballot?.closes_at])
 
-  if (error) return <main className="display-page"><p className="error">{error}</p></main>
   if (!ballot || !results) return <main className="display-page"><p>Loading...</p></main>
 
   const rows = [...results.rows].sort((a, b) => b.votes - a.votes)
