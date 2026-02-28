@@ -32,25 +32,30 @@ export function AdminBallotPage() {
   const [voteQrDataUrl, setVoteQrDataUrl] = useState<string | null>(null)
   const [secondsToClose, setSecondsToClose] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   const closeFinalizeInFlight = useRef(false)
 
   const appBase = useMemo(() => window.location.origin, [])
 
   async function load() {
+    setLoading(true)
+    setError(null)
     const { data: sessionData } = await supabase.auth.getSession()
     if (!sessionData.session) {
       navigate('/admin')
+      setLoading(false)
       return
     }
 
     const { data: ballotData, error: ballotError } = await supabase
       .from('ballots')
-      .select('id,event_id,slug,title,description,status,majority_rule,opens_at,closes_at,vote_round,events(name)')
+      .select('id,event_id,slug,title,description,status,majority_rule,opens_at,closes_at,vote_round')
       .eq('id', ballotId)
       .single()
 
     if (ballotError || !ballotData) {
       setError(ballotError?.message ?? 'Unable to load ballot')
+      setLoading(false)
       return
     }
 
@@ -62,13 +67,26 @@ export function AdminBallotPage() {
 
     if (choiceError) {
       setError(choiceError.message)
+      setLoading(false)
+      return
+    }
+
+    const { data: eventData, error: eventError } = await supabase
+      .from('events')
+      .select('name')
+      .eq('id', ballotData.event_id)
+      .single()
+
+    if (eventError) {
+      setError(eventError.message)
+      setLoading(false)
       return
     }
 
     setBallot({
       id: ballotData.id,
       event_id: ballotData.event_id,
-      event_name: eventNameFromJoin((ballotData as { events?: unknown }).events),
+      event_name: eventData.name ?? 'Event',
       slug: ballotData.slug,
       title: ballotData.title,
       description: ballotData.description,
@@ -80,6 +98,7 @@ export function AdminBallotPage() {
     })
     setChoices(choiceData ?? [])
     await loadResults(ballotData.slug)
+    setLoading(false)
   }
 
   async function loadResults(slug: string) {
@@ -203,8 +222,23 @@ export function AdminBallotPage() {
     await load()
   }
 
-  if (!ballot) {
+  if (loading && !ballot) {
     return <main className="page"><p>Loading ballot...</p></main>
+  }
+
+  if (!ballot) {
+    return (
+      <main className="page">
+        <section className="card">
+          <h1>Unable to load ballot</h1>
+          {error && <p className="error">{error}</p>}
+          <div className="inline">
+            <button onClick={() => load()}>Retry</button>
+            <Link to="/admin">Back to admin</Link>
+          </div>
+        </section>
+      </main>
+    )
   }
 
   return (
@@ -280,14 +314,3 @@ export function AdminBallotPage() {
     </main>
   )
 }
-  function eventNameFromJoin(eventsField: unknown): string {
-    if (Array.isArray(eventsField)) {
-      const first = eventsField[0] as { name?: string } | undefined
-      return first?.name ?? 'Event'
-    }
-    if (eventsField && typeof eventsField === 'object') {
-      const single = eventsField as { name?: string }
-      return single.name ?? 'Event'
-    }
-    return 'Event'
-  }
