@@ -157,19 +157,20 @@ export function AdminBallotPage() {
   useEffect(() => {
     if (!ballot || ballot.status !== 'OPEN' || secondsToClose !== 0 || closeFinalizeInFlight.current) return
     closeFinalizeInFlight.current = true
-    supabase
-      .from('ballots')
-      .update({ status: 'CLOSED' })
-      .eq('id', ballot.id)
-      .then(async ({ error: updateError }) => {
+    ;(async () => {
+      try {
+        const { error: updateError } = await supabase
+          .from('ballots')
+          .update({ status: 'CLOSED' })
+          .eq('id', ballot.id)
         if (updateError) {
           setError(updateError.message)
         }
         await load()
-      })
-      .finally(() => {
+      } finally {
         closeFinalizeInFlight.current = false
-      })
+      }
+    })()
   }, [ballot, secondsToClose])
 
   async function closeBallot() {
