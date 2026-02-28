@@ -67,7 +67,7 @@ export function AdminBallotPage() {
     setBallot({
       id: ballotData.id,
       event_id: ballotData.event_id,
-      event_name: ballotData.events?.name ?? 'Event',
+      event_name: eventNameFromJoin((ballotData as { events?: unknown }).events),
       slug: ballotData.slug,
       title: ballotData.title,
       description: ballotData.description,
@@ -263,3 +263,14 @@ export function AdminBallotPage() {
     </main>
   )
 }
+  function eventNameFromJoin(eventsField: unknown): string {
+    if (Array.isArray(eventsField)) {
+      const first = eventsField[0] as { name?: string } | undefined
+      return first?.name ?? 'Event'
+    }
+    if (eventsField && typeof eventsField === 'object') {
+      const single = eventsField as { name?: string }
+      return single.name ?? 'Event'
+    }
+    return 'Event'
+  }
