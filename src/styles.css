@@ -1,5 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: Inter, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   color: #10213b;
   background: linear-gradient(180deg, #f7fbff 0%, #e8f2ff 100%);
 }
