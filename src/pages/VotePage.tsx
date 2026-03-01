@@ -47,6 +47,7 @@ export function VotePage() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
+    if (!ballot) return
     setError(null)
     setSubmitting(true)
 
