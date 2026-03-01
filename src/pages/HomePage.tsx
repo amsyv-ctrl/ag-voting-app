@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion'
 import Particles from 'react-tsparticles'
 import { loadFull } from 'tsparticles'
-import { MoveDirection, type ISourceOptions } from 'tsparticles-engine'
+import type { ISourceOptions } from 'tsparticles-engine'
+import { MoveDirection } from 'tsparticles-engine/Enums/Directions/MoveDirection'
 import { Link as RouterLink } from 'react-router-dom'
 import { Link as ScrollLink } from 'react-scroll'
 
