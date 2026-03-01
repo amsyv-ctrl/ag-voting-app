@@ -9,6 +9,14 @@ type BallotRow = {
   title: string
   slug: string
   status: 'DRAFT' | 'OPEN' | 'CLOSED'
+  requires_pin: boolean
+  created_at: string
+}
+
+type PinRow = {
+  id: string
+  code: string
+  is_active: boolean
   created_at: string
 }
 
@@ -27,10 +35,12 @@ export function AdminEventPage() {
 
   const [eventName, setEventName] = useState('')
   const [ballots, setBallots] = useState<BallotRow[]>([])
+  const [activePins, setActivePins] = useState<PinRow[]>([])
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [majorityRule, setMajorityRule] = useState<'SIMPLE' | 'TWO_THIRDS'>('SIMPLE')
   const [ballotType, setBallotType] = useState<'YES_NO' | 'PICK_ONE'>('PICK_ONE')
+  const [requiresPin, setRequiresPin] = useState(true)
   const [pinCount, setPinCount] = useState(100)
   const [pinsOutput, setPinsOutput] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -58,7 +68,7 @@ export function AdminEventPage() {
 
     const { data: ballotData, error: ballotError } = await supabase
       .from('ballots')
-      .select('id,title,slug,status,created_at')
+      .select('id,title,slug,status,requires_pin,created_at')
       .eq('event_id', eventId)
       .order('created_at', { ascending: false })
 
@@ -68,6 +78,20 @@ export function AdminEventPage() {
     }
 
     setBallots(ballotData ?? [])
+
+    const { data: pinData, error: pinError } = await supabase
+      .from('pins')
+      .select('id,code,is_active,created_at')
+      .eq('event_id', eventId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+
+    if (pinError) {
+      setError(pinError.message)
+      return
+    }
+
+    setActivePins(pinData ?? [])
   }
 
   useEffect(() => {
@@ -88,6 +112,7 @@ export function AdminEventPage() {
         slug,
         ballot_type: ballotType,
         majority_rule: majorityRule,
+        requires_pin: requiresPin,
         status: 'DRAFT'
       })
       .select('id')
@@ -107,6 +132,7 @@ export function AdminEventPage() {
 
     setTitle('')
     setDescription('')
+    setRequiresPin(true)
     await load()
   }
 
@@ -122,6 +148,7 @@ export function AdminEventPage() {
     try {
       const result = await adminGeneratePins(token, eventId, pinCount)
       setPinsOutput(result.generated)
+      await load()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not generate PINs')
     }
@@ -134,6 +161,53 @@ export function AdminEventPage() {
         <p>Manage ballots and delegate PINs.</p>
         <Link to="/admin">Back to admin</Link>
         {error && <p className="error">{error}</p>}
+      </section>
+
+      <section className="card">
+        <h2>Ballots</h2>
+        <ul className="list">
+          {ballots.map((ballot) => (
+            <li key={ballot.id}>
+              <div>
+                <strong>{ballot.title}</strong>
+                <div>Status: {ballot.status}</div>
+                <div>PIN required: {ballot.requires_pin ? 'Yes' : 'No'}</div>
+                <div>Vote URL: {appBase}/vote/{ballot.slug}</div>
+                <div>Display URL: {appBase}/display/{ballot.slug}</div>
+              </div>
+              <Link to={`/admin/ballots/${ballot.id}`}>Manage</Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="card">
+        <h2>Generate 4-digit PINs</h2>
+        <p>Active PINs for this event: <strong>{activePins.length}</strong></p>
+        <form onSubmit={onGeneratePins} className="stack inline">
+          <input
+            type="number"
+            min={1}
+            max={500}
+            value={pinCount}
+            onChange={(e) => setPinCount(Math.max(1, Math.min(Number(e.target.value), 500)))}
+          />
+          <button type="submit">Generate</button>
+        </form>
+        {pinsOutput.length > 0 && (
+          <details>
+            <summary>Show newly generated PINs ({pinsOutput.length})</summary>
+            <pre className="code-block">{pinsOutput.join(', ')}</pre>
+          </details>
+        )}
+        <details>
+          <summary>View active PINs ({activePins.length})</summary>
+          {activePins.length === 0 ? (
+            <p>No active PINs yet.</p>
+          ) : (
+            <pre className="code-block">{activePins.map((pin) => pin.code).join(', ')}</pre>
+          )}
+        </details>
       </section>
 
       <section className="card">
@@ -155,45 +229,12 @@ export function AdminEventPage() {
               <option value="TWO_THIRDS">Two thirds (≥66.67%)</option>
             </select>
           </label>
+          <label className="inline">
+            <input type="checkbox" checked={requiresPin} onChange={(e) => setRequiresPin(e.target.checked)} />
+            Require PIN for this ballot
+          </label>
           <button type="submit">Create ballot</button>
         </form>
-      </section>
-
-      <section className="card">
-        <h2>Generate 4-digit PINs</h2>
-        <form onSubmit={onGeneratePins} className="stack inline">
-          <input
-            type="number"
-            min={1}
-            max={5000}
-            value={pinCount}
-            onChange={(e) => setPinCount(Number(e.target.value))}
-          />
-          <button type="submit">Generate</button>
-        </form>
-        {pinsOutput.length > 0 && (
-          <details>
-            <summary>Show generated PINs ({pinsOutput.length})</summary>
-            <pre className="code-block">{pinsOutput.join(', ')}</pre>
-          </details>
-        )}
-      </section>
-
-      <section className="card">
-        <h2>Ballots</h2>
-        <ul className="list">
-          {ballots.map((ballot) => (
-            <li key={ballot.id}>
-              <div>
-                <strong>{ballot.title}</strong>
-                <div>Status: {ballot.status}</div>
-                <div>Vote URL: {appBase}/vote/{ballot.slug}</div>
-                <div>Display URL: {appBase}/display/{ballot.slug}</div>
-              </div>
-              <Link to={`/admin/ballots/${ballot.id}`}>Manage</Link>
-            </li>
-          ))}
-        </ul>
       </section>
     </main>
   )

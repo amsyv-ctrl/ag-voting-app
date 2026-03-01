@@ -43,14 +43,14 @@ export const handler: Handler = async (event) => {
   const pin = payload.pin?.trim()
   const choiceId = payload.choiceId?.trim()
 
-  if (!slug || !pin || !choiceId) {
+  if (!slug || !choiceId) {
     registerFailure(ip)
-    return { statusCode: 400, body: JSON.stringify({ error: 'slug, pin, and choiceId are required' }) }
+    return { statusCode: 400, body: JSON.stringify({ error: 'slug and choiceId are required' }) }
   }
 
   const { data, error } = await supabaseAdmin.rpc('submit_vote_atomic', {
     p_slug: slug,
-    p_pin_code: pin,
+    p_pin_code: pin ?? null,
     p_choice_id: choiceId,
     p_device_fingerprint_hash: payload.deviceFingerprintHash ?? null
   })

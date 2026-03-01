@@ -33,7 +33,7 @@ export const handler: Handler = async (event) => {
 
   const payload = JSON.parse(event.body || '{}') as Body
   const eventId = payload.eventId?.trim()
-  const count = Math.max(1, Math.min(payload.count ?? 100, 5000))
+  const count = Math.max(1, Math.min(payload.count ?? 100, 500))
 
   if (!eventId) {
     return { statusCode: 400, body: JSON.stringify({ error: 'eventId is required' }) }

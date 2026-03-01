@@ -18,7 +18,7 @@ export async function fetchBallotPublic(slug: string): Promise<PublicBallot> {
 
 export async function submitVote(payload: {
   slug: string
-  pin: string
+  pin?: string
   choiceId: string
 }): Promise<{ message: string; submittedAt: string }> {
   const res = await fetch(`${API_BASE}/submitVote`, {

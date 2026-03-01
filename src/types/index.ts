@@ -20,6 +20,7 @@ export type PublicBallot = {
   opens_at: string | null
   closes_at: string | null
   vote_round: number
+  requires_pin: boolean
   choices: BallotChoice[]
 }
 

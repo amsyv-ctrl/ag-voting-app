@@ -18,6 +18,7 @@ type BallotData = {
   opens_at: string | null
   closes_at: string | null
   vote_round: number
+  requires_pin: boolean
 }
 
 type ChoiceRow = { id: string; label: string; sort_order: number }
@@ -58,7 +59,7 @@ export function AdminBallotPage() {
 
     const { data: ballotData, error: ballotError } = await supabase
       .from('ballots')
-      .select('id,event_id,slug,title,description,status,majority_rule,opens_at,closes_at,vote_round')
+      .select('id,event_id,slug,title,description,status,majority_rule,opens_at,closes_at,vote_round,requires_pin')
       .eq('id', ballotId)
       .single()
 
@@ -103,7 +104,8 @@ export function AdminBallotPage() {
       majority_rule: ballotData.majority_rule,
       opens_at: ballotData.opens_at,
       closes_at: ballotData.closes_at,
-      vote_round: ballotData.vote_round ?? 1
+      vote_round: ballotData.vote_round ?? 1,
+      requires_pin: ballotData.requires_pin ?? true
     })
     setChoices(choiceData ?? [])
     await loadResults(ballotData.slug)
@@ -282,6 +284,19 @@ export function AdminBallotPage() {
     await load()
   }
 
+  async function togglePinRequirement(nextValue: boolean) {
+    if (!ballot) return
+    const { error: updateError } = await supabase
+      .from('ballots')
+      .update({ requires_pin: nextValue })
+      .eq('id', ballot.id)
+    if (updateError) {
+      setError(updateError.message)
+      return
+    }
+    await load()
+  }
+
   async function onAddChoice(e: FormEvent) {
     e.preventDefault()
     if (!ballot || !newChoice.trim()) return
@@ -327,6 +342,14 @@ export function AdminBallotPage() {
         <p>{ballot.description || 'No description'}</p>
         <p>Status: <strong>{ballot.status}</strong></p>
         <p><strong>Current Vote:</strong> #{ballot.vote_round} ({roundLabel(ballot.vote_round)} vote)</p>
+        <label className="inline">
+          <input
+            type="checkbox"
+            checked={ballot.requires_pin}
+            onChange={(e) => togglePinRequirement(e.target.checked)}
+          />
+          Require PIN for this vote
+        </label>
         {secondsToClose !== null && (
           <p><strong>Closing in: {secondsToClose}s</strong></p>
         )}
