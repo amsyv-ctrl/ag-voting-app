@@ -85,6 +85,12 @@ export function DisplayPage() {
           <p><strong>Closing in: {secondsToClose}s</strong></p>
         )}
         <p>Total Votes: {results.total_votes}</p>
+        {results.winner_label && !results.hidden_until_closed && (
+          <div className="winner-banner">
+            <p className="winner-kicker">Election Reached</p>
+            <h2>{results.winner_label}</h2>
+          </div>
+        )}
         {results.hidden_until_closed ? (
           <p>Results are hidden until ballot is closed.</p>
         ) : results.winner_label ? (

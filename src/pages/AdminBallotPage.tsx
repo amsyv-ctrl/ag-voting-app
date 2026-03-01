@@ -438,6 +438,13 @@ export function AdminBallotPage() {
       <section className="card">
         <h2>Live results</h2>
         <p><strong>Showing Vote:</strong> #{results?.vote_round ?? ballot.vote_round}</p>
+        {results?.winner_label && (
+          <div className="winner-banner">
+            <p className="winner-kicker">Election Reached</p>
+            <h3>{results.winner_label}</h3>
+            <p>{(results.top_pct! * 100).toFixed(1)}% of votes</p>
+          </div>
+        )}
         {!results || results.total_votes === 0 ? (
           <p>No votes yet.</p>
         ) : (
