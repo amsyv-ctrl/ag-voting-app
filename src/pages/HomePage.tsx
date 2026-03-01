@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import Particles from 'react-tsparticles'
 import { loadFull } from 'tsparticles'
+import { MoveDirection, type ISourceOptions } from 'tsparticles-engine'
 import { Link as RouterLink } from 'react-router-dom'
 import { Link as ScrollLink } from 'react-scroll'
 
@@ -8,14 +9,14 @@ const particlesInit = async (main: any) => {
   await loadFull(main)
 }
 
-const particlesOptions = {
+const particlesOptions: ISourceOptions = {
   particles: {
     number: { value: 50 },
     color: { value: '#ffffff' },
     shape: { type: 'circle' },
     opacity: { value: 0.5 },
     size: { value: 1 },
-    move: { enable: true, speed: 0.5, direction: 'none', random: true }
+    move: { enable: true, speed: 0.5, direction: MoveDirection.none, random: true }
   },
   interactivity: {
     events: { onHover: { enable: true, mode: 'repulse' as const } }
