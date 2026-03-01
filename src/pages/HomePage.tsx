@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion'
 import Particles from 'react-tsparticles'
 import { loadFull } from 'tsparticles'
-import type { ISourceOptions } from 'tsparticles-engine'
 import { Link as RouterLink } from 'react-router-dom'
 import { Link as ScrollLink } from 'react-scroll'
 
@@ -9,7 +8,7 @@ const particlesInit = async (main: any) => {
   await loadFull(main)
 }
 
-const particlesOptions: ISourceOptions = {
+const particlesOptions = {
   particles: {
     number: { value: 50 },
     color: { value: '#ffffff' },
@@ -27,6 +26,7 @@ const particlesOptions: ISourceOptions = {
 export function HomePage() {
   return (
     <div className="min-h-screen bg-black text-white font-body">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(37,99,235,0.25),transparent_40%),radial-gradient(circle_at_80%_10%,rgba(56,189,248,0.2),transparent_35%),linear-gradient(180deg,#000000,#030712)]" />
       <Particles id="tsparticles" init={particlesInit} options={particlesOptions} className="absolute inset-0" />
 
       <motion.section
