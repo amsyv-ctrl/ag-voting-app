@@ -154,6 +154,23 @@ export function AdminEventPage() {
     }
   }
 
+  async function onDeleteAllPins() {
+    const typed = window.prompt('Type DELETE to permanently remove all PINs for this event.')
+    if (typed !== 'DELETE') {
+      return
+    }
+
+    setError(null)
+    const { error: deleteError } = await supabase.from('pins').delete().eq('event_id', eventId)
+    if (deleteError) {
+      setError(deleteError.message)
+      return
+    }
+
+    setPinsOutput([])
+    await load()
+  }
+
   return (
     <main className="page">
       <section className="card">
@@ -182,36 +199,10 @@ export function AdminEventPage() {
       </section>
 
       <section className="card">
-        <h2>Generate 4-digit PINs</h2>
-        <p>Active PINs for this event: <strong>{activePins.length}</strong></p>
-        <form onSubmit={onGeneratePins} className="stack inline">
-          <input
-            type="number"
-            min={1}
-            max={500}
-            value={pinCount}
-            onChange={(e) => setPinCount(Math.max(1, Math.min(Number(e.target.value), 500)))}
-          />
-          <button type="submit">Generate</button>
-        </form>
-        {pinsOutput.length > 0 && (
-          <details>
-            <summary>Show newly generated PINs ({pinsOutput.length})</summary>
-            <pre className="code-block">{pinsOutput.join(', ')}</pre>
-          </details>
-        )}
-        <details>
-          <summary>View active PINs ({activePins.length})</summary>
-          {activePins.length === 0 ? (
-            <p>No active PINs yet.</p>
-          ) : (
-            <pre className="code-block">{activePins.map((pin) => pin.code).join(', ')}</pre>
-          )}
-        </details>
-      </section>
-
-      <section className="card">
         <h2>Create ballot</h2>
+        <p className="muted">
+          If ballot PINs are turned on, a voter must enter their unique PIN for each vote.
+        </p>
         <form onSubmit={onCreateBallot} className="stack">
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ballot title" required />
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
@@ -235,6 +226,36 @@ export function AdminEventPage() {
           </label>
           <button type="submit">Create ballot</button>
         </form>
+      </section>
+
+      <section className="card">
+        <h2>Generate 4-digit PINs</h2>
+        <p>Active PINs for this event: <strong>{activePins.length}</strong></p>
+        <form onSubmit={onGeneratePins} className="stack inline">
+          <input
+            type="number"
+            min={1}
+            max={500}
+            value={pinCount}
+            onChange={(e) => setPinCount(Math.max(1, Math.min(Number(e.target.value), 500)))}
+          />
+          <button type="submit">Generate</button>
+        </form>
+        <button className="secondary" onClick={onDeleteAllPins}>Delete all PINs</button>
+        {pinsOutput.length > 0 && (
+          <details>
+            <summary>Show newly generated PINs ({pinsOutput.length})</summary>
+            <pre className="code-block">{pinsOutput.join(', ')}</pre>
+          </details>
+        )}
+        <details>
+          <summary>View active PINs ({activePins.length})</summary>
+          {activePins.length === 0 ? (
+            <p>No active PINs yet.</p>
+          ) : (
+            <pre className="code-block">{activePins.map((pin) => pin.code).join(', ')}</pre>
+          )}
+        </details>
       </section>
     </main>
   )
