@@ -34,6 +34,9 @@ export function AdminEventPage() {
   const navigate = useNavigate()
 
   const [eventName, setEventName] = useState('')
+  const [eventDate, setEventDate] = useState('')
+  const [eventLocation, setEventLocation] = useState('')
+  const [votingStaffNames, setVotingStaffNames] = useState('')
   const [ballots, setBallots] = useState<BallotRow[]>([])
   const [activePins, setActivePins] = useState<PinRow[]>([])
   const [title, setTitle] = useState('')
@@ -56,7 +59,7 @@ export function AdminEventPage() {
 
     const { data: eventData, error: eventError } = await supabase
       .from('events')
-      .select('name')
+      .select('name,date,location,voting_staff_names')
       .eq('id', eventId)
       .single()
 
@@ -65,6 +68,9 @@ export function AdminEventPage() {
       return
     }
     setEventName(eventData.name)
+    setEventDate(eventData.date ?? '')
+    setEventLocation(eventData.location ?? '')
+    setVotingStaffNames(eventData.voting_staff_names ?? '')
 
     const { data: ballotData, error: ballotError } = await supabase
       .from('ballots')
@@ -171,13 +177,63 @@ export function AdminEventPage() {
     await load()
   }
 
+  async function onUpdateEvent(e: FormEvent) {
+    e.preventDefault()
+    setError(null)
+
+    const { error: updateError } = await supabase
+      .from('events')
+      .update({
+        name: eventName,
+        date: eventDate || null,
+        location: eventLocation || null,
+        voting_staff_names: votingStaffNames || null
+      })
+      .eq('id', eventId)
+
+    if (updateError) {
+      setError(updateError.message)
+      return
+    }
+
+    await load()
+  }
+
   return (
     <main className="page">
       <section className="card">
         <h1>{eventName || 'Event'}</h1>
         <p>Manage ballots and delegate PINs.</p>
+        {votingStaffNames && <p><strong>Voting team:</strong> {votingStaffNames}</p>}
         <Link to="/admin">Back to admin</Link>
         {error && <p className="error">{error}</p>}
+      </section>
+
+      <section className="card">
+        <h2>Edit event</h2>
+        <form onSubmit={onUpdateEvent} className="stack">
+          <label>
+            Event name
+            <input value={eventName} onChange={(e) => setEventName(e.target.value)} required />
+          </label>
+          <label>
+            Event date
+            <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
+          </label>
+          <label>
+            Event location
+            <input value={eventLocation} onChange={(e) => setEventLocation(e.target.value)} placeholder="Location" />
+          </label>
+          <label>
+            Names running voting
+            <textarea
+              value={votingStaffNames}
+              onChange={(e) => setVotingStaffNames(e.target.value)}
+              placeholder="Example: John Doe, Jane Smith"
+            />
+          </label>
+          <button type="submit">Save event details</button>
+        </form>
       </section>
 
       <section className="card">

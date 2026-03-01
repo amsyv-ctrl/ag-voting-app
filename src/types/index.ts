@@ -41,4 +41,6 @@ export type BallotResults = {
   top_pct: number | null
   has_tie: boolean
   majority_rule: MajorityRule
+  results_visibility?: 'LIVE' | 'CLOSED_ONLY'
+  hidden_until_closed?: boolean
 }

@@ -19,6 +19,7 @@ type BallotData = {
   closes_at: string | null
   vote_round: number
   requires_pin: boolean
+  results_visibility: 'LIVE' | 'CLOSED_ONLY' | null
 }
 
 type ChoiceRow = { id: string; label: string; sort_order: number }
@@ -59,7 +60,7 @@ export function AdminBallotPage() {
 
     const { data: ballotData, error: ballotError } = await supabase
       .from('ballots')
-      .select('id,event_id,slug,title,description,status,majority_rule,opens_at,closes_at,vote_round,requires_pin')
+      .select('id,event_id,slug,title,description,status,majority_rule,opens_at,closes_at,vote_round,requires_pin,results_visibility')
       .eq('id', ballotId)
       .single()
 
@@ -105,7 +106,8 @@ export function AdminBallotPage() {
       opens_at: ballotData.opens_at,
       closes_at: ballotData.closes_at,
       vote_round: ballotData.vote_round ?? 1,
-      requires_pin: ballotData.requires_pin ?? true
+      requires_pin: ballotData.requires_pin ?? true,
+      results_visibility: ballotData.results_visibility ?? null
     })
     setChoices(choiceData ?? [])
     await loadResults(ballotData.slug)
@@ -270,6 +272,10 @@ export function AdminBallotPage() {
 
   async function openNewVoteRound() {
     if (!ballot) return
+    if (!ballot.results_visibility) {
+      setError('Choose results visibility (Show live voting or Hide until ballot is closed) before opening a vote.')
+      return
+    }
     const nextRound = ballot.status === 'DRAFT' ? 1 : (ballot.vote_round ?? 1) + 1
     if (!window.confirm(`Open ${roundLabel(nextRound)} vote for this ballot?`)) {
       return
@@ -282,6 +288,32 @@ export function AdminBallotPage() {
       return
     }
     await load()
+  }
+
+  async function setResultsVisibility(mode: 'LIVE' | 'CLOSED_ONLY') {
+    if (!ballot) return
+    const { error: updateError } = await supabase
+      .from('ballots')
+      .update({ results_visibility: mode })
+      .eq('id', ballot.id)
+    if (updateError) {
+      setError(updateError.message)
+      return
+    }
+    await load()
+  }
+
+  async function deleteBallot() {
+    if (!ballot) return
+    if (!window.confirm(`Are you sure you want to delete ballot "${ballot.title}"? This cannot be undone.`)) {
+      return
+    }
+    const { error: deleteError } = await supabase.from('ballots').delete().eq('id', ballot.id)
+    if (deleteError) {
+      setError(deleteError.message)
+      return
+    }
+    navigate(`/admin/events/${ballot.event_id}`)
   }
 
   async function togglePinRequirement(nextValue: boolean) {
@@ -350,6 +382,27 @@ export function AdminBallotPage() {
           />
           Require PIN for this vote
         </label>
+        <fieldset>
+          <legend>Results visibility (required before opening vote)</legend>
+          <label className="radio-row">
+            <input
+              type="radio"
+              name="resultsVisibility"
+              checked={ballot.results_visibility === 'LIVE'}
+              onChange={() => setResultsVisibility('LIVE')}
+            />
+            Show live voting
+          </label>
+          <label className="radio-row">
+            <input
+              type="radio"
+              name="resultsVisibility"
+              checked={ballot.results_visibility === 'CLOSED_ONLY'}
+              onChange={() => setResultsVisibility('CLOSED_ONLY')}
+            />
+            Hide results until ballot is closed
+          </label>
+        </fieldset>
         {secondsToClose !== null && (
           <p><strong>Closing in: {secondsToClose}s</strong></p>
         )}
@@ -442,6 +495,12 @@ export function AdminBallotPage() {
           ))}
         </section>
       )}
+
+      <section className="card">
+        <h2>Danger Zone</h2>
+        <p className="error">Delete this ballot and all of its votes.</p>
+        <button className="secondary" onClick={deleteBallot}>Delete ballot</button>
+      </section>
     </main>
   )
 }

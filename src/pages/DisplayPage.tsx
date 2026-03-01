@@ -85,20 +85,30 @@ export function DisplayPage() {
           <p><strong>Closing in: {secondsToClose}s</strong></p>
         )}
         <p>Total Votes: {results.total_votes}</p>
-        {results.winner_label ? (
+        {results.hidden_until_closed ? (
+          <p>Results are hidden until ballot is closed.</p>
+        ) : results.winner_label ? (
           <p className="winner">Winner: {results.winner_label}</p>
         ) : (
           <p>No winner yet{results.has_tie ? ' (tie)' : ''}</p>
         )}
       </header>
       <section>
-        {rows.map((row) => (
-          <article key={row.choice_id} className="display-row">
-            <h2>{row.label}</h2>
-            <p>{row.votes} votes</p>
-            <p>{(row.pct * 100).toFixed(1)}%</p>
+        {results.hidden_until_closed ? (
+          <article className="display-row">
+            <h2>Voting in progress</h2>
+            <p>Live results hidden</p>
+            <p>Will display after close</p>
           </article>
-        ))}
+        ) : (
+          rows.map((row) => (
+            <article key={row.choice_id} className="display-row">
+              <h2>{row.label}</h2>
+              <p>{row.votes} votes</p>
+              <p>{(row.pct * 100).toFixed(1)}%</p>
+            </article>
+          ))
+        )}
       </section>
     </main>
   )
