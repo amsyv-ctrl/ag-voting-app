@@ -45,7 +45,13 @@ export function HomePage() {
             to="/admin"
             className="rounded-full bg-blue-600 px-6 py-3 text-lg font-semibold text-white transition duration-300 hover:bg-blue-800"
           >
-            Get Started Now
+            Log In as Admin
+          </RouterLink>
+          <RouterLink
+            to="/admin?mode=register"
+            className="rounded-full bg-emerald-600 px-6 py-3 text-lg font-semibold text-white transition duration-300 hover:bg-emerald-700"
+          >
+            Register New Admin
           </RouterLink>
           <ScrollLink
             to="how"

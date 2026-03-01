@@ -14,6 +14,19 @@
 
 body {
   margin: 0;
+  font-family: Inter, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: radial-gradient(circle at 20% 0%, #d7ebff 0%, #eef6ff 45%, #f8fbff 100%);
+}
+
+h1,
+h2,
+h3 {
+  font-family: Orbitron, Inter, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  letter-spacing: 0.01em;
+}
+
+a {
+  color: #1d4ed8;
 }
 
 .page,
