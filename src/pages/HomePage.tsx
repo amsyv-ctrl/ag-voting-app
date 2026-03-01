@@ -2,7 +2,6 @@ import { motion } from 'framer-motion'
 import Particles from 'react-tsparticles'
 import { loadFull } from 'tsparticles'
 import type { ISourceOptions } from 'tsparticles-engine'
-import { MoveDirection } from 'tsparticles-engine/Enums/Directions/MoveDirection'
 import { Link as RouterLink } from 'react-router-dom'
 import { Link as ScrollLink } from 'react-scroll'
 
@@ -17,7 +16,7 @@ const particlesOptions: ISourceOptions = {
     shape: { type: 'circle' },
     opacity: { value: 0.5 },
     size: { value: 1 },
-    move: { enable: true, speed: 0.5, direction: MoveDirection.none, random: true }
+    move: { enable: true, speed: 0.5, direction: 'none' as const, random: true }
   },
   interactivity: {
     events: { onHover: { enable: true, mode: 'repulse' as const } }
