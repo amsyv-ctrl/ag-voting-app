@@ -72,12 +72,13 @@ export function VotePage() {
   return (
     <main className="vote-page">
       <section className="vote-card">
-        <p><strong>Current Vote:</strong> #{Math.max(1, ballot.vote_round || 1)}</p>
-        <p><strong>Event:</strong> {ballot.event_name}</p>
-        <h1>{ballot.title}</h1>
-        <p><strong>Round Label:</strong> {roundLabel(ballot.vote_round)} vote</p>
-        <p><strong>PIN Required:</strong> {ballot.requires_pin ? 'Yes' : 'No'}</p>
-        {ballot.description && <p>{ballot.description}</p>}
+        <h1 className="vote-title">Cast Your Vote</h1>
+        <p className="vote-info">Current Vote: #{Math.max(1, ballot.vote_round || 1)}</p>
+        <p className="vote-info">Event: {ballot.event_name}</p>
+        <p className="vote-info">Ballot: {ballot.title}</p>
+        <p className="vote-info">Round Label: {roundLabel(ballot.vote_round)} vote</p>
+        <p className="vote-info">PIN Required: {ballot.requires_pin ? 'Yes' : 'No'}</p>
+        {ballot.description && <p className="vote-description">{ballot.description}</p>}
 
         {confirmation ? (
           <div className="success-box">
@@ -88,8 +89,8 @@ export function VotePage() {
         ) : (
           <form onSubmit={onSubmit} className="stack">
             {ballot.requires_pin && (
-              <label>
-                4-digit PIN
+              <label className="vote-pin-label">
+                Enter PIN
                 <input
                   type="password"
                   inputMode="numeric"
@@ -105,7 +106,7 @@ export function VotePage() {
               </label>
             )}
 
-            <fieldset disabled={submitting || isClosed}>
+            <fieldset className="vote-options" disabled={submitting || isClosed}>
               <legend>Choose one</legend>
               {ballot.choices.map((choice) => (
                 <label key={choice.id} className="radio-row">

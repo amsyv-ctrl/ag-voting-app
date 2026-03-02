@@ -276,7 +276,41 @@ a {
 }
 
 .vote-card {
-  width: min(560px, 100%);
+  width: min(420px, 100%);
+  padding: 1.5rem;
+}
+
+.vote-title {
+  text-align: center;
+  margin: 0 0 0.8rem 0;
+  font-size: 1.7rem;
+}
+
+.vote-info {
+  margin: 0.2rem 0;
+  color: #5f6772;
+  font-size: 1rem;
+}
+
+.vote-description {
+  margin: 1rem 0;
+  text-align: center;
+  font-size: 1.05rem;
+}
+
+.vote-pin-label {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.vote-options {
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+}
+
+.vote-options legend {
+  padding: 0 0.3rem;
 }
 
 .stack {
@@ -376,6 +410,14 @@ button:disabled {
   gap: 0.5rem;
   align-items: center;
   margin-bottom: 0.5rem;
+  font-size: 1.08rem;
+  cursor: pointer;
+}
+
+.radio-row input[type='radio'] {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: #007bff;
 }
 
 .code-block {
@@ -397,43 +439,163 @@ td {
 }
 
 .display-page {
-  background: linear-gradient(120deg, #0f1830, #203b70);
+  background: #001f3f;
   color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: center;
+  padding: 20px;
 }
 
-.display-qr-wrap {
+.display-main {
+  width: min(1200px, 100%);
+  margin: 0 auto;
+  animation: fadeInUp 0.4s ease-in-out;
+}
+
+.display-event {
+  font-size: clamp(2.2rem, 7vw, 4rem);
+  margin: 0 0 0.4rem 0;
+}
+
+.display-ballot-title {
+  font-size: clamp(1.6rem, 5vw, 3rem);
+  margin: 0 0 0.8rem 0;
+}
+
+.display-status {
+  font-size: clamp(1.2rem, 3vw, 2rem);
+  margin: 0.35rem 0;
+}
+
+.display-close {
+  font-weight: 800;
+}
+
+.display-winner-wrap {
+  margin: 0.75rem auto;
+  padding: 1rem;
+  border: 2px solid #66b78f;
+  background: rgba(234, 251, 241, 0.15);
+  border-radius: 12px;
+  width: min(980px, 100%);
+}
+
+.display-winner-kicker {
+  margin: 0;
+  font-size: clamp(1rem, 2.4vw, 1.5rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.display-winner-name {
+  margin: 0.5rem 0 0;
+  font-size: clamp(1.6rem, 4.2vw, 3rem);
+  font-weight: 800;
+}
+
+.display-no-winner {
+  font-size: clamp(1.2rem, 3vw, 2rem);
+  color: #ffc107;
+  margin: 0.75rem 0;
+}
+
+.display-results {
+  display: grid;
+  gap: 1rem;
+  margin: 1.6rem 0;
+}
+
+.display-bar-container {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 0.85rem;
+  text-align: left;
+}
+
+.display-bar-label {
+  font-size: clamp(1rem, 2.8vw, 2rem);
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.display-bar-track {
+  height: clamp(18px, 3.2vw, 42px);
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.display-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #007bff, #00bfff);
+  border-radius: 6px;
+  transition: width 0.45s ease-in-out;
+}
+
+.display-hidden-state {
+  border: 1px dashed rgba(255, 255, 255, 0.5);
+  border-radius: 10px;
+  padding: 1rem;
+  font-size: clamp(1.2rem, 3vw, 2rem);
+  font-weight: 700;
+}
+
+.display-qr-section {
+  margin-top: auto;
+  padding: 20px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
   display: grid;
   justify-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
-  text-align: center;
+  gap: 0.7rem;
 }
 
 .display-qr {
-  width: min(78vw, 560px);
+  width: min(66vw, 520px);
   height: auto;
   background: #ffffff;
   border-radius: 14px;
   padding: 0.75rem;
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.38);
 }
 
 .display-vote-url {
-  font-size: 1.1rem;
+  font-size: clamp(0.95rem, 2.2vw, 1.5rem);
   font-weight: 700;
-}
-
-.display-row {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 0.75rem 0;
+  word-break: break-all;
 }
 
 @media (max-width: 640px) {
-  .display-row {
-    grid-template-columns: 1fr;
-    gap: 0.25rem;
+  .vote-card {
+    width: min(94vw, 420px);
+    padding: 1.1rem;
+  }
+
+  .vote-title {
+    font-size: 1.45rem;
+  }
+
+  .vote-info {
+    font-size: 0.9rem;
+  }
+
+  .display-page {
+    padding: 14px;
+  }
+
+  .display-bar-label {
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .display-qr {
+    width: min(82vw, 420px);
   }
 }
