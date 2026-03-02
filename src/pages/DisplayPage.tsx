@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import QRCode from 'qrcode'
 import { fetchBallotPublic, fetchBallotResults } from '../lib/api'
 import { roundLabel } from '../lib/roundLabel'
 import { computeWinner } from '../lib/winner'
@@ -14,6 +15,7 @@ export function DisplayPage() {
   const [results, setResults] = useState<BallotResults | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [secondsToClose, setSecondsToClose] = useState<number | null>(null)
+  const [voteQrDataUrl, setVoteQrDataUrl] = useState<string | null>(null)
 
   useEffect(() => {
     fetchBallotPublic(ballotSlug).then(setBallot).catch(() => null)
@@ -71,12 +73,33 @@ export function DisplayPage() {
     return () => window.clearInterval(timer)
   }, [ballot?.closes_at])
 
+  useEffect(() => {
+    if (!ballot?.slug) {
+      setVoteQrDataUrl(null)
+      return
+    }
+    QRCode.toDataURL(`${window.location.origin}/vote/${ballot.slug}`, { width: 1024, margin: 1 })
+      .then(setVoteQrDataUrl)
+      .catch(() => setVoteQrDataUrl(null))
+  }, [ballot?.slug])
+
   if (!ballot || !results) return <main className="display-page"><p>Loading...</p></main>
 
   const rows = [...results.rows].sort((a, b) => b.votes - a.votes)
+  const showWinner = results.ballot_status === 'CLOSED' && !!results.winner_label
 
   return (
     <main className="display-page">
+      <section className="display-qr-wrap">
+        <h2>Scan to Vote</h2>
+        {voteQrDataUrl ? (
+          <img className="display-qr" src={voteQrDataUrl} alt="QR code for ballot voting link" />
+        ) : (
+          <p>Generating QR code...</p>
+        )}
+        <p className="display-vote-url">{window.location.origin}/vote/{ballot.slug}</p>
+      </section>
+
       <header>
         <h1>{ballot.event_name}</h1>
         <p>{ballot.title}</p>
@@ -85,7 +108,7 @@ export function DisplayPage() {
           <p><strong>Closing in: {secondsToClose}s</strong></p>
         )}
         <p>Total Votes: {results.total_votes}</p>
-        {results.winner_label && !results.hidden_until_closed && (
+        {showWinner && !results.hidden_until_closed && (
           <div className="winner-banner">
             <p className="winner-kicker">Election Reached</p>
             <h2>{results.winner_label}</h2>
@@ -93,7 +116,7 @@ export function DisplayPage() {
         )}
         {results.hidden_until_closed ? (
           <p>Results are hidden until ballot is closed.</p>
-        ) : results.winner_label ? (
+        ) : showWinner ? (
           <p className="winner">Winner: {results.winner_label}</p>
         ) : (
           <p>No winner yet{results.has_tie ? ' (tie)' : ''}</p>

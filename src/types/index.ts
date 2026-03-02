@@ -33,6 +33,7 @@ export type BallotResultRow = {
 
 export type BallotResults = {
   ballot_id: string
+  ballot_status?: 'DRAFT' | 'OPEN' | 'CLOSED'
   vote_round: number
   total_votes: number
   rows: BallotResultRow[]

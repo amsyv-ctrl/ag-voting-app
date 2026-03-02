@@ -9,6 +9,13 @@ type EventRow = {
   location: string | null
 }
 
+type AdminProfileRow = {
+  first_name: string
+  last_name: string
+  network: string
+  address: string
+}
+
 export function AdminLoginPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const modeParam = searchParams.get('mode')
@@ -24,6 +31,7 @@ export function AdminLoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [events, setEvents] = useState<EventRow[]>([])
+  const [profile, setProfile] = useState<AdminProfileRow | null>(null)
   const [hasSession, setHasSession] = useState(false)
   const [ready, setReady] = useState(false)
 
@@ -38,9 +46,23 @@ export function AdminLoginPage() {
     if (!sessionData.session) {
       setHasSession(false)
       setEvents([])
+      setProfile(null)
       return
     }
     setHasSession(true)
+
+    const { data: profileData, error: profileError } = await supabase
+      .from('admin_profiles')
+      .select('first_name,last_name,network,address')
+      .eq('user_id', sessionData.session.user.id)
+      .maybeSingle()
+
+    if (profileError && profileError.code !== 'PGRST116') {
+      setError(profileError.message)
+      return
+    }
+
+    setProfile(profileData ?? null)
 
     const { data, error: eventsError } = await supabase
       .from('events')
@@ -147,6 +169,7 @@ export function AdminLoginPage() {
     await supabase.auth.signOut()
     setHasSession(false)
     setEvents([])
+    setProfile(null)
   }
 
   if (!ready) return <main className="page"><p>Loading...</p></main>
@@ -204,6 +227,14 @@ export function AdminLoginPage() {
       <section className="card">
         <h2>Events</h2>
         <button onClick={onLogout} className="secondary">Sign out</button>
+        {profile && (
+          <div className="card">
+            <h3>Admin Profile</h3>
+            <p><strong>Name:</strong> {profile.first_name} {profile.last_name}</p>
+            <p><strong>Network:</strong> {profile.network}</p>
+            <p><strong>Address:</strong> {profile.address}</p>
+          </div>
+        )}
         <form onSubmit={onCreateEvent} className="stack">
           <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Event name" required />
           <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} />
