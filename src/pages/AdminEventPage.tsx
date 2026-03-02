@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useMemo, useState, useEffect } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { adminGeneratePins } from '../lib/api'
@@ -69,6 +69,9 @@ export function AdminEventPage() {
   const [pinsOutput, setPinsOutput] = useState<string[]>([])
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [editOpen, setEditOpen] = useState(false)
+  const [pinsOpen, setPinsOpen] = useState(false)
 
   const appBase = useMemo(() => window.location.origin, [])
 
@@ -348,122 +351,145 @@ export function AdminEventPage() {
   }
 
   return (
-    <main className="page">
-      <section className="card">
+    <main className="event-page">
+      <section className="event-container">
+        <Link to="/admin" className="back-link">&larr; Back to Admin</Link>
         <h1>{eventName || 'Event'}</h1>
-        <p>Manage ballots and delegate PINs.</p>
-        {votingStaffNames && <p><strong>Voting team:</strong> {votingStaffNames}</p>}
-        <Link to="/admin">Back to admin</Link>
-        {error && <p className="error">{error}</p>}
-      </section>
-
-      <section className="card">
-        <h2>Edit event</h2>
-        <form onSubmit={onUpdateEvent} className="stack">
-          <label>
-            Event name
-            <input value={eventName} onChange={(e) => setEventName(e.target.value)} required />
-          </label>
-          <label>
-            Event date
-            <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
-          </label>
-          <label>
-            Event location
-            <input value={eventLocation} onChange={(e) => setEventLocation(e.target.value)} placeholder="Location" />
-          </label>
-          <label>
-            Names running voting
-            <textarea
-              value={votingStaffNames}
-              onChange={(e) => setVotingStaffNames(e.target.value)}
-              placeholder="Example: John Doe, Jane Smith"
-            />
-          </label>
-          <button type="submit">Save event details</button>
-        </form>
-      </section>
-
-      <section className="card">
-        <h2>Ballots</h2>
-        <button onClick={onExportResults} disabled={exporting}>
-          {exporting ? 'Exporting...' : 'Export All Voting Results'}
-        </button>
-        <p className="muted">Includes every vote record and the timestamp each election threshold was first reached.</p>
-        <ul className="list">
-          {ballots.map((ballot) => (
-            <li key={ballot.id}>
-              <div>
-                <strong>{ballot.title}</strong>
-                <div>Status: {ballot.status}</div>
-                <div>PIN required: {ballot.requires_pin ? 'Yes' : 'No'}</div>
-                <div>Vote URL: {appBase}/vote/{ballot.slug}</div>
-                <div>Display URL: {appBase}/display/{ballot.slug}</div>
-              </div>
-              <Link to={`/admin/ballots/${ballot.id}`}>Manage</Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="card">
-        <h2>Create ballot</h2>
-        <p className="muted">
-          If ballot PINs are turned on, a voter must enter their unique PIN for each vote.
+        <p className="subtitle">
+          Manage ballots and delegate PINs.
+          {votingStaffNames ? <><br />Voting Team: {votingStaffNames}</> : null}
         </p>
-        <form onSubmit={onCreateBallot} className="stack">
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ballot title" required />
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
-          <label>
-            Ballot type
-            <select value={ballotType} onChange={(e) => setBallotType(e.target.value as 'YES_NO' | 'PICK_ONE')}>
-              <option value="PICK_ONE">Pick one candidate</option>
-              <option value="YES_NO">Yes / No</option>
-            </select>
-          </label>
-          <label>
-            Majority rule
-            <select value={majorityRule} onChange={(e) => setMajorityRule(e.target.value as 'SIMPLE' | 'TWO_THIRDS')}>
-              <option value="SIMPLE">Simple majority (&gt;50%)</option>
-              <option value="TWO_THIRDS">Two thirds (≥66.67%)</option>
-            </select>
-          </label>
-          <label className="inline">
-            <input type="checkbox" checked={requiresPin} onChange={(e) => setRequiresPin(e.target.checked)} />
-            Require PIN for this ballot
-          </label>
-          <button type="submit">Create ballot</button>
-        </form>
-      </section>
+        {error && <p className="error">{error}</p>}
 
-      <section className="card">
-        <h2>Generate 4-digit PINs</h2>
-        <p>Active PINs for this event: <strong>{activePins.length}</strong></p>
-        <form onSubmit={onGeneratePins} className="stack inline">
-          <input
-            type="number"
-            min={1}
-            max={500}
-            value={pinCount}
-            onChange={(e) => setPinCount(Math.max(1, Math.min(Number(e.target.value), 500)))}
-          />
-          <button type="submit">Generate</button>
-        </form>
-        <button className="secondary" onClick={onDeleteAllPins}>Delete all PINs</button>
-        {pinsOutput.length > 0 && (
-          <details>
-            <summary>Show newly generated PINs ({pinsOutput.length})</summary>
-            <pre className="code-block">{pinsOutput.join(', ')}</pre>
-          </details>
-        )}
-        <details>
-          <summary>View active PINs ({activePins.length})</summary>
-          {activePins.length === 0 ? (
-            <p>No active PINs yet.</p>
-          ) : (
-            <pre className="code-block">{activePins.map((pin) => pin.code).join(', ')}</pre>
-          )}
-        </details>
+        <div className={`accordion ${editOpen ? 'active' : ''}`}>
+          <button type="button" className="accordion-header" onClick={() => setEditOpen((v) => !v)}>
+            Edit Event
+            <span className="accordion-icon">&#9654;</span>
+          </button>
+          <div className="accordion-content">
+            <form onSubmit={onUpdateEvent} className="stack">
+              <label>
+                Event name
+                <input value={eventName} onChange={(e) => setEventName(e.target.value)} required />
+              </label>
+              <label>
+                Event date
+                <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
+              </label>
+              <label>
+                Event location
+                <input value={eventLocation} onChange={(e) => setEventLocation(e.target.value)} placeholder="Location" />
+              </label>
+              <label>
+                Names running voting
+                <input
+                  value={votingStaffNames}
+                  onChange={(e) => setVotingStaffNames(e.target.value)}
+                  placeholder="Example: Yisrael Vincent"
+                />
+              </label>
+              <button type="submit">Save Event Details</button>
+            </form>
+          </div>
+        </div>
+
+        <div className={`accordion ${pinsOpen ? 'active' : ''}`}>
+          <button type="button" className="accordion-header" onClick={() => setPinsOpen((v) => !v)}>
+            Manage PINs
+            <span className="accordion-icon">&#9654;</span>
+          </button>
+          <div className="accordion-content">
+            <p>Generate 4-digit PINs. Active PINs for this event: <strong>{activePins.length}</strong></p>
+            <form className="pin-section" onSubmit={onGeneratePins}>
+              <input
+                className="pin-input"
+                type="number"
+                min={1}
+                max={500}
+                value={pinCount}
+                onChange={(e) => setPinCount(Math.max(1, Math.min(Number(e.target.value), 500)))}
+              />
+              <button type="submit">Generate</button>
+            </form>
+            <button className="danger-btn" style={{ marginTop: '10px' }} onClick={onDeleteAllPins}>Delete All PINs</button>
+            {pinsOutput.length > 0 && (
+              <details>
+                <summary>Show newly generated PINs ({pinsOutput.length})</summary>
+                <pre className="code-block">{pinsOutput.join(', ')}</pre>
+              </details>
+            )}
+            <details>
+              <summary>View active PINs ({activePins.length})</summary>
+              {activePins.length === 0 ? (
+                <p>No active PINs yet.</p>
+              ) : (
+                <pre className="code-block">{activePins.map((pin) => pin.code).join(', ')}</pre>
+              )}
+            </details>
+          </div>
+        </div>
+
+        <h2>Ballots</h2>
+        <p className="subtitle">Includes every vote record and the timestamp each election threshold was first reached when exported.</p>
+
+        {ballots.map((ballot) => (
+          <div className="ballot-item" key={ballot.id}>
+            <div className="ballot-header">
+              <span>{ballot.title}</span>
+              <Link to={`/admin/ballots/${ballot.id}`}>
+                <button className="secondary-btn">Manage</button>
+              </Link>
+            </div>
+            <div className="ballot-details">
+              Status: {ballot.status}<br />
+              PIN required: {ballot.requires_pin ? 'Yes' : 'No'}<br />
+              Vote URL: <span className="url">{appBase}/vote/{ballot.slug}</span><br />
+              Display URL: <span className="url">{appBase}/display/{ballot.slug}</span>
+            </div>
+          </div>
+        ))}
+
+        <div className="ballot-item ballot-create-card">
+          <div className="ballot-header">Create New Ballot</div>
+          <form onSubmit={onCreateBallot} className="stack" style={{ marginTop: '15px' }}>
+            <label>
+              Ballot title
+              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ballot title" required />
+            </label>
+            <label>
+              Description
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
+            </label>
+            <label>
+              Ballot type
+              <select value={ballotType} onChange={(e) => setBallotType(e.target.value as 'YES_NO' | 'PICK_ONE')}>
+                <option value="PICK_ONE">Pick one candidate</option>
+                <option value="YES_NO">Yes / No</option>
+              </select>
+            </label>
+            <label>
+              Majority rule
+              <select value={majorityRule} onChange={(e) => setMajorityRule(e.target.value as 'SIMPLE' | 'TWO_THIRDS')}>
+                <option value="SIMPLE">Simple majority (&gt;50%)</option>
+                <option value="TWO_THIRDS">Two thirds (≥66.67%)</option>
+              </select>
+            </label>
+            <label className="checkbox-label">
+              <input type="checkbox" checked={requiresPin} onChange={(e) => setRequiresPin(e.target.checked)} />
+              Require PIN for this ballot
+            </label>
+            <button type="submit" style={{ marginTop: '10px' }}>Create Ballot</button>
+          </form>
+        </div>
+
+        <div className="export-section">
+          <button className="secondary-btn" onClick={onExportResults} disabled={exporting}>
+            {exporting ? 'Exporting...' : 'Export All Voting Results'}
+          </button>
+          <p className="subtitle" style={{ marginTop: '10px' }}>
+            Download full vote records including timestamps for when each threshold was reached.
+          </p>
+        </div>
       </section>
     </main>
   )
