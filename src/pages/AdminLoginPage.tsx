@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
@@ -38,8 +38,6 @@ export function AdminLoginPage() {
   const [newName, setNewName] = useState('')
   const [newDate, setNewDate] = useState('')
   const [newLocation, setNewLocation] = useState('')
-
-  const isAuthenticated = useMemo(() => hasSession, [hasSession])
 
   async function loadEvents() {
     const { data: sessionData } = await supabase.auth.getSession()
@@ -172,87 +170,97 @@ export function AdminLoginPage() {
     setProfile(null)
   }
 
-  if (!ready) return <main className="page"><p>Loading...</p></main>
+  if (!ready) return <main className="auth-page"><div className="auth-container"><p>Loading...</p></div></main>
 
   return (
-    <main className="page">
-      <section className="card">
-        <h1>AG Voting Admin</h1>
-        <p>Log in or register to create your own voting session and events.</p>
+    <main className="auth-page">
+      <section className="auth-container">
+        {!hasSession ? (
+          <div>
+            <h1 className="auth-title">AG Voting Admin</h1>
+            <p className="muted">Log in or register to manage voting sessions and events.</p>
 
-        <div className="inline">
-          <button className={authMode === 'login' ? '' : 'secondary'} onClick={() => setAuthMode('login')}>
-            Log in as admin
-          </button>
-          <button className={authMode === 'register' ? '' : 'secondary'} onClick={() => setAuthMode('register')}>
-            Register admin account
-          </button>
-        </div>
+            <div className="inline">
+              <button className={authMode === 'login' ? '' : 'secondary'} onClick={() => setAuthMode('login')}>
+                Log In as Admin
+              </button>
+              <button className={authMode === 'register' ? '' : 'secondary'} onClick={() => setAuthMode('register')}>
+                Register Admin Account
+              </button>
+            </div>
 
-        {error && <p className="error">{error}</p>}
-        {notice && <p className="winner">{notice}</p>}
+            {error && <p className="error">{error}</p>}
+            {notice && <p className="winner">{notice}</p>}
 
-        {authMode === 'login' ? (
-          <form onSubmit={onLogin} className="stack">
-            <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <button type="submit">Sign in</button>
-          </form>
+            {authMode === 'login' ? (
+              <form onSubmit={onLogin} className="stack">
+                <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button type="submit">Sign In</button>
+              </form>
+            ) : (
+              <form onSubmit={onRegister} className="stack">
+                <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" required />
+                <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" required />
+                <input value={network} onChange={(e) => setNetwork(e.target.value)} placeholder="Network" required />
+                <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address" required />
+                <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  minLength={8}
+                  required
+                />
+                <button type="submit">Create Admin Account</button>
+              </form>
+            )}
+          </div>
         ) : (
-          <form onSubmit={onRegister} className="stack">
-            <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" required />
-            <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" required />
-            <input value={network} onChange={(e) => setNetwork(e.target.value)} placeholder="Network" required />
-            <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address" required />
-            <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              minLength={8}
-              required
-            />
-            <button type="submit">Create admin account</button>
-          </form>
-        )}
-      </section>
+          <div>
+            <div className="auth-header-row">
+              <h1 className="auth-title">Events</h1>
+              <button className="logout-btn" onClick={onLogout}>Sign Out</button>
+            </div>
 
-      <section className="card">
-        <h2>Events</h2>
-        <button onClick={onLogout} className="secondary">Sign out</button>
-        {profile && (
-          <div className="card">
-            <h3>Admin Profile</h3>
-            <p><strong>Name:</strong> {profile.first_name} {profile.last_name}</p>
-            <p><strong>Network:</strong> {profile.network}</p>
-            <p><strong>Address:</strong> {profile.address}</p>
+            {profile && (
+              <div className="card">
+                <h3>Admin Profile</h3>
+                <p><strong>Name:</strong> {profile.first_name} {profile.last_name}</p>
+                <p><strong>Network:</strong> {profile.network}</p>
+                <p><strong>Address:</strong> {profile.address}</p>
+              </div>
+            )}
+
+            <form onSubmit={onCreateEvent} className="stack">
+              <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Event name" required />
+              <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} required />
+              <input value={newLocation} onChange={(e) => setNewLocation(e.target.value)} placeholder="Location" required />
+              <button type="submit">Create Event</button>
+            </form>
+
+            <div className="event-list">
+              {events.map((event) => (
+                <div className="event-item" key={event.id}>
+                  <div>
+                    <strong>{event.name}</strong>
+                    <div>{event.location || 'No location'} - {event.date || 'No date'}</div>
+                  </div>
+                  <Link to={`/admin/events/${event.id}`}>
+                    <button className="secondary">Open</button>
+                  </Link>
+                </div>
+              ))}
+            </div>
           </div>
         )}
-        <form onSubmit={onCreateEvent} className="stack">
-          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Event name" required />
-          <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} />
-          <input value={newLocation} onChange={(e) => setNewLocation(e.target.value)} placeholder="Location" />
-          <button type="submit" disabled={!isAuthenticated}>Create event</button>
-        </form>
-
-        <ul className="list">
-          {events.map((event) => (
-            <li key={event.id}>
-              <div>
-                <strong>{event.name}</strong>
-                <div>{event.location || 'No location'} · {event.date || 'No date'}</div>
-              </div>
-              <Link to={`/admin/events/${event.id}`}>Open</Link>
-            </li>
-          ))}
-        </ul>
       </section>
     </main>
   )
