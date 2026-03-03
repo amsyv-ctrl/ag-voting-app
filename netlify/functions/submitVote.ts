@@ -17,13 +17,31 @@ function getIp(event: Parameters<Handler>[0]) {
   )
 }
 
+function makeRateKey(ip: string, slug: string | undefined) {
+  return `${ip}:${slug?.trim().toLowerCase() || 'unknown'}`
+}
+
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
   }
 
   const ip = getIp(event)
-  const rate = checkLimit(ip)
+
+  let payload: Body = {}
+  try {
+    payload = JSON.parse(event.body || '{}') as Body
+  } catch {
+    const key = makeRateKey(ip, undefined)
+    registerFailure(key)
+    return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON payload' }) }
+  }
+
+  const slug = payload.slug?.trim()
+  const pin = payload.pin?.trim()
+  const choiceId = payload.choiceId?.trim()
+  const rateKey = makeRateKey(ip, slug)
+  const rate = checkLimit(rateKey)
   if (rate.blocked) {
     return {
       statusCode: 429,
@@ -31,20 +49,8 @@ export const handler: Handler = async (event) => {
     }
   }
 
-  let payload: Body = {}
-  try {
-    payload = JSON.parse(event.body || '{}') as Body
-  } catch {
-    registerFailure(ip)
-    return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON payload' }) }
-  }
-
-  const slug = payload.slug?.trim()
-  const pin = payload.pin?.trim()
-  const choiceId = payload.choiceId?.trim()
-
   if (!slug || !choiceId) {
-    registerFailure(ip)
+    registerFailure(rateKey)
     return { statusCode: 400, body: JSON.stringify({ error: 'slug and choiceId are required' }) }
   }
 
@@ -56,11 +62,11 @@ export const handler: Handler = async (event) => {
   })
 
   if (error) {
-    registerFailure(ip)
+    registerFailure(rateKey)
     return { statusCode: 400, body: JSON.stringify({ error: error.message }) }
   }
 
-  registerSuccess(ip)
+  registerSuccess(rateKey)
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },

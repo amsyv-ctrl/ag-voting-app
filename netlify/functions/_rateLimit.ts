@@ -5,9 +5,9 @@ type Entry = {
 }
 
 const entries = new Map<string, Entry>()
-const WINDOW_MS = 2 * 60 * 1000
-const MAX_ATTEMPTS = 8
-const BLOCK_MS = 60 * 1000
+const WINDOW_MS = 60 * 1000
+const MAX_ATTEMPTS = 20
+const BLOCK_MS = 30 * 1000
 
 export function checkLimit(key: string) {
   const now = Date.now()
