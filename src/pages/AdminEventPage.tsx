@@ -251,7 +251,8 @@ export function AdminEventPage() {
       const { data, error: exportError } = await supabase.rpc('export_event_results_admin', {
         p_event_id: eventId
       })
-      if (exportError || !data) throw exportError ?? new Error('Export failed')
+      if (exportError) throw new Error(exportError.message)
+      if (!data) throw new Error('Export failed: empty export payload')
 
       const payload = data as {
         exported_at: string
@@ -360,7 +361,12 @@ export function AdminEventPage() {
       a.click()
       URL.revokeObjectURL(url)
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Export failed'
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string'
+            ? (err as { message: string }).message
+            : 'Export failed'
       if (/function .*export_event_results_admin.* does not exist/i.test(message)) {
         setError('Export failed: database migration for export RPC is missing. Apply the latest Supabase migrations and retry.')
       } else {
