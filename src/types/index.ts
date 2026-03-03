@@ -1,5 +1,5 @@
 export type MajorityRule = 'SIMPLE' | 'TWO_THIRDS'
-export type BallotStatus = 'DRAFT' | 'OPEN' | 'CLOSED'
+export type BallotStatus = 'DRAFT' | 'OPEN' | 'CLOSED' | 'MANUAL_FALLBACK'
 export type BallotType = 'YES_NO' | 'PICK_ONE'
 
 export type BallotChoice = {
@@ -34,7 +34,7 @@ export type BallotResultRow = {
 
 export type BallotResults = {
   ballot_id: string
-  ballot_status?: 'DRAFT' | 'OPEN' | 'CLOSED'
+  ballot_status?: 'DRAFT' | 'OPEN' | 'CLOSED' | 'MANUAL_FALLBACK'
   vote_round: number
   total_votes: number
   rows: BallotResultRow[]

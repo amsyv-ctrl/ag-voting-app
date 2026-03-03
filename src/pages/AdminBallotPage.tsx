@@ -14,7 +14,7 @@ type BallotData = {
   title: string
   incumbent_name: string | null
   description: string | null
-  status: 'DRAFT' | 'OPEN' | 'CLOSED'
+  status: 'DRAFT' | 'OPEN' | 'CLOSED' | 'MANUAL_FALLBACK'
   majority_rule: 'SIMPLE' | 'TWO_THIRDS'
   opens_at: string | null
   closes_at: string | null
@@ -52,17 +52,19 @@ export function AdminBallotPage() {
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editIncumbentName, setEditIncumbentName] = useState('')
+  const [manualNotes, setManualNotes] = useState('')
+  const [manualCounts, setManualCounts] = useState<Record<string, string>>({})
   const [voteQrDataUrl, setVoteQrDataUrl] = useState<string | null>(null)
   const [secondsToClose, setSecondsToClose] = useState<number | null>(null)
   const [eligiblePins, setEligiblePins] = useState<number>(0)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const closeFinalizeInFlight = useRef(false)
-  const [activeSection, setActiveSection] = useState<'edit' | 'controls' | 'choices' | 'results' | 'history' | 'danger' | null>('controls')
+  const [activeSection, setActiveSection] = useState<'edit' | 'controls' | 'choices' | 'results' | 'manual' | 'history' | 'danger' | null>('controls')
 
   const appBase = useMemo(() => window.location.origin, [])
 
-  function toggleSection(section: 'edit' | 'controls' | 'choices' | 'results' | 'history' | 'danger') {
+  function toggleSection(section: 'edit' | 'controls' | 'choices' | 'results' | 'manual' | 'history' | 'danger') {
     setActiveSection((current) => (current === section ? null : section))
   }
 
@@ -132,6 +134,11 @@ export function AdminBallotPage() {
     setEditDescription(ballotData.description ?? '')
     setEditIncumbentName(ballotData.incumbent_name ?? '')
     setChoices(choiceData ?? [])
+    const nextCounts: Record<string, string> = {}
+    for (const choice of choiceData ?? []) {
+      if (!choice.is_withdrawn) nextCounts[choice.id] = manualCounts[choice.id] ?? '0'
+    }
+    setManualCounts(nextCounts)
 
     const { count: pinCount, error: pinCountError } = await supabase
       .from('pins')
@@ -290,7 +297,9 @@ export function AdminBallotPage() {
 
   async function closeBallot() {
     if (!ballot) return
-    if (!window.confirm(`Close ${roundLabel(ballot.vote_round)} vote for this ballot with a 10-second delay?`)) {
+    if (!window.confirm(
+      `Are you sure?\n\nClosing this ballot will finalize results for ${roundLabel(ballot.vote_round)} vote after a 10-second delay.`
+    )) {
       return
     }
     const closeAtIso = new Date(Date.now() + 10_000).toISOString()
@@ -324,6 +333,56 @@ export function AdminBallotPage() {
     await load()
   }
 
+  async function switchToManualFallbackMode() {
+    if (!ballot) return
+    const typed = window.prompt(
+      `Type MANUAL to switch "${ballot.title}" into Manual Count Mode for ${roundLabel(ballot.vote_round)} vote.`
+    )
+    if (typed !== 'MANUAL') return
+
+    const { error: updateError } = await supabase
+      .from('ballots')
+      .update({ status: 'MANUAL_FALLBACK', closes_at: null })
+      .eq('id', ballot.id)
+
+    if (updateError) {
+      setError(updateError.message)
+      return
+    }
+    setActiveSection('manual')
+    await load()
+  }
+
+  async function finalizeManualRound(e: FormEvent) {
+    e.preventDefault()
+    if (!ballot) return
+    if (ballot.status !== 'MANUAL_FALLBACK') {
+      setError('Ballot must be in manual fallback mode before recording manual totals.')
+      return
+    }
+
+    const counts = choices
+      .filter((choice) => !choice.is_withdrawn)
+      .map((choice) => ({
+        choice_id: choice.id,
+        votes: Math.max(0, Number.parseInt(manualCounts[choice.id] ?? '0', 10) || 0)
+      }))
+
+    const { error: rpcError } = await supabase.rpc('record_manual_round_result', {
+      p_ballot_id: ballot.id,
+      p_counts: counts,
+      p_notes: manualNotes.trim() || null,
+      p_closed_at: new Date().toISOString()
+    })
+
+    if (rpcError) {
+      setError(rpcError.message)
+      return
+    }
+
+    await load()
+  }
+
   async function setResultsVisibility(mode: 'LIVE' | 'CLOSED_ONLY') {
     if (!ballot) return
     const { error: updateError } = await supabase
@@ -339,7 +398,10 @@ export function AdminBallotPage() {
 
   async function deleteBallot() {
     if (!ballot) return
-    if (!window.confirm(`Are you sure you want to delete ballot "${ballot.title}"? This cannot be undone.`)) {
+    const typed = window.prompt(
+      `Type DELETE to permanently remove ballot "${ballot.title}" and all associated vote records.`
+    )
+    if (typed !== 'DELETE') {
       return
     }
     const { error: deleteError } = await supabase.from('ballots').delete().eq('id', ballot.id)
@@ -468,13 +530,30 @@ export function AdminBallotPage() {
     )
   }
 
+  const stateLabel = ballot.status === 'OPEN'
+    ? 'OPEN'
+    : ballot.status === 'MANUAL_FALLBACK'
+      ? 'MANUAL FALLBACK'
+    : (results?.total_votes ?? 0) > 0
+      ? 'ROUND COMPLETE'
+      : 'CLOSED'
+
+  const stateClass = ballot.status === 'OPEN'
+    ? 'status-badge-open'
+    : ballot.status === 'MANUAL_FALLBACK'
+      ? 'status-badge-manual'
+    : (results?.total_votes ?? 0) > 0
+      ? 'status-badge-round-complete'
+      : 'status-badge-closed'
+
   return (
     <main className="ballot-admin-page">
       <section className="ballot-admin-card ballot-admin-hero">
         <h1>{ballot.event_name}</h1>
         <h2>{ballot.title}</h2>
+        <div className={`status-badge ${stateClass}`}>{stateLabel}</div>
         <p className="ballot-admin-info">Current Vote: #{ballot.vote_round} ({roundLabel(ballot.vote_round)} vote)</p>
-        <p className="ballot-admin-info">Status: <strong>{ballot.status}</strong></p>
+        <p className="ballot-admin-info">Ballot Status: <strong>{ballot.status}</strong></p>
         <p className="ballot-admin-info">PIN Required: {ballot.requires_pin ? 'Yes' : 'No'}</p>
         {ballot.incumbent_name && <p className="ballot-admin-info">Incumbent: {ballot.incumbent_name}</p>}
         <p className="ballot-admin-description">{ballot.description || 'No description'}</p>
@@ -553,7 +632,12 @@ export function AdminBallotPage() {
           </fieldset>
           <div className="inline ballot-admin-actions">
             {ballot.status === 'OPEN' ? (
-              <button className="secondary" onClick={closeBallot}>Close current vote (10s delay)</button>
+              <>
+                <button className="secondary" onClick={closeBallot}>Close current vote (10s delay)</button>
+                <button className="secondary" onClick={switchToManualFallbackMode}>Switch to Manual Count Mode</button>
+              </>
+            ) : ballot.status === 'MANUAL_FALLBACK' ? (
+              <p className="muted">Manual fallback mode active. Record manual totals in the Manual Fallback section.</p>
             ) : (
               <button onClick={openNewVoteRound}>
                 {ballot.status === 'DRAFT' ? 'Open Vote #1' : `Open Vote #${(ballot.vote_round ?? 1) + 1}`}
@@ -666,6 +750,47 @@ export function AdminBallotPage() {
               </table>
             </>
           )}
+        </div>
+      </section>
+
+      <section className={`accordion ${activeSection === 'manual' ? 'active' : ''}`}>
+        <button type="button" className="accordion-header" onClick={() => toggleSection('manual')}>
+          Manual Fallback
+          <span className="accordion-icon">&#9654;</span>
+        </button>
+        <div className="accordion-content">
+          <p className="muted">
+            Use this only if internet/session flow fails. Record a manual count and finalize the round.
+          </p>
+          <form onSubmit={finalizeManualRound} className="stack">
+            {choices.filter((choice) => !choice.is_withdrawn).map((choice) => (
+              <label key={choice.id} className="manual-row">
+                <span>{choice.label}</span>
+                <input
+                  type="number"
+                  min={0}
+                  value={manualCounts[choice.id] ?? '0'}
+                  onChange={(e) =>
+                    setManualCounts((prev) => ({
+                      ...prev,
+                      [choice.id]: e.target.value.replace(/[^\d]/g, '')
+                    }))
+                  }
+                />
+              </label>
+            ))}
+            <label>
+              Notes (reason / context)
+              <textarea
+                value={manualNotes}
+                onChange={(e) => setManualNotes(e.target.value)}
+                placeholder="Example: Internet outage during vote #3. Manual count by tellers."
+              />
+            </label>
+            <button type="submit" disabled={ballot.status !== 'MANUAL_FALLBACK'}>
+              Record Manual Totals and Close Round
+            </button>
+          </form>
         </div>
       </section>
 

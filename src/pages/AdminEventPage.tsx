@@ -9,7 +9,7 @@ type BallotRow = {
   title: string
   incumbent_name: string | null
   slug: string
-  status: 'DRAFT' | 'OPEN' | 'CLOSED'
+  status: 'DRAFT' | 'OPEN' | 'CLOSED' | 'MANUAL_FALLBACK'
   requires_pin: boolean
   created_at: string
 }
@@ -28,12 +28,23 @@ type ExportSummaryRow = {
   ballot_slug: string
   vote_round: number
   majority_rule: 'SIMPLE' | 'TWO_THIRDS'
+  majority_rule_applied?: 'SIMPLE' | 'TWO_THIRDS'
+  result_mode?: 'NORMAL' | 'MANUAL'
   total_votes: number
   election_reached_at: string | null
+  timestamp_of_close?: string | null
+  opened_at?: string | null
   winner_choice_id: string | null
   winner_label: string | null
-  status: 'DRAFT' | 'OPEN' | 'CLOSED'
-  counts: Array<{
+  status: 'DRAFT' | 'OPEN' | 'CLOSED' | 'MANUAL_FALLBACK'
+  counts?: Array<{
+    choice_id: string
+    label: string
+    votes: number
+    pct: number
+    is_withdrawn: boolean
+  }>
+  votes_per_choice?: Array<{
     choice_id: string
     label: string
     votes: number

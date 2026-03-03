@@ -288,6 +288,40 @@ a {
   color: #5f6772;
 }
 
+.status-badge {
+  display: inline-block;
+  margin: 0.25rem 0 0.55rem 0;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.status-badge-open {
+  color: #0f5132;
+  background: #d1f3df;
+  border: 1px solid #7ecf9d;
+}
+
+.status-badge-closed {
+  color: #5a6170;
+  background: #eceff4;
+  border: 1px solid #c8d0dc;
+}
+
+.status-badge-round-complete {
+  color: #7a4f00;
+  background: #ffe7b6;
+  border: 1px solid #f0c97a;
+}
+
+.status-badge-manual {
+  color: #1e3a8a;
+  background: #dbeafe;
+  border: 1px solid #93c5fd;
+}
+
 .ballot-admin-description {
   margin: 0.8rem 0 0.3rem 0;
 }
@@ -511,6 +545,13 @@ button:disabled {
 .participation-panel p {
   margin: 0;
   color: #274465;
+}
+
+.manual-row {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .radio-row {
