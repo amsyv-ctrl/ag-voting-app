@@ -53,6 +53,11 @@ type ExportSummaryRow = {
   }>
 }
 
+function csvCell(value: unknown) {
+  const s = String(value ?? '')
+  return `"${s.replace(/"/g, '""')}"`
+}
+
 function slugify(input: string) {
   return input
     .toLowerCase()
@@ -259,16 +264,108 @@ export function AdminEventPage() {
         }
         summaries: ExportSummaryRow[]
       }
+      const rows: string[] = []
+      rows.push([
+        'event_id',
+        'event_name',
+        'event_date',
+        'event_location',
+        'voting_staff_names',
+        'exported_at',
+        'ballot_id',
+        'ballot_title',
+        'incumbent_name',
+        'ballot_slug',
+        'vote_round',
+        'result_mode',
+        'majority_rule_applied',
+        'ballot_status',
+        'opened_at',
+        'timestamp_of_close',
+        'total_votes',
+        'election_reached_at',
+        'winner_label',
+        'choice_label',
+        'choice_votes',
+        'choice_pct',
+        'choice_withdrawn'
+      ].map(csvCell).join(','))
 
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+      for (const summary of payload.summaries ?? []) {
+        const choiceRows = summary.votes_per_choice ?? summary.counts ?? []
+        if (choiceRows.length === 0) {
+          rows.push([
+            payload.event.id,
+            payload.event.name,
+            payload.event.date ?? '',
+            payload.event.location ?? '',
+            payload.event.voting_staff_names ?? '',
+            payload.exported_at,
+            summary.ballot_id,
+            summary.ballot_title,
+            summary.incumbent_name ?? '',
+            summary.ballot_slug,
+            summary.vote_round,
+            summary.result_mode ?? 'NORMAL',
+            summary.majority_rule_applied ?? summary.majority_rule,
+            summary.status,
+            summary.opened_at ?? '',
+            summary.timestamp_of_close ?? '',
+            summary.total_votes,
+            summary.election_reached_at ?? '',
+            summary.winner_label ?? '',
+            '',
+            '',
+            '',
+            ''
+          ].map(csvCell).join(','))
+          continue
+        }
+
+        for (const choice of choiceRows) {
+          rows.push([
+            payload.event.id,
+            payload.event.name,
+            payload.event.date ?? '',
+            payload.event.location ?? '',
+            payload.event.voting_staff_names ?? '',
+            payload.exported_at,
+            summary.ballot_id,
+            summary.ballot_title,
+            summary.incumbent_name ?? '',
+            summary.ballot_slug,
+            summary.vote_round,
+            summary.result_mode ?? 'NORMAL',
+            summary.majority_rule_applied ?? summary.majority_rule,
+            summary.status,
+            summary.opened_at ?? '',
+            summary.timestamp_of_close ?? '',
+            summary.total_votes,
+            summary.election_reached_at ?? '',
+            summary.winner_label ?? '',
+            choice.label,
+            choice.votes,
+            (Number(choice.pct ?? 0) * 100).toFixed(2),
+            choice.is_withdrawn ? 'true' : 'false'
+          ].map(csvCell).join(','))
+        }
+      }
+
+      const csv = rows.join('\n')
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `${eventName.replace(/\s+/g, '-').toLowerCase() || 'event'}-results-export.json`
+      a.download = `${eventName.replace(/\s+/g, '-').toLowerCase() || 'event'}-results-export.csv`
       a.click()
       URL.revokeObjectURL(url)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Export failed')
+      const message = err instanceof Error ? err.message : 'Export failed'
+      if (/function .*export_event_results_admin.* does not exist/i.test(message)) {
+        setError('Export failed: database migration for export RPC is missing. Apply the latest Supabase migrations and retry.')
+      } else {
+        setError(message)
+      }
     } finally {
       setExporting(false)
     }
@@ -417,7 +514,7 @@ export function AdminEventPage() {
 
         <div className="export-section">
           <button className="secondary-btn" onClick={onExportResults} disabled={exporting}>
-            {exporting ? 'Exporting...' : 'Export All Voting Results'}
+            {exporting ? 'Exporting...' : 'Export All Voting Results (CSV)'}
           </button>
           <p className="subtitle" style={{ marginTop: '10px' }}>
             Download aggregated round results and threshold timestamps for record keeping.
