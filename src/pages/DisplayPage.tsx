@@ -87,6 +87,7 @@ export function DisplayPage() {
 
   const rows = [...results.rows].sort((a, b) => b.votes - a.votes)
   const isClosed = results.ballot_status === 'CLOSED'
+  const shouldHideResults = results.hidden_until_closed === true
   const showWinner = isClosed && !!results.winner_label
   const requiredVotes = results.total_votes === 0
     ? 0
@@ -105,15 +106,15 @@ export function DisplayPage() {
         <p className="display-status">Total Votes: {results.total_votes}</p>
         {secondsToClose !== null && <p className="display-status display-close">Closing in: {secondsToClose}s</p>}
 
-        {!isClosed ? (
-          <p className="display-hidden-note">Voting in progress. Results will display when this vote is closed.</p>
+        {shouldHideResults ? (
+          <p className="display-hidden-note">Results hidden until ballot is closed.</p>
         ) : (
           <p className="display-threshold">
             Votes cast: <strong>{results.total_votes}</strong> | Needed for election:{' '}
             <strong>{requiredVotes}</strong> ({requiredRuleLabel})
           </p>
         )}
-        {showWinner && (
+        {showWinner && !shouldHideResults && (
           <div className="display-winner-wrap">
             <p className="display-winner-kicker">Election Reached</p>
             <p className="display-winner-name">{results.winner_label}</p>
@@ -121,7 +122,7 @@ export function DisplayPage() {
         )}
 
         <section className="display-results">
-          {!isClosed ? (
+          {shouldHideResults ? (
             <article className="display-hidden-state">
               <p>Voting in progress</p>
               <p>Results are hidden until this vote is closed.</p>
