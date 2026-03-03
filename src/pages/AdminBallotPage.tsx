@@ -12,6 +12,7 @@ type BallotData = {
   event_name: string
   slug: string
   title: string
+  incumbent_name: string | null
   description: string | null
   status: 'DRAFT' | 'OPEN' | 'CLOSED'
   majority_rule: 'SIMPLE' | 'TWO_THIRDS'
@@ -40,13 +41,21 @@ export function AdminBallotPage() {
   const [results, setResults] = useState<BallotResults | null>(null)
   const [roundHistory, setRoundHistory] = useState<RoundHistory[]>([])
   const [newChoice, setNewChoice] = useState('')
+  const [editTitle, setEditTitle] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editIncumbentName, setEditIncumbentName] = useState('')
   const [voteQrDataUrl, setVoteQrDataUrl] = useState<string | null>(null)
   const [secondsToClose, setSecondsToClose] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const closeFinalizeInFlight = useRef(false)
+  const [activeSection, setActiveSection] = useState<'edit' | 'controls' | 'choices' | 'results' | 'history' | 'danger' | null>('controls')
 
   const appBase = useMemo(() => window.location.origin, [])
+
+  function toggleSection(section: 'edit' | 'controls' | 'choices' | 'results' | 'history' | 'danger') {
+    setActiveSection((current) => (current === section ? null : section))
+  }
 
   async function load() {
     setLoading(true)
@@ -60,7 +69,7 @@ export function AdminBallotPage() {
 
     const { data: ballotData, error: ballotError } = await supabase
       .from('ballots')
-      .select('id,event_id,slug,title,description,status,majority_rule,opens_at,closes_at,vote_round,requires_pin,results_visibility')
+      .select('id,event_id,slug,title,incumbent_name,description,status,majority_rule,opens_at,closes_at,vote_round,requires_pin,results_visibility')
       .eq('id', ballotId)
       .single()
 
@@ -100,6 +109,7 @@ export function AdminBallotPage() {
       event_name: eventData.name ?? 'Event',
       slug: ballotData.slug,
       title: ballotData.title,
+      incumbent_name: ballotData.incumbent_name,
       description: ballotData.description,
       status: ballotData.status,
       majority_rule: ballotData.majority_rule,
@@ -109,6 +119,9 @@ export function AdminBallotPage() {
       requires_pin: ballotData.requires_pin ?? true,
       results_visibility: ballotData.results_visibility ?? null
     })
+    setEditTitle(ballotData.title ?? '')
+    setEditDescription(ballotData.description ?? '')
+    setEditIncumbentName(ballotData.incumbent_name ?? '')
     setChoices(choiceData ?? [])
     await loadResults(ballotData.slug)
     await loadRoundHistory(ballotData.id, choiceData ?? [], ballotData.majority_rule, ballotData.vote_round ?? 1)
@@ -329,6 +342,28 @@ export function AdminBallotPage() {
     await load()
   }
 
+  async function onSaveBallotDetails(e: FormEvent) {
+    e.preventDefault()
+    if (!ballot) return
+    setError(null)
+
+    const { error: updateError } = await supabase
+      .from('ballots')
+      .update({
+        title: editTitle.trim(),
+        description: editDescription.trim() || null,
+        incumbent_name: editIncumbentName.trim() || null
+      })
+      .eq('id', ballot.id)
+
+    if (updateError) {
+      setError(updateError.message)
+      return
+    }
+
+    await load()
+  }
+
   async function onAddChoice(e: FormEvent) {
     e.preventDefault()
     if (!ballot || !newChoice.trim()) return
@@ -348,13 +383,13 @@ export function AdminBallotPage() {
   }
 
   if (loading && !ballot) {
-    return <main className="page"><p>Loading ballot...</p></main>
+    return <main className="ballot-admin-page"><p>Loading ballot...</p></main>
   }
 
   if (!ballot) {
     return (
-      <main className="page">
-        <section className="card">
+      <main className="ballot-admin-page">
+        <section className="ballot-admin-card">
           <h1>Unable to load ballot</h1>
           {error && <p className="error">{error}</p>}
           <div className="inline">
@@ -367,130 +402,149 @@ export function AdminBallotPage() {
   }
 
   return (
-    <main className="page">
-      <section className="card">
+    <main className="ballot-admin-page">
+      <section className="ballot-admin-card ballot-admin-hero">
         <h1>{ballot.event_name}</h1>
         <h2>{ballot.title}</h2>
-        <p>{ballot.description || 'No description'}</p>
-        <p>Status: <strong>{ballot.status}</strong></p>
-        <p><strong>Current Vote:</strong> #{ballot.vote_round} ({roundLabel(ballot.vote_round)} vote)</p>
-        <label className="inline">
-          <input
-            type="checkbox"
-            checked={ballot.requires_pin}
-            onChange={(e) => togglePinRequirement(e.target.checked)}
-          />
-          Require PIN for this vote
-        </label>
-        <fieldset>
-          <legend>Results visibility (required before opening vote)</legend>
-          <label className="radio-row">
-            <input
-              type="radio"
-              name="resultsVisibility"
-              checked={ballot.results_visibility === 'LIVE'}
-              onChange={() => setResultsVisibility('LIVE')}
-            />
-            Show live voting
-          </label>
-          <label className="radio-row">
-            <input
-              type="radio"
-              name="resultsVisibility"
-              checked={ballot.results_visibility === 'CLOSED_ONLY'}
-              onChange={() => setResultsVisibility('CLOSED_ONLY')}
-            />
-            Hide results until ballot is closed
-          </label>
-        </fieldset>
+        <p className="ballot-admin-info">Current Vote: #{ballot.vote_round} ({roundLabel(ballot.vote_round)} vote)</p>
+        <p className="ballot-admin-info">Status: <strong>{ballot.status}</strong></p>
+        <p className="ballot-admin-info">PIN Required: {ballot.requires_pin ? 'Yes' : 'No'}</p>
+        {ballot.incumbent_name && <p className="ballot-admin-info">Incumbent: {ballot.incumbent_name}</p>}
+        <p className="ballot-admin-description">{ballot.description || 'No description'}</p>
         {secondsToClose !== null && (
           <p><strong>Closing in: {secondsToClose}s</strong></p>
         )}
-        <p>Vote URL: {appBase}/vote/{ballot.slug}</p>
-        <p>Display URL: {appBase}/display/{ballot.slug}</p>
-        {voteQrDataUrl && <img src={voteQrDataUrl} alt="Ballot QR code" width={180} height={180} />}
-        <div className="inline">
-          {ballot.status === 'OPEN' ? (
-            <button className="secondary" onClick={closeBallot}>Close current vote (10s delay)</button>
-          ) : (
-            <button onClick={openNewVoteRound}>
-              {ballot.status === 'DRAFT' ? 'Open Vote #1' : `Open Vote #${(ballot.vote_round ?? 1) + 1}`}
-            </button>
-          )}
-        </div>
+        <p className="ballot-admin-url">Vote URL: {appBase}/vote/{ballot.slug}</p>
+        <p className="ballot-admin-url">Display URL: {appBase}/display/{ballot.slug}</p>
+        {voteQrDataUrl && <img className="ballot-admin-qr" src={voteQrDataUrl} alt="Ballot QR code" width={180} height={180} />}
         <Link to={`/admin/events/${ballot.event_id}`}>Back to event</Link>
         {error && <p className="error">{error}</p>}
       </section>
 
-      <section className="card">
-        <h2>Choices</h2>
-        <form onSubmit={onAddChoice} className="stack inline">
-          <input value={newChoice} onChange={(e) => setNewChoice(e.target.value)} placeholder="Choice label" />
-          <button type="submit">Add</button>
-        </form>
-        <ul className="list">
-          {choices.map((choice) => (
-            <li key={choice.id}>{choice.sort_order}. {choice.label}</li>
-          ))}
-        </ul>
+      <section className={`accordion ${activeSection === 'edit' ? 'active' : ''}`}>
+        <button type="button" className="accordion-header" onClick={() => toggleSection('edit')}>
+          Edit Ballot Details
+          <span className="accordion-icon">&#9654;</span>
+        </button>
+        <div className="accordion-content">
+          <form onSubmit={onSaveBallotDetails} className="stack" style={{ marginTop: '0.8rem' }}>
+            <label>
+              Vote name
+              <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} required />
+            </label>
+            <label>
+              Ballot description
+              <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
+            </label>
+            <label>
+              Incumbent name
+              <input
+                value={editIncumbentName}
+                onChange={(e) => setEditIncumbentName(e.target.value)}
+                placeholder="Incumbent name (optional)"
+              />
+            </label>
+            <button type="submit">Save Ballot Details</button>
+          </form>
+        </div>
       </section>
 
-      <section className="card">
-        <h2>Live results</h2>
-        <p><strong>Showing Vote:</strong> #{results?.vote_round ?? ballot.vote_round}</p>
-        {results?.winner_label && (
-          <div className="winner-banner">
-            <p className="winner-kicker">Election Reached</p>
-            <h3>{results.winner_label}</h3>
-            <p>{(results.top_pct! * 100).toFixed(1)}% of votes</p>
-          </div>
-        )}
-        {!results || results.total_votes === 0 ? (
-          <p>No votes yet.</p>
-        ) : (
-          <>
-            <p>Total votes: {results.total_votes}</p>
-            {results.winner_label ? (
-              <p className="winner">Winner: {results.winner_label} ({(results.top_pct! * 100).toFixed(1)}%)</p>
+      <section className={`accordion ${activeSection === 'controls' ? 'active' : ''}`}>
+        <button type="button" className="accordion-header" onClick={() => toggleSection('controls')}>
+          Vote Controls
+          <span className="accordion-icon">&#9654;</span>
+        </button>
+        <div className="accordion-content">
+          <label className="inline">
+            <input
+              type="checkbox"
+              checked={ballot.requires_pin}
+              onChange={(e) => togglePinRequirement(e.target.checked)}
+            />
+            Require PIN for this vote
+          </label>
+          <fieldset>
+            <legend>Results visibility (required before opening vote)</legend>
+            <label className="radio-row">
+              <input
+                type="radio"
+                name="resultsVisibility"
+                checked={ballot.results_visibility === 'LIVE'}
+                onChange={() => setResultsVisibility('LIVE')}
+              />
+              Show live voting
+            </label>
+            <label className="radio-row">
+              <input
+                type="radio"
+                name="resultsVisibility"
+                checked={ballot.results_visibility === 'CLOSED_ONLY'}
+                onChange={() => setResultsVisibility('CLOSED_ONLY')}
+              />
+              Hide results until ballot is closed
+            </label>
+          </fieldset>
+          <div className="inline ballot-admin-actions">
+            {ballot.status === 'OPEN' ? (
+              <button className="secondary" onClick={closeBallot}>Close current vote (10s delay)</button>
             ) : (
-              <p className="muted">No winner yet{results.has_tie ? ' (tie)' : ''}.</p>
+              <button onClick={openNewVoteRound}>
+                {ballot.status === 'DRAFT' ? 'Open Vote #1' : `Open Vote #${(ballot.vote_round ?? 1) + 1}`}
+              </button>
             )}
-            <table>
-              <thead>
-                <tr><th>Choice</th><th>Votes</th><th>%</th></tr>
-              </thead>
-              <tbody>
-                {[...results.rows].sort((a, b) => b.votes - a.votes).map((row) => (
-                  <tr key={row.choice_id}>
-                    <td>{row.label}</td>
-                    <td>{row.votes}</td>
-                    <td>{(row.pct * 100).toFixed(1)}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        )}
+          </div>
+        </div>
       </section>
 
-      {roundHistory.length > 0 && (
-        <section className="card">
-          <h2>Previous Vote Rounds</h2>
-          {roundHistory.map((round) => (
-            <div key={round.round} className="card">
-              <p><strong>Vote #{round.round}</strong> · Total votes: {round.total_votes}</p>
-              {round.winner_label ? (
-                <p className="winner">Winner: {round.winner_label}</p>
+      <section className={`accordion ${activeSection === 'choices' ? 'active' : ''}`}>
+        <button type="button" className="accordion-header" onClick={() => toggleSection('choices')}>
+          Choices
+          <span className="accordion-icon">&#9654;</span>
+        </button>
+        <div className="accordion-content">
+          <form onSubmit={onAddChoice} className="stack inline">
+            <input value={newChoice} onChange={(e) => setNewChoice(e.target.value)} placeholder="Choice label" />
+            <button type="submit">Add</button>
+          </form>
+          <ul className="list">
+            {choices.map((choice) => (
+              <li key={choice.id}>{choice.sort_order}. {choice.label}</li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section className={`accordion ${activeSection === 'results' ? 'active' : ''}`}>
+        <button type="button" className="accordion-header" onClick={() => toggleSection('results')}>
+          Live Results
+          <span className="accordion-icon">&#9654;</span>
+        </button>
+        <div className="accordion-content">
+          <p><strong>Showing Vote:</strong> #{results?.vote_round ?? ballot.vote_round}</p>
+          {results?.winner_label && (
+            <div className="winner-banner">
+              <p className="winner-kicker">Election Reached</p>
+              <h3>{results.winner_label}</h3>
+              <p>{(results.top_pct! * 100).toFixed(1)}% of votes</p>
+            </div>
+          )}
+          {!results || results.total_votes === 0 ? (
+            <p>No votes yet.</p>
+          ) : (
+            <>
+              <p>Total votes: {results.total_votes}</p>
+              {results.winner_label ? (
+                <p className="winner">Winner: {results.winner_label} ({(results.top_pct! * 100).toFixed(1)}%)</p>
               ) : (
-                <p className="muted">No winner reached in this vote.</p>
+                <p className="muted">No winner yet{results.has_tie ? ' (tie)' : ''}.</p>
               )}
               <table>
                 <thead>
                   <tr><th>Choice</th><th>Votes</th><th>%</th></tr>
                 </thead>
                 <tbody>
-                  {round.rows.map((row) => (
-                    <tr key={`${round.round}-${row.choice_id}`}>
+                  {[...results.rows].sort((a, b) => b.votes - a.votes).map((row) => (
+                    <tr key={row.choice_id}>
                       <td>{row.label}</td>
                       <td>{row.votes}</td>
                       <td>{(row.pct * 100).toFixed(1)}%</td>
@@ -498,15 +552,55 @@ export function AdminBallotPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          ))}
+            </>
+          )}
+        </div>
+      </section>
+
+      {roundHistory.length > 0 && (
+        <section className={`accordion ${activeSection === 'history' ? 'active' : ''}`}>
+          <button type="button" className="accordion-header" onClick={() => toggleSection('history')}>
+            Previous Vote Rounds
+            <span className="accordion-icon">&#9654;</span>
+          </button>
+          <div className="accordion-content">
+            {roundHistory.map((round) => (
+              <div key={round.round} className="ballot-admin-round-card">
+                <p><strong>Vote #{round.round}</strong> · Total votes: {round.total_votes}</p>
+                {round.winner_label ? (
+                  <p className="winner">Winner: {round.winner_label}</p>
+                ) : (
+                  <p className="muted">No winner reached in this vote.</p>
+                )}
+                <table>
+                  <thead>
+                    <tr><th>Choice</th><th>Votes</th><th>%</th></tr>
+                  </thead>
+                  <tbody>
+                    {round.rows.map((row) => (
+                      <tr key={`${round.round}-${row.choice_id}`}>
+                        <td>{row.label}</td>
+                        <td>{row.votes}</td>
+                        <td>{(row.pct * 100).toFixed(1)}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
-      <section className="card">
-        <h2>Danger Zone</h2>
-        <p className="error">Delete this ballot and all of its votes.</p>
-        <button className="secondary" onClick={deleteBallot}>Delete ballot</button>
+      <section className={`accordion ${activeSection === 'danger' ? 'active' : ''}`}>
+        <button type="button" className="accordion-header" onClick={() => toggleSection('danger')}>
+          Danger Zone
+          <span className="accordion-icon">&#9654;</span>
+        </button>
+        <div className="accordion-content">
+          <p className="error">Delete this ballot and all of its votes.</p>
+          <button className="secondary" onClick={deleteBallot}>Delete ballot</button>
+        </div>
       </section>
     </main>
   )
