@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 type EventRow = {
@@ -20,6 +20,7 @@ type AdminProfileRow = {
 
 export function AdminLoginPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const modeParam = searchParams.get('mode')
   const [authMode, setAuthMode] = useState<'login' | 'register'>(modeParam === 'register' ? 'register' : 'login')
 
@@ -107,8 +108,7 @@ export function AdminLoginPage() {
       return
     }
 
-    setHasSession(true)
-    await loadEvents()
+    navigate('/admin/org')
   }
 
   async function onRegister(e: FormEvent) {
@@ -136,8 +136,7 @@ export function AdminLoginPage() {
 
     if (data.session) {
       setNotice('Admin account created. You are signed in and can create events now.')
-      setHasSession(true)
-      await loadEvents()
+      navigate('/admin/org')
       return
     }
 

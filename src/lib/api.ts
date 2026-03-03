@@ -51,3 +51,29 @@ export async function adminGeneratePins(
 
   return handleJson<{ generated: string[]; total: number }>(res)
 }
+
+export type OrgBootstrapResponse = {
+  org: {
+    id: string
+    name: string
+    mode: 'DEMO' | 'TRIAL' | 'PAID'
+    trial_votes_used: number
+    trial_votes_limit: number
+    subscription_status: string | null
+    current_period_end: string | null
+    is_active: boolean
+  }
+  role: 'OWNER' | 'ADMIN' | 'STAFF'
+}
+
+export async function bootstrapOrg(accessToken: string): Promise<OrgBootstrapResponse> {
+  const res = await fetch(`${API_BASE}/bootstrapOrg`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  })
+
+  return handleJson<OrgBootstrapResponse>(res)
+}
