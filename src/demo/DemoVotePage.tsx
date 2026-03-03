@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { DemoBanner } from './DemoBanner'
-import { demoBallot } from './ballot'
+import { demoBallot, demoMajorityLabel } from './ballot'
 import { submitDemoVote } from './store'
 
 const RESET_MS = 1500
@@ -34,6 +34,8 @@ export function DemoVotePage() {
       <section className="vote-card">
         <h1 className="vote-title">{demoBallot.title}</h1>
         <p className="vote-description">{demoBallot.description}</p>
+        <p className="vote-info">Incumbent: {demoBallot.incumbentName}</p>
+        <p className="vote-info">Threshold: {demoMajorityLabel(demoBallot.majorityRule)}</p>
         {confirmation ? (
           <div className="success-box">
             <h2>Vote received</h2>
@@ -65,4 +67,3 @@ export function DemoVotePage() {
     </main>
   )
 }
-
