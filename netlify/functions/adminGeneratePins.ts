@@ -41,12 +41,31 @@ export const handler: Handler = async (event) => {
 
   const { data: eventRow, error: eventError } = await supabaseAdmin
     .from('events')
-    .select('id')
+    .select('id,org_id,created_by')
     .eq('id', eventId)
-    .eq('created_by', user.id)
     .single()
 
   if (eventError || !eventRow) {
+    return { statusCode: 403, body: JSON.stringify({ error: 'Event not found or forbidden' }) }
+  }
+
+  let canManage = false
+  if (eventRow.org_id) {
+    const { data: membership } = await supabaseAdmin
+      .from('org_members')
+      .select('role')
+      .eq('org_id', eventRow.org_id)
+      .eq('user_id', user.id)
+      .in('role', ['OWNER', 'ADMIN'])
+      .maybeSingle()
+
+    canManage = !!membership
+  } else {
+    // Backward compatibility for pre-org events.
+    canManage = eventRow.created_by === user.id
+  }
+
+  if (!canManage) {
     return { statusCode: 403, body: JSON.stringify({ error: 'Event not found or forbidden' }) }
   }
 

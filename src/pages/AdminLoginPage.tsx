@@ -4,9 +4,11 @@ import { supabase } from '../lib/supabase'
 
 type EventRow = {
   id: string
+  org_id: string
   name: string
   date: string | null
   location: string | null
+  is_trial_event: boolean
 }
 
 type AdminProfileRow = {
@@ -64,7 +66,7 @@ export function AdminLoginPage() {
 
     const { data, error: eventsError } = await supabase
       .from('events')
-      .select('id,name,date,location')
+      .select('id,org_id,name,date,location,is_trial_event')
       .order('created_at', { ascending: false })
 
     if (eventsError) {
