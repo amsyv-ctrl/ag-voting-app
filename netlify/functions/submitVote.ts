@@ -54,6 +54,94 @@ export const handler: Handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'slug and choiceId are required' }) }
   }
 
+  const { data: ballotRow, error: ballotLookupError } = await supabaseAdmin
+    .from('ballots')
+    .select('id,event_id')
+    .eq('slug', slug)
+    .maybeSingle()
+
+  if (ballotLookupError || !ballotRow?.event_id) {
+    registerFailure(rateKey)
+    return { statusCode: 400, body: JSON.stringify({ error: 'Ballot not found' }) }
+  }
+
+  const { data: eventRow, error: eventLookupError } = await supabaseAdmin
+    .from('events')
+    .select('id,org_id,is_trial_event')
+    .eq('id', ballotRow.event_id)
+    .maybeSingle()
+
+  if (eventLookupError || !eventRow?.org_id) {
+    console.error('submitVote event lookup failed', {
+      slug,
+      ballotId: ballotRow.id,
+      eventId: ballotRow.event_id,
+      error: eventLookupError?.message
+    })
+    return { statusCode: 500, body: JSON.stringify({ error: 'Could not resolve event context' }) }
+  }
+
+  const { data: orgRow, error: orgLookupError } = await supabaseAdmin
+    .from('organizations')
+    .select('id,mode,trial_event_id')
+    .eq('id', eventRow.org_id)
+    .maybeSingle()
+
+  if (orgLookupError || !orgRow) {
+    console.error('submitVote org lookup failed', {
+      slug,
+      ballotId: ballotRow.id,
+      eventId: eventRow.id,
+      orgId: eventRow.org_id,
+      error: orgLookupError?.message
+    })
+    return { statusCode: 500, body: JSON.stringify({ error: 'Could not resolve organization context' }) }
+  }
+
+  const enforceTrialCap = !!(
+    eventRow.is_trial_event ||
+    (orgRow.mode === 'TRIAL' && orgRow.trial_event_id === eventRow.id)
+  )
+  let trialReserved = false
+
+  if (enforceTrialCap) {
+    const { data: trialData, error: trialError } = await supabaseAdmin.rpc('increment_trial_vote', {
+      p_org_id: orgRow.id,
+      p_event_id: eventRow.id
+    })
+
+    if (trialError) {
+      console.error('submitVote trial increment RPC failed', {
+        slug,
+        ballotId: ballotRow.id,
+        eventId: eventRow.id,
+        orgId: orgRow.id,
+        error: trialError.message
+      })
+      return { statusCode: 500, body: JSON.stringify({ error: 'Could not enforce trial vote cap' }) }
+    }
+
+    const trialResult = Array.isArray(trialData) ? trialData[0] : trialData
+    if (!trialResult?.allowed) {
+      console.warn('submitVote rejected: TRIAL_LIMIT_REACHED', {
+        slug,
+        ballotId: ballotRow.id,
+        eventId: eventRow.id,
+        orgId: orgRow.id,
+        remaining: trialResult?.remaining ?? 0,
+        ip
+      })
+      return {
+        statusCode: 402,
+        body: JSON.stringify({
+          error: 'TRIAL_LIMIT_REACHED',
+          message: 'Trial limit reached. Please ask your administrator to subscribe to continue.'
+        })
+      }
+    }
+    trialReserved = true
+  }
+
   const { data, error } = await supabaseAdmin.rpc('submit_vote_atomic', {
     p_slug: slug,
     p_pin_code: pin ?? null,
@@ -62,6 +150,12 @@ export const handler: Handler = async (event) => {
   })
 
   if (error) {
+    if (trialReserved) {
+      await supabaseAdmin.rpc('decrement_trial_vote', {
+        p_org_id: orgRow.id,
+        p_event_id: eventRow.id
+      })
+    }
     registerFailure(rateKey)
     return { statusCode: 400, body: JSON.stringify({ error: error.message }) }
   }

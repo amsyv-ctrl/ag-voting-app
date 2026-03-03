@@ -2,11 +2,29 @@ import type { BallotResults, PublicBallot } from '../types'
 
 const API_BASE = '/api'
 
+export class ApiError extends Error {
+  code: string | null
+  status: number
+
+  constructor(message: string, status: number, code: string | null = null) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.code = code
+  }
+}
+
 async function handleJson<T>(res: Response): Promise<T> {
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
-    const message = typeof data?.error === 'string' ? data.error : 'Request failed'
-    throw new Error(message)
+    const code = typeof data?.error === 'string' ? data.error : null
+    const message =
+      typeof data?.message === 'string'
+        ? data.message
+        : typeof data?.error === 'string'
+          ? data.error
+          : 'Request failed'
+    throw new ApiError(message, res.status, code)
   }
   return data as T
 }

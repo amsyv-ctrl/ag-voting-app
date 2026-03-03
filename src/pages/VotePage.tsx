@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { fetchBallotPublic, submitVote } from '../lib/api'
+import { ApiError, fetchBallotPublic, submitVote } from '../lib/api'
 import { roundLabel } from '../lib/roundLabel'
 import type { PublicBallot } from '../types'
 
@@ -16,6 +16,7 @@ export function VotePage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [confirmation, setConfirmation] = useState<{ message: string; submittedAt: string } | null>(null)
+  const [trialLimitReached, setTrialLimitReached] = useState(false)
 
   useEffect(() => {
     fetchBallotPublic(ballotSlug)
@@ -49,6 +50,7 @@ export function VotePage() {
     e.preventDefault()
     if (!ballot) return
     setError(null)
+    setTrialLimitReached(false)
     setSubmitting(true)
 
     try {
@@ -59,6 +61,9 @@ export function VotePage() {
       })
       setConfirmation(result)
     } catch (err) {
+      if (err instanceof ApiError && err.code === 'TRIAL_LIMIT_REACHED') {
+        setTrialLimitReached(true)
+      }
       setError(err instanceof Error ? err.message : 'Failed to submit vote')
     } finally {
       setSubmitting(false)
@@ -107,7 +112,7 @@ export function VotePage() {
               </label>
             )}
 
-            <fieldset className="vote-options" disabled={submitting || isClosed}>
+            <fieldset className="vote-options" disabled={submitting || isClosed || trialLimitReached}>
               <legend>Choose one</legend>
               {ballot.choices.map((choice) => (
                 <label key={choice.id} className="radio-row">
@@ -125,7 +130,7 @@ export function VotePage() {
 
             <button
               type="submit"
-              disabled={submitting || isClosed || (ballot.requires_pin && pin.length !== 4) || !choiceId}
+              disabled={submitting || isClosed || trialLimitReached || (ballot.requires_pin && pin.length !== 4) || !choiceId}
             >
               {submitting ? 'Submitting...' : 'Submit Vote'}
             </button>
@@ -133,7 +138,10 @@ export function VotePage() {
         )}
 
         {isClosed && <p className="error">This ballot is currently closed.</p>}
-        {error && <p className="error">{error}</p>}
+        {trialLimitReached && (
+          <p className="error">Trial limit reached. Please ask your administrator to subscribe to continue.</p>
+        )}
+        {error && !trialLimitReached && <p className="error">{error}</p>}
       </section>
     </main>
   )
