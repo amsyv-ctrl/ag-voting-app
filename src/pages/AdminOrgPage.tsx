@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { bootstrapOrg } from '../lib/api'
+import { bootstrapOrg, createTrialEvent } from '../lib/api'
 import { getAccessToken, requireSession } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 
@@ -8,6 +8,7 @@ type OrgState = {
   id: string
   name: string
   mode: 'DEMO' | 'TRIAL' | 'PAID'
+  trial_event_id: string | null
   trial_votes_used: number
   trial_votes_limit: number
   subscription_status: string | null
@@ -44,6 +45,7 @@ export function AdminOrgPage() {
     address: ''
   })
   const [savingProfile, setSavingProfile] = useState(false)
+  const [creatingTrialEvent, setCreatingTrialEvent] = useState(false)
 
   async function load() {
     setError(null)
@@ -98,6 +100,28 @@ export function AdminOrgPage() {
   async function onSignOut() {
     await supabase.auth.signOut()
     navigate('/admin')
+  }
+
+  async function onCreateTrialEvent() {
+    if (!org || org.trial_event_id) return
+    setNotice(null)
+    setError(null)
+    setCreatingTrialEvent(true)
+    const token = await getAccessToken()
+    if (!token) {
+      setError('No session token found.')
+      setCreatingTrialEvent(false)
+      return
+    }
+
+    try {
+      const data = await createTrialEvent(token)
+      navigate(`/admin/events/${data.eventId}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create trial event')
+    } finally {
+      setCreatingTrialEvent(false)
+    }
   }
 
   async function onSaveProfile() {
@@ -163,8 +187,26 @@ export function AdminOrgPage() {
 
       <section className="card">
         <h2>Trial Onboarding</h2>
-        <p className="muted">Step 3 will enable one-click trial event creation and usage enforcement.</p>
-        <button disabled>Create your free trial event (100 votes)</button>
+        {!org?.trial_event_id ? (
+          <p className="muted">Trial not started.</p>
+        ) : org.trial_votes_used >= org.trial_votes_limit ? (
+          <p className="error">Trial limit reached: {org.trial_votes_used}/{org.trial_votes_limit} votes used.</p>
+        ) : (
+          <p className="muted">Trial active: {org.trial_votes_used}/{org.trial_votes_limit} votes used.</p>
+        )}
+        <div className="inline">
+          <button
+            onClick={onCreateTrialEvent}
+            disabled={creatingTrialEvent || !!org?.trial_event_id}
+          >
+            {creatingTrialEvent ? 'Creating trial event...' : 'Create your free trial event (100 votes)'}
+          </button>
+          {org?.trial_event_id && (
+            <Link to={`/admin/events/${org.trial_event_id}`}>
+              <button className="secondary" type="button">Go to trial event</button>
+            </Link>
+          )}
+        </div>
       </section>
 
       <section className="card">

@@ -57,6 +57,7 @@ export type OrgBootstrapResponse = {
     id: string
     name: string
     mode: 'DEMO' | 'TRIAL' | 'PAID'
+    trial_event_id: string | null
     trial_votes_used: number
     trial_votes_limit: number
     subscription_status: string | null
@@ -77,4 +78,16 @@ export async function bootstrapOrg(accessToken: string): Promise<OrgBootstrapRes
   })
 
   return handleJson<OrgBootstrapResponse>(res)
+}
+
+export async function createTrialEvent(accessToken: string): Promise<{ eventId: string; slug: string | null }> {
+  const res = await fetch(`${API_BASE}/createTrialEvent`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  })
+
+  return handleJson<{ eventId: string; slug: string | null }>(res)
 }

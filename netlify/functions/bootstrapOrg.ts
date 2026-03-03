@@ -5,6 +5,7 @@ type OrgRow = {
   id: string
   name: string
   mode: 'DEMO' | 'TRIAL' | 'PAID'
+  trial_event_id: string | null
   trial_votes_used: number
   trial_votes_limit: number
   subscription_status: string | null
@@ -50,7 +51,7 @@ export const handler: Handler = async (event) => {
   if (membership?.org_id) {
     const { data: orgData, error: orgError } = await supabaseAdmin
       .from('organizations')
-      .select('id,name,mode,trial_votes_used,trial_votes_limit,subscription_status,current_period_end,is_active')
+      .select('id,name,mode,trial_event_id,trial_votes_used,trial_votes_limit,subscription_status,current_period_end,is_active')
       .eq('id', membership.org_id)
       .single()
 
@@ -69,7 +70,7 @@ export const handler: Handler = async (event) => {
         mode: 'TRIAL',
         is_active: false
       })
-      .select('id,name,mode,trial_votes_used,trial_votes_limit,subscription_status,current_period_end,is_active')
+      .select('id,name,mode,trial_event_id,trial_votes_used,trial_votes_limit,subscription_status,current_period_end,is_active')
       .single()
 
     if (createOrgError || !createdOrg) {
