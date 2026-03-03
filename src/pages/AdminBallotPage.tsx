@@ -54,6 +54,7 @@ export function AdminBallotPage() {
   const [editIncumbentName, setEditIncumbentName] = useState('')
   const [voteQrDataUrl, setVoteQrDataUrl] = useState<string | null>(null)
   const [secondsToClose, setSecondsToClose] = useState<number | null>(null)
+  const [eligiblePins, setEligiblePins] = useState<number>(0)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const closeFinalizeInFlight = useRef(false)
@@ -131,6 +132,20 @@ export function AdminBallotPage() {
     setEditDescription(ballotData.description ?? '')
     setEditIncumbentName(ballotData.incumbent_name ?? '')
     setChoices(choiceData ?? [])
+
+    const { count: pinCount, error: pinCountError } = await supabase
+      .from('pins')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', ballotData.event_id)
+      .eq('is_active', true)
+
+    if (pinCountError) {
+      setError(pinCountError.message)
+      setLoading(false)
+      return
+    }
+    setEligiblePins(pinCount ?? 0)
+
     await loadResults(ballotData.slug)
     await loadRoundHistory(ballotData.id, ballotData.majority_rule, ballotData.vote_round ?? 1)
     setLoading(false)
@@ -607,6 +622,16 @@ export function AdminBallotPage() {
           <span className="accordion-icon">&#9654;</span>
         </button>
         <div className="accordion-content">
+          <div className="participation-panel">
+            <p><strong>Votes Cast:</strong> {results?.total_votes ?? 0}</p>
+            <p><strong>Eligible PINs:</strong> {eligiblePins}</p>
+            <p>
+              <strong>Participation:</strong>{' '}
+              {eligiblePins > 0
+                ? `${((((results?.total_votes ?? 0) / eligiblePins) * 100)).toFixed(1)}%`
+                : '0.0%'}
+            </p>
+          </div>
           <p><strong>Showing Vote:</strong> #{results?.vote_round ?? ballot.vote_round}</p>
           {results?.winner_label && (
             <div className="winner-banner">
