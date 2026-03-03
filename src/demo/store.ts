@@ -124,6 +124,7 @@ export function submitDemoVote(choiceId: string) {
 
 export function subscribeDemoState(cb: () => void) {
   listeners.add(cb)
-  return () => listeners.delete(cb)
+  return () => {
+    listeners.delete(cb)
+  }
 }
-
