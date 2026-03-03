@@ -15,6 +15,13 @@ type OrgState = {
   is_active: boolean
 }
 
+type ProfileState = {
+  first_name: string
+  last_name: string
+  network: string
+  address: string
+}
+
 function formatDate(value: string | null) {
   if (!value) return 'N/A'
   const d = new Date(value)
@@ -26,8 +33,17 @@ export function AdminOrgPage() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
   const [role, setRole] = useState<'OWNER' | 'ADMIN' | 'STAFF' | null>(null)
   const [org, setOrg] = useState<OrgState | null>(null)
+  const [profile, setProfile] = useState<ProfileState>({
+    first_name: '',
+    last_name: '',
+    network: '',
+    address: ''
+  })
+  const [savingProfile, setSavingProfile] = useState(false)
 
   async function load() {
     setError(null)
@@ -37,6 +53,7 @@ export function AdminOrgPage() {
       navigate('/admin')
       return
     }
+    setUserId(session.user.id)
 
     const token = await getAccessToken()
     if (!token) {
@@ -48,6 +65,25 @@ export function AdminOrgPage() {
       const data = await bootstrapOrg(token)
       setRole(data.role)
       setOrg(data.org)
+
+      const { data: profileData, error: profileError } = await supabase
+        .from('admin_profiles')
+        .select('first_name,last_name,network,address')
+        .eq('user_id', session.user.id)
+        .maybeSingle()
+
+      if (profileError && profileError.code !== 'PGRST116') {
+        throw new Error(profileError.message)
+      }
+
+      if (profileData) {
+        setProfile({
+          first_name: profileData.first_name ?? '',
+          last_name: profileData.last_name ?? '',
+          network: profileData.network ?? '',
+          address: profileData.address ?? ''
+        })
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load organization')
     } finally {
@@ -62,6 +98,29 @@ export function AdminOrgPage() {
   async function onSignOut() {
     await supabase.auth.signOut()
     navigate('/admin')
+  }
+
+  async function onSaveProfile() {
+    if (!userId) return
+    setNotice(null)
+    setError(null)
+    setSavingProfile(true)
+    const { error: updateError } = await supabase
+      .from('admin_profiles')
+      .upsert({
+        user_id: userId,
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        network: profile.network,
+        address: profile.address
+      })
+
+    setSavingProfile(false)
+    if (updateError) {
+      setError(updateError.message)
+      return
+    }
+    setNotice('Profile updated.')
   }
 
   if (loading) {
@@ -80,9 +139,15 @@ export function AdminOrgPage() {
       <section className="card">
         <div className="auth-header-row">
           <h1>Organization Dashboard</h1>
-          <button className="logout-btn" onClick={onSignOut}>Sign Out</button>
+          <div className="auth-header-actions">
+            <Link to="/admin">
+              <button className="secondary" type="button">Events</button>
+            </Link>
+            <button className="logout-btn" onClick={onSignOut}>Sign Out</button>
+          </div>
         </div>
         {error && <p className="error">{error}</p>}
+        {notice && <p className="winner">{notice}</p>}
         {org && (
           <>
             <p><strong>Name:</strong> {org.name}</p>
@@ -100,11 +165,44 @@ export function AdminOrgPage() {
         <h2>Trial Onboarding</h2>
         <p className="muted">Step 3 will enable one-click trial event creation and usage enforcement.</p>
         <button disabled>Create your free trial event (100 votes)</button>
-        <div style={{ marginTop: '0.75rem' }}>
-          <Link to="/admin">Go to Event Manager</Link>
+      </section>
+
+      <section className="card">
+        <h2>Edit Profile</h2>
+        <div className="stack">
+          <label>
+            First name
+            <input
+              value={profile.first_name}
+              onChange={(e) => setProfile((p) => ({ ...p, first_name: e.target.value }))}
+            />
+          </label>
+          <label>
+            Last name
+            <input
+              value={profile.last_name}
+              onChange={(e) => setProfile((p) => ({ ...p, last_name: e.target.value }))}
+            />
+          </label>
+          <label>
+            Network
+            <input
+              value={profile.network}
+              onChange={(e) => setProfile((p) => ({ ...p, network: e.target.value }))}
+            />
+          </label>
+          <label>
+            Address
+            <textarea
+              value={profile.address}
+              onChange={(e) => setProfile((p) => ({ ...p, address: e.target.value }))}
+            />
+          </label>
+          <button onClick={onSaveProfile} disabled={savingProfile}>
+            {savingProfile ? 'Saving...' : 'Save Profile'}
+          </button>
         </div>
       </section>
     </main>
   )
 }
-

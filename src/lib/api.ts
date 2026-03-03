@@ -64,6 +64,7 @@ export type OrgBootstrapResponse = {
     is_active: boolean
   }
   role: 'OWNER' | 'ADMIN' | 'STAFF'
+  created: boolean
 }
 
 export async function bootstrapOrg(accessToken: string): Promise<OrgBootstrapResponse> {

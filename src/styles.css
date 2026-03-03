@@ -210,6 +210,12 @@ a {
   margin-bottom: 0.5rem;
 }
 
+.auth-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
 .logout-btn {
   background: none;
   border: none;
@@ -332,6 +338,18 @@ a {
   color: #2c4266;
 }
 
+.ballot-admin-live-panel {
+  margin-top: 0.75rem;
+}
+
+.ballot-admin-close-countdown {
+  margin: 0.6rem 0;
+  color: #b42318;
+  font-weight: 800;
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
+}
+
 .ballot-admin-qr {
   margin: 0.6rem 0;
   border: 1px solid #d0deef;
@@ -340,8 +358,16 @@ a {
   padding: 0.3rem;
 }
 
+.ballot-admin-qr-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 .ballot-admin-actions {
   margin: 0.6rem 0;
+  align-items: flex-start;
 }
 
 .ballot-admin-round-card {
@@ -757,5 +783,10 @@ td {
 
   .display-qr {
     width: min(82vw, 420px);
+  }
+
+  .ballot-admin-qr-actions {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

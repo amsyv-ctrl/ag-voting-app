@@ -95,7 +95,6 @@ export const handler: Handler = async (event) => {
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ org, role })
+    body: JSON.stringify({ org, role, created: !membership?.org_id })
   }
 }
-

@@ -1,5 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { bootstrapOrg } from '../lib/api'
+import { getAccessToken } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 
 type EventRow = {
@@ -108,7 +110,23 @@ export function AdminLoginPage() {
       return
     }
 
-    navigate('/admin/org')
+    const token = await getAccessToken()
+    if (!token) {
+      setError('Signed in, but could not establish a session token.')
+      return
+    }
+
+    try {
+      const org = await bootstrapOrg(token)
+      if (org.created) {
+        navigate('/admin/org')
+        return
+      }
+      setHasSession(true)
+      await loadEvents()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to initialize organization')
+    }
   }
 
   async function onRegister(e: FormEvent) {
@@ -136,7 +154,23 @@ export function AdminLoginPage() {
 
     if (data.session) {
       setNotice('Admin account created. You are signed in and can create events now.')
-      navigate('/admin/org')
+      const token = await getAccessToken()
+      if (!token) {
+        setError('Signed in, but could not establish a session token.')
+        return
+      }
+
+      try {
+        const org = await bootstrapOrg(token)
+        if (org.created) {
+          navigate('/admin/org')
+          return
+        }
+        setHasSession(true)
+        await loadEvents()
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unable to initialize organization')
+      }
       return
     }
 
@@ -228,7 +262,12 @@ export function AdminLoginPage() {
           <div>
             <div className="auth-header-row">
               <h1 className="auth-title">Events</h1>
-              <button className="logout-btn" onClick={onLogout}>Sign Out</button>
+              <div className="auth-header-actions">
+                <Link to="/admin/org">
+                  <button className="secondary" type="button">Account</button>
+                </Link>
+                <button className="logout-btn" onClick={onLogout}>Sign Out</button>
+              </div>
             </div>
 
             {profile && (
