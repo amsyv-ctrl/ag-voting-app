@@ -7,6 +7,7 @@ import { getAccessToken, requireSession } from '../lib/auth'
 type BallotRow = {
   id: string
   title: string
+  incumbent_name: string | null
   slug: string
   status: 'DRAFT' | 'OPEN' | 'CLOSED'
   requires_pin: boolean
@@ -30,6 +31,7 @@ type ExportVoteRow = {
 type ExportBallotRow = {
   id: string
   title: string
+  incumbent_name: string | null
   slug: string
   majority_rule: 'SIMPLE' | 'TWO_THIRDS'
   status: 'DRAFT' | 'OPEN' | 'CLOSED'
@@ -62,6 +64,7 @@ export function AdminEventPage() {
   const [activePins, setActivePins] = useState<PinRow[]>([])
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [incumbentName, setIncumbentName] = useState('')
   const [majorityRule, setMajorityRule] = useState<'SIMPLE' | 'TWO_THIRDS'>('SIMPLE')
   const [ballotType, setBallotType] = useState<'YES_NO' | 'PICK_ONE'>('PICK_ONE')
   const [requiresPin, setRequiresPin] = useState(true)
@@ -99,7 +102,7 @@ export function AdminEventPage() {
 
     const { data: ballotData, error: ballotError } = await supabase
       .from('ballots')
-      .select('id,title,slug,status,requires_pin,created_at')
+      .select('id,title,incumbent_name,slug,status,requires_pin,created_at')
       .eq('event_id', eventId)
       .order('created_at', { ascending: false })
 
@@ -140,6 +143,7 @@ export function AdminEventPage() {
         event_id: eventId,
         title,
         description: description || null,
+        incumbent_name: incumbentName || null,
         slug,
         ballot_type: ballotType,
         majority_rule: majorityRule,
@@ -163,6 +167,7 @@ export function AdminEventPage() {
 
     setTitle('')
     setDescription('')
+    setIncumbentName('')
     setRequiresPin(true)
     await load()
   }
@@ -242,7 +247,7 @@ export function AdminEventPage() {
     try {
       const { data: ballotsData, error: ballotsError } = await supabase
         .from('ballots')
-        .select('id,title,slug,majority_rule,status')
+        .select('id,title,incumbent_name,slug,majority_rule,status')
         .eq('event_id', eventId)
 
       if (ballotsError) throw ballotsError
@@ -303,6 +308,7 @@ export function AdminEventPage() {
           roundSummaries.push({
             ballot_id: ballot.id,
             ballot_title: ballot.title,
+            incumbent_name: ballot.incumbent_name,
             ballot_slug: ballot.slug,
             vote_round: round,
             majority_rule: ballot.majority_rule,
@@ -442,6 +448,7 @@ export function AdminEventPage() {
             </div>
             <div className="ballot-details">
               Status: {ballot.status}<br />
+              Incumbent: {ballot.incumbent_name || 'N/A'}<br />
               PIN required: {ballot.requires_pin ? 'Yes' : 'No'}<br />
               Vote URL: <span className="url">{appBase}/vote/{ballot.slug}</span><br />
               Display URL: <span className="url">{appBase}/display/{ballot.slug}</span>
@@ -459,6 +466,14 @@ export function AdminEventPage() {
             <label>
               Description
               <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
+            </label>
+            <label>
+              Incumbent name
+              <input
+                value={incumbentName}
+                onChange={(e) => setIncumbentName(e.target.value)}
+                placeholder="Incumbent name (optional)"
+              />
             </label>
             <label>
               Ballot type

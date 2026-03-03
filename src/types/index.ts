@@ -13,6 +13,7 @@ export type PublicBallot = {
   event_name: string
   slug: string
   title: string
+  incumbent_name: string | null
   description: string | null
   ballot_type: BallotType
   majority_rule: MajorityRule

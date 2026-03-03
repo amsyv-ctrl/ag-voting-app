@@ -261,6 +261,63 @@ a {
   margin: 0 auto;
 }
 
+.ballot-admin-page {
+  min-height: 100vh;
+  display: grid;
+  gap: 1rem;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.ballot-admin-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid #d0deef;
+  box-shadow: 0 8px 20px rgba(16, 33, 59, 0.08);
+}
+
+.ballot-admin-hero h1,
+.ballot-admin-hero h2 {
+  margin-bottom: 0.35rem;
+}
+
+.ballot-admin-info {
+  margin: 0.2rem 0;
+  color: #5f6772;
+}
+
+.ballot-admin-description {
+  margin: 0.8rem 0 0.3rem 0;
+}
+
+.ballot-admin-url {
+  word-break: break-all;
+  margin: 0.35rem 0;
+  color: #2c4266;
+}
+
+.ballot-admin-qr {
+  margin: 0.6rem 0;
+  border: 1px solid #d0deef;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.3rem;
+}
+
+.ballot-admin-actions {
+  margin: 0.6rem 0;
+}
+
+.ballot-admin-round-card {
+  border: 1px solid #d0deef;
+  border-radius: 10px;
+  padding: 0.8rem;
+  margin-top: 0.7rem;
+  background: #fafcff;
+}
+
 .card,
 .vote-card {
   background: #fff;
@@ -499,6 +556,17 @@ td {
 .display-no-winner {
   font-size: clamp(1.2rem, 3vw, 2rem);
   color: #ffc107;
+  margin: 0.75rem 0;
+}
+
+.display-hidden-note {
+  font-size: clamp(1.1rem, 2.4vw, 1.7rem);
+  color: #dce9ff;
+  margin: 0.75rem 0;
+}
+
+.display-threshold {
+  font-size: clamp(1.1rem, 2.5vw, 1.75rem);
   margin: 0.75rem 0;
 }
 
