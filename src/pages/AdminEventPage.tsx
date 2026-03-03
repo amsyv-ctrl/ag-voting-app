@@ -14,6 +14,15 @@ type BallotRow = {
   created_at: string
 }
 
+type OrgAccessRow = {
+  id: string
+  mode: 'DEMO' | 'TRIAL' | 'PAID'
+  is_active: boolean
+  trial_event_id: string | null
+  trial_votes_used: number
+  trial_votes_limit: number
+}
+
 type PinRow = {
   id: string
   code: string
@@ -87,6 +96,7 @@ export function AdminEventPage() {
   const [pinsOutput, setPinsOutput] = useState<string[]>([])
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [orgAccess, setOrgAccess] = useState<OrgAccessRow | null>(null)
 
   const [editOpen, setEditOpen] = useState(false)
   const [pinsOpen, setPinsOpen] = useState(false)
@@ -102,7 +112,7 @@ export function AdminEventPage() {
 
     const { data: eventData, error: eventError } = await supabase
       .from('events')
-      .select('name,date,location,voting_staff_names')
+      .select('name,date,location,voting_staff_names,org_id,is_trial_event')
       .eq('id', eventId)
       .single()
 
@@ -114,6 +124,18 @@ export function AdminEventPage() {
     setEventDate(eventData.date ?? '')
     setEventLocation(eventData.location ?? '')
     setVotingStaffNames(eventData.voting_staff_names ?? '')
+
+    const { data: orgData, error: orgError } = await supabase
+      .from('organizations')
+      .select('id,mode,is_active,trial_event_id,trial_votes_used,trial_votes_limit')
+      .eq('id', eventData.org_id)
+      .single()
+
+    if (orgError) {
+      setError(orgError.message)
+      return
+    }
+    setOrgAccess(orgData as OrgAccessRow)
 
     const { data: ballotData, error: ballotError } = await supabase
       .from('ballots')
@@ -149,6 +171,10 @@ export function AdminEventPage() {
 
   async function onCreateBallot(e: FormEvent) {
     e.preventDefault()
+    if (!canOperateEvent) {
+      setError('Subscription inactive. This event is read-only.')
+      return
+    }
     setError(null)
     const slug = `${slugify(title)}-${Math.random().toString(36).slice(2, 8)}`
 
@@ -189,6 +215,10 @@ export function AdminEventPage() {
 
   async function onGeneratePins(e: FormEvent) {
     e.preventDefault()
+    if (!canOperateEvent) {
+      setError('Subscription inactive. This event is read-only.')
+      return
+    }
     setError(null)
     const token = await getAccessToken()
     if (!token) {
@@ -206,6 +236,10 @@ export function AdminEventPage() {
   }
 
   async function onDeleteAllPins() {
+    if (!canOperateEvent) {
+      setError('Subscription inactive. This event is read-only.')
+      return
+    }
     const typed = window.prompt('Type DELETE to permanently remove all PINs for this event.')
     if (typed !== 'DELETE') {
       return
@@ -224,6 +258,10 @@ export function AdminEventPage() {
 
   async function onUpdateEvent(e: FormEvent) {
     e.preventDefault()
+    if (!canOperateEvent) {
+      setError('Subscription inactive. This event is read-only.')
+      return
+    }
     setError(null)
 
     const { error: updateError } = await supabase
@@ -377,6 +415,15 @@ export function AdminEventPage() {
     }
   }
 
+  const isPaidActive = !!(orgAccess?.mode === 'PAID' && orgAccess?.is_active)
+  const isTrialActiveForThisEvent = !!(
+    orgAccess?.mode === 'TRIAL' &&
+    orgAccess?.trial_event_id === eventId &&
+    (orgAccess?.trial_votes_used ?? 0) < (orgAccess?.trial_votes_limit ?? 0)
+  )
+  const canOperateEvent = isPaidActive || isTrialActiveForThisEvent
+  const isReadOnly = !canOperateEvent
+
   return (
     <main className="event-page">
       <section className="event-container">
@@ -386,6 +433,15 @@ export function AdminEventPage() {
           Manage ballots and delegate PINs.
           {votingStaffNames ? <><br />Voting Team: {votingStaffNames}</> : null}
         </p>
+        {orgAccess && (
+          <p className={canOperateEvent ? 'muted' : 'error'}>
+            {isReadOnly
+              ? 'Subscription inactive — this event is read-only. You can view/export, but cannot run new votes.'
+              : orgAccess.mode === 'TRIAL'
+                ? `Trial mode: ${orgAccess.trial_votes_used}/${orgAccess.trial_votes_limit} votes used on your trial event.`
+                : 'Paid active: full event controls enabled.'}
+          </p>
+        )}
         {error && <p className="error">{error}</p>}
 
         <div className={`accordion ${editOpen ? 'active' : ''}`}>
@@ -397,15 +453,15 @@ export function AdminEventPage() {
             <form onSubmit={onUpdateEvent} className="stack">
               <label>
                 Event name
-                <input value={eventName} onChange={(e) => setEventName(e.target.value)} required />
+                <input value={eventName} onChange={(e) => setEventName(e.target.value)} required disabled={!canOperateEvent} />
               </label>
               <label>
                 Event date
-                <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
+                <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} disabled={!canOperateEvent} />
               </label>
               <label>
                 Event location
-                <input value={eventLocation} onChange={(e) => setEventLocation(e.target.value)} placeholder="Location" />
+                <input value={eventLocation} onChange={(e) => setEventLocation(e.target.value)} placeholder="Location" disabled={!canOperateEvent} />
               </label>
               <label>
                 Names running voting
@@ -413,9 +469,10 @@ export function AdminEventPage() {
                   value={votingStaffNames}
                   onChange={(e) => setVotingStaffNames(e.target.value)}
                   placeholder="Example: Yisrael Vincent"
+                  disabled={!canOperateEvent}
                 />
               </label>
-              <button type="submit">Save Event Details</button>
+              <button type="submit" disabled={!canOperateEvent}>Save Event Details</button>
             </form>
           </div>
         </div>
@@ -435,10 +492,11 @@ export function AdminEventPage() {
                 max={500}
                 value={pinCount}
                 onChange={(e) => setPinCount(Math.max(1, Math.min(Number(e.target.value), 500)))}
+                disabled={!canOperateEvent}
               />
-              <button type="submit">Generate</button>
+              <button type="submit" disabled={!canOperateEvent}>Generate</button>
             </form>
-            <button className="danger-btn" style={{ marginTop: '10px' }} onClick={onDeleteAllPins}>Delete All PINs</button>
+            <button className="danger-btn" style={{ marginTop: '10px' }} onClick={onDeleteAllPins} disabled={!canOperateEvent}>Delete All PINs</button>
             {pinsOutput.length > 0 && (
               <details>
                 <summary>Show newly generated PINs ({pinsOutput.length})</summary>
@@ -482,11 +540,11 @@ export function AdminEventPage() {
           <form onSubmit={onCreateBallot} className="stack" style={{ marginTop: '15px' }}>
             <label>
               Ballot title
-              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ballot title" required />
+              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ballot title" required disabled={!canOperateEvent} />
             </label>
             <label>
               Description
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" disabled={!canOperateEvent} />
             </label>
             <label>
               Incumbent name
@@ -494,27 +552,28 @@ export function AdminEventPage() {
                 value={incumbentName}
                 onChange={(e) => setIncumbentName(e.target.value)}
                 placeholder="Incumbent name (optional)"
+                disabled={!canOperateEvent}
               />
             </label>
             <label>
               Ballot type
-              <select value={ballotType} onChange={(e) => setBallotType(e.target.value as 'YES_NO' | 'PICK_ONE')}>
+              <select value={ballotType} onChange={(e) => setBallotType(e.target.value as 'YES_NO' | 'PICK_ONE')} disabled={!canOperateEvent}>
                 <option value="PICK_ONE">Pick one candidate</option>
                 <option value="YES_NO">Yes / No</option>
               </select>
             </label>
             <label>
               Majority rule
-              <select value={majorityRule} onChange={(e) => setMajorityRule(e.target.value as 'SIMPLE' | 'TWO_THIRDS')}>
+              <select value={majorityRule} onChange={(e) => setMajorityRule(e.target.value as 'SIMPLE' | 'TWO_THIRDS')} disabled={!canOperateEvent}>
                 <option value="SIMPLE">Simple majority (&gt;50%)</option>
                 <option value="TWO_THIRDS">Two thirds (≥66.67%)</option>
               </select>
             </label>
             <label className="checkbox-label">
-              <input type="checkbox" checked={requiresPin} onChange={(e) => setRequiresPin(e.target.checked)} />
+              <input type="checkbox" checked={requiresPin} onChange={(e) => setRequiresPin(e.target.checked)} disabled={!canOperateEvent} />
               Require PIN for this ballot
             </label>
-            <button type="submit" style={{ marginTop: '10px' }}>Create Ballot</button>
+            <button type="submit" style={{ marginTop: '10px' }} disabled={!canOperateEvent}>Create Ballot</button>
           </form>
         </div>
 

@@ -158,6 +158,19 @@ export function AdminOrgPage() {
     )
   }
 
+  const isPaidActive = !!(org?.mode === 'PAID' && org?.is_active)
+  const isTrialActive = !!(
+    org?.mode === 'TRIAL' &&
+    !!org?.trial_event_id &&
+    (org?.trial_votes_used ?? 0) < (org?.trial_votes_limit ?? 0)
+  )
+  const canStartTrialEvent = !!(
+    org?.mode === 'TRIAL' &&
+    !org?.trial_event_id &&
+    (org?.trial_votes_used ?? 0) < (org?.trial_votes_limit ?? 0)
+  )
+  const isReadOnly = !isPaidActive && !isTrialActive
+
   return (
     <main className="page">
       <section className="card">
@@ -170,6 +183,15 @@ export function AdminOrgPage() {
             <button className="logout-btn" onClick={onSignOut}>Sign Out</button>
           </div>
         </div>
+        {org && (
+          <p className={isReadOnly ? 'error' : 'muted'}>
+            {isReadOnly
+              ? 'Subscription inactive — account is read-only. You can view/export history, but cannot run new votes.'
+              : org.mode === 'TRIAL'
+                ? `Trial mode: ${org.trial_votes_used}/${org.trial_votes_limit} votes used on your trial event.`
+                : 'Paid active: full access enabled.'}
+          </p>
+        )}
         {error && <p className="error">{error}</p>}
         {notice && <p className="winner">{notice}</p>}
         {org && (
@@ -197,7 +219,7 @@ export function AdminOrgPage() {
         <div className="inline">
           <button
             onClick={onCreateTrialEvent}
-            disabled={creatingTrialEvent || !!org?.trial_event_id}
+            disabled={creatingTrialEvent || !canStartTrialEvent}
           >
             {creatingTrialEvent ? 'Creating trial event...' : 'Create your free trial event (100 votes)'}
           </button>

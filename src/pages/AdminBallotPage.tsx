@@ -37,6 +37,14 @@ type RoundHistory = {
   rows: Array<{ choice_id: string; label: string; votes: number; pct: number; is_withdrawn?: boolean }>
 }
 
+type OrgAccessRow = {
+  mode: 'DEMO' | 'TRIAL' | 'PAID'
+  is_active: boolean
+  trial_event_id: string | null
+  trial_votes_used: number
+  trial_votes_limit: number
+}
+
 export function AdminBallotPage() {
   const { id } = useParams()
   const ballotId = id as string
@@ -59,13 +67,29 @@ export function AdminBallotPage() {
   const [eligiblePins, setEligiblePins] = useState<number>(0)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [orgAccess, setOrgAccess] = useState<OrgAccessRow | null>(null)
   const closeFinalizeInFlight = useRef(false)
-  const [activeSection, setActiveSection] = useState<'edit' | 'controls' | 'choices' | 'results' | 'manual' | 'history' | 'danger' | null>('controls')
+  const [activeSection, setActiveSection] = useState<'edit' | 'choices' | 'results' | 'manual' | 'history' | 'danger' | null>('edit')
 
   const appBase = useMemo(() => window.location.origin, [])
 
-  function toggleSection(section: 'edit' | 'controls' | 'choices' | 'results' | 'manual' | 'history' | 'danger') {
+  function toggleSection(section: 'edit' | 'choices' | 'results' | 'manual' | 'history' | 'danger') {
     setActiveSection((current) => (current === section ? null : section))
+  }
+
+  const isPaidActive = !!(orgAccess?.mode === 'PAID' && orgAccess?.is_active)
+  const isTrialActiveForThisEvent = !!(
+    orgAccess?.mode === 'TRIAL' &&
+    orgAccess?.trial_event_id === ballot?.event_id &&
+    (orgAccess?.trial_votes_used ?? 0) < (orgAccess?.trial_votes_limit ?? 0)
+  )
+  const canOperateEvent = isPaidActive || isTrialActiveForThisEvent
+  const isReadOnly = !canOperateEvent
+
+  function requireOperateAccess() {
+    if (canOperateEvent) return true
+    setError('Subscription inactive. This event is read-only.')
+    return false
   }
 
   async function load() {
@@ -104,7 +128,7 @@ export function AdminBallotPage() {
 
     const { data: eventData, error: eventError } = await supabase
       .from('events')
-      .select('name')
+      .select('name,org_id')
       .eq('id', ballotData.event_id)
       .single()
 
@@ -113,6 +137,19 @@ export function AdminBallotPage() {
       setLoading(false)
       return
     }
+
+    const { data: orgData, error: orgError } = await supabase
+      .from('organizations')
+      .select('mode,is_active,trial_event_id,trial_votes_used,trial_votes_limit')
+      .eq('id', eventData.org_id)
+      .single()
+
+    if (orgError) {
+      setError(orgError.message)
+      setLoading(false)
+      return
+    }
+    setOrgAccess(orgData as OrgAccessRow)
 
     setBallot({
       id: ballotData.id,
@@ -154,7 +191,7 @@ export function AdminBallotPage() {
     setEligiblePins(pinCount ?? 0)
 
     await loadResults(ballotData.slug)
-    await loadRoundHistory(ballotData.id, ballotData.majority_rule, ballotData.vote_round ?? 1)
+    await loadRoundHistory(ballotData.id, ballotData.majority_rule, ballotData.vote_round ?? 1, ballotData.status)
     setLoading(false)
   }
 
@@ -170,7 +207,8 @@ export function AdminBallotPage() {
   async function loadRoundHistory(
     currentBallotId: string,
     majorityRule: 'SIMPLE' | 'TWO_THIRDS',
-    currentRound: number
+    currentRound: number,
+    ballotStatus: 'DRAFT' | 'OPEN' | 'CLOSED' | 'MANUAL_FALLBACK'
   ) {
     const { data, error: historyError } = await supabase.rpc('get_ballot_round_history_admin', {
       p_ballot_id: currentBallotId
@@ -186,9 +224,10 @@ export function AdminBallotPage() {
       : []
 
     const history: RoundHistory[] = []
+    const excludeCurrentRound = ballotStatus === 'OPEN' || ballotStatus === 'MANUAL_FALLBACK'
     for (const roundData of rounds) {
       const round = Math.max(1, Number(roundData.vote_round ?? 1))
-      if (round === currentRound) continue
+      if (excludeCurrentRound && round === currentRound) continue
 
       const resultLike: BallotResults = {
         ballot_id: currentBallotId,
@@ -241,7 +280,7 @@ export function AdminBallotPage() {
         { event: 'INSERT', schema: 'public', table: 'votes', filter: `ballot_id=eq.${ballot.id}` },
         async () => {
           await loadResults(ballot.slug)
-          await loadRoundHistory(ballot.id, ballot.majority_rule, ballot.vote_round)
+          await loadRoundHistory(ballot.id, ballot.majority_rule, ballot.vote_round, ballot.status)
         }
       )
       .subscribe()
@@ -249,7 +288,7 @@ export function AdminBallotPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [ballot?.id, ballot?.majority_rule, ballot?.vote_round])
+  }, [ballot?.id, ballot?.majority_rule, ballot?.vote_round, ballot?.status])
 
   useEffect(() => {
     if (!ballot) return
@@ -297,6 +336,7 @@ export function AdminBallotPage() {
 
   async function closeBallot() {
     if (!ballot) return
+    if (!requireOperateAccess()) return
     if (!window.confirm(
       `Are you sure?\n\nClosing this ballot will finalize results for ${roundLabel(ballot.vote_round)} vote after a 10-second delay.`
     )) {
@@ -315,6 +355,7 @@ export function AdminBallotPage() {
 
   async function openNewVoteRound() {
     if (!ballot) return
+    if (!requireOperateAccess()) return
     if (!ballot.results_visibility) {
       setError('Choose results visibility (Show live voting or Hide until ballot is closed) before opening a vote.')
       return
@@ -335,6 +376,7 @@ export function AdminBallotPage() {
 
   async function switchToManualFallbackMode() {
     if (!ballot) return
+    if (!requireOperateAccess()) return
     const typed = window.prompt(
       `Type MANUAL to switch "${ballot.title}" into Manual Count Mode for ${roundLabel(ballot.vote_round)} vote.`
     )
@@ -356,6 +398,7 @@ export function AdminBallotPage() {
   async function finalizeManualRound(e: FormEvent) {
     e.preventDefault()
     if (!ballot) return
+    if (!requireOperateAccess()) return
     if (ballot.status !== 'MANUAL_FALLBACK') {
       setError('Ballot must be in manual fallback mode before recording manual totals.')
       return
@@ -385,6 +428,7 @@ export function AdminBallotPage() {
 
   async function setResultsVisibility(mode: 'LIVE' | 'CLOSED_ONLY') {
     if (!ballot) return
+    if (!requireOperateAccess()) return
     const { error: updateError } = await supabase
       .from('ballots')
       .update({ results_visibility: mode })
@@ -398,6 +442,10 @@ export function AdminBallotPage() {
 
   async function deleteBallot() {
     if (!ballot) return
+    if (!isPaidActive) {
+      setError('Deleting ballots requires an active paid subscription.')
+      return
+    }
     const typed = window.prompt(
       `Type DELETE to permanently remove ballot "${ballot.title}" and all associated vote records.`
     )
@@ -414,6 +462,7 @@ export function AdminBallotPage() {
 
   async function togglePinRequirement(nextValue: boolean) {
     if (!ballot) return
+    if (!requireOperateAccess()) return
     const { error: updateError } = await supabase
       .from('ballots')
       .update({ requires_pin: nextValue })
@@ -428,6 +477,7 @@ export function AdminBallotPage() {
   async function onSaveBallotDetails(e: FormEvent) {
     e.preventDefault()
     if (!ballot) return
+    if (!requireOperateAccess()) return
     setError(null)
 
     const { error: updateError } = await supabase
@@ -450,6 +500,7 @@ export function AdminBallotPage() {
   async function onAddChoice(e: FormEvent) {
     e.preventDefault()
     if (!ballot || !newChoice.trim()) return
+    if (!requireOperateAccess()) return
 
     const nextOrder = choices.length + 1
     const { error: insertError } = await supabase
@@ -476,6 +527,7 @@ export function AdminBallotPage() {
   }
 
   async function saveChoiceLabel(choiceId: string) {
+    if (!requireOperateAccess()) return
     const nextLabel = editingChoiceLabel.trim()
     if (!nextLabel) {
       setError('Choice label cannot be empty')
@@ -491,6 +543,7 @@ export function AdminBallotPage() {
   }
 
   async function toggleChoiceWithdraw(choice: ChoiceRow) {
+    if (!requireOperateAccess()) return
     const nextWithdrawn = !choice.is_withdrawn
     const message = nextWithdrawn
       ? `Mark "${choice.label}" as withdrawn? It will be hidden from voter and public results pages.`
@@ -555,14 +608,63 @@ export function AdminBallotPage() {
         <p className="ballot-admin-info">Current Vote: #{ballot.vote_round} ({roundLabel(ballot.vote_round)} vote)</p>
         <p className="ballot-admin-info">Ballot Status: <strong>{ballot.status}</strong></p>
         <p className="ballot-admin-info">PIN Required: {ballot.requires_pin ? 'Yes' : 'No'}</p>
+        {orgAccess && (
+          <p className={isReadOnly ? 'error' : 'muted'}>
+            {isReadOnly
+              ? 'Subscription inactive — this event is read-only. You can view/export, but cannot run new votes.'
+              : orgAccess.mode === 'TRIAL'
+                ? `Trial mode: ${orgAccess.trial_votes_used}/${orgAccess.trial_votes_limit} votes used on your trial event.`
+                : 'Paid active: full ballot controls enabled.'}
+          </p>
+        )}
         {ballot.incumbent_name && <p className="ballot-admin-info">Incumbent: {ballot.incumbent_name}</p>}
         <p className="ballot-admin-description">{ballot.description || 'No description'}</p>
+        <div className="participation-panel ballot-admin-live-panel">
+          <p><strong>Votes Cast:</strong> {results?.total_votes ?? 0}</p>
+          <p><strong>Eligible PINs:</strong> {eligiblePins}</p>
+          <p>
+            <strong>Participation:</strong>{' '}
+            {eligiblePins > 0
+              ? `${((((results?.total_votes ?? 0) / eligiblePins) * 100)).toFixed(1)}%`
+              : '0.0%'}
+          </p>
+          <p><strong>Showing Vote:</strong> #{results?.vote_round ?? ballot.vote_round}</p>
+          {results?.winner_label && (
+            <p className="winner"><strong>Leader:</strong> {results.winner_label} ({(results.top_pct! * 100).toFixed(1)}%)</p>
+          )}
+        </div>
         {secondsToClose !== null && (
-          <p><strong>Closing in: {secondsToClose}s</strong></p>
+          <p className="ballot-admin-close-countdown">Closing in: {secondsToClose}s</p>
         )}
-        <p className="ballot-admin-url">Vote URL: {appBase}/vote/{ballot.slug}</p>
-        <p className="ballot-admin-url">Display URL: {appBase}/display/{ballot.slug}</p>
-        {voteQrDataUrl && <img className="ballot-admin-qr" src={voteQrDataUrl} alt="Ballot QR code" width={180} height={180} />}
+        <p className="ballot-admin-url">
+          Vote URL:{' '}
+          <a href={`${appBase}/vote/${ballot.slug}`} target="_blank" rel="noreferrer">
+            {appBase}/vote/{ballot.slug}
+          </a>
+        </p>
+        <p className="ballot-admin-url">
+          Display URL:{' '}
+          <a href={`${appBase}/display/${ballot.slug}`} target="_blank" rel="noreferrer">
+            {appBase}/display/{ballot.slug}
+          </a>
+        </p>
+        <div className="ballot-admin-qr-actions">
+          {voteQrDataUrl && <img className="ballot-admin-qr" src={voteQrDataUrl} alt="Ballot QR code" width={180} height={180} />}
+          <div className="inline ballot-admin-actions">
+            {ballot.status === 'OPEN' ? (
+              <>
+                <button className="secondary" onClick={closeBallot} disabled={!canOperateEvent}>Close current vote (10s delay)</button>
+                <button className="secondary" onClick={switchToManualFallbackMode} disabled={!canOperateEvent}>Switch to Manual Count Mode</button>
+              </>
+            ) : ballot.status === 'MANUAL_FALLBACK' ? (
+              <p className="muted">Manual fallback mode active. Record manual totals in the Manual Fallback section.</p>
+            ) : (
+              <button onClick={openNewVoteRound} disabled={!canOperateEvent}>
+                {ballot.status === 'DRAFT' ? 'Open Vote #1' : `Open Vote #${(ballot.vote_round ?? 1) + 1}`}
+              </button>
+            )}
+          </div>
+        </div>
         <Link to={`/admin/events/${ballot.event_id}`}>Back to event</Link>
         {error && <p className="error">{error}</p>}
       </section>
@@ -574,13 +676,45 @@ export function AdminBallotPage() {
         </button>
         <div className="accordion-content">
           <form onSubmit={onSaveBallotDetails} className="stack" style={{ marginTop: '0.8rem' }}>
+            <label className="inline">
+              <input
+                type="checkbox"
+                checked={ballot.requires_pin}
+                onChange={(e) => togglePinRequirement(e.target.checked)}
+                disabled={!canOperateEvent}
+              />
+              Require PIN for this vote
+            </label>
+            <fieldset>
+              <legend>Results visibility (required before opening vote)</legend>
+              <label className="radio-row">
+                <input
+                  type="radio"
+                  name="resultsVisibility"
+                  checked={ballot.results_visibility === 'LIVE'}
+                  onChange={() => setResultsVisibility('LIVE')}
+                  disabled={!canOperateEvent}
+                />
+                Show live voting
+              </label>
+              <label className="radio-row">
+                <input
+                  type="radio"
+                  name="resultsVisibility"
+                  checked={ballot.results_visibility === 'CLOSED_ONLY'}
+                  onChange={() => setResultsVisibility('CLOSED_ONLY')}
+                  disabled={!canOperateEvent}
+                />
+                Hide results until ballot is closed
+              </label>
+            </fieldset>
             <label>
               Vote name
-              <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} required />
+              <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} required disabled={!canOperateEvent} />
             </label>
             <label>
               Ballot description
-              <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
+              <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} disabled={!canOperateEvent} />
             </label>
             <label>
               Incumbent name
@@ -588,62 +722,11 @@ export function AdminBallotPage() {
                 value={editIncumbentName}
                 onChange={(e) => setEditIncumbentName(e.target.value)}
                 placeholder="Incumbent name (optional)"
+                disabled={!canOperateEvent}
               />
             </label>
-            <button type="submit">Save Ballot Details</button>
+            <button type="submit" disabled={!canOperateEvent}>Save Ballot Details</button>
           </form>
-        </div>
-      </section>
-
-      <section className={`accordion ${activeSection === 'controls' ? 'active' : ''}`}>
-        <button type="button" className="accordion-header" onClick={() => toggleSection('controls')}>
-          Vote Controls
-          <span className="accordion-icon">&#9654;</span>
-        </button>
-        <div className="accordion-content">
-          <label className="inline">
-            <input
-              type="checkbox"
-              checked={ballot.requires_pin}
-              onChange={(e) => togglePinRequirement(e.target.checked)}
-            />
-            Require PIN for this vote
-          </label>
-          <fieldset>
-            <legend>Results visibility (required before opening vote)</legend>
-            <label className="radio-row">
-              <input
-                type="radio"
-                name="resultsVisibility"
-                checked={ballot.results_visibility === 'LIVE'}
-                onChange={() => setResultsVisibility('LIVE')}
-              />
-              Show live voting
-            </label>
-            <label className="radio-row">
-              <input
-                type="radio"
-                name="resultsVisibility"
-                checked={ballot.results_visibility === 'CLOSED_ONLY'}
-                onChange={() => setResultsVisibility('CLOSED_ONLY')}
-              />
-              Hide results until ballot is closed
-            </label>
-          </fieldset>
-          <div className="inline ballot-admin-actions">
-            {ballot.status === 'OPEN' ? (
-              <>
-                <button className="secondary" onClick={closeBallot}>Close current vote (10s delay)</button>
-                <button className="secondary" onClick={switchToManualFallbackMode}>Switch to Manual Count Mode</button>
-              </>
-            ) : ballot.status === 'MANUAL_FALLBACK' ? (
-              <p className="muted">Manual fallback mode active. Record manual totals in the Manual Fallback section.</p>
-            ) : (
-              <button onClick={openNewVoteRound}>
-                {ballot.status === 'DRAFT' ? 'Open Vote #1' : `Open Vote #${(ballot.vote_round ?? 1) + 1}`}
-              </button>
-            )}
-          </div>
         </div>
       </section>
 
@@ -654,8 +737,8 @@ export function AdminBallotPage() {
         </button>
         <div className="accordion-content">
           <form onSubmit={onAddChoice} className="stack inline">
-            <input value={newChoice} onChange={(e) => setNewChoice(e.target.value)} placeholder="Choice label" />
-            <button type="submit">Add</button>
+            <input value={newChoice} onChange={(e) => setNewChoice(e.target.value)} placeholder="Choice label" disabled={!canOperateEvent} />
+            <button type="submit" disabled={!canOperateEvent}>Add</button>
           </form>
           <ul className="list">
             {choices.map((choice) => (
@@ -667,6 +750,7 @@ export function AdminBallotPage() {
                       value={editingChoiceLabel}
                       onChange={(e) => setEditingChoiceLabel(e.target.value)}
                       aria-label={`Edit label for ${choice.label}`}
+                      disabled={!canOperateEvent}
                     />
                   ) : (
                     <span className={`choice-label ${choice.is_withdrawn ? 'choice-label-withdrawn' : ''}`}>
@@ -678,16 +762,17 @@ export function AdminBallotPage() {
                 <div className="choice-actions">
                   {editingChoiceId === choice.id ? (
                     <>
-                      <button type="button" onClick={() => saveChoiceLabel(choice.id)}>Save</button>
+                      <button type="button" onClick={() => saveChoiceLabel(choice.id)} disabled={!canOperateEvent}>Save</button>
                       <button type="button" className="secondary" onClick={cancelEditChoice}>Cancel</button>
                     </>
                   ) : (
                     <>
-                      <button type="button" onClick={() => startEditChoice(choice)}>Edit</button>
+                      <button type="button" onClick={() => startEditChoice(choice)} disabled={!canOperateEvent}>Edit</button>
                       <button
                         type="button"
                         className="secondary"
                         onClick={() => toggleChoiceWithdraw(choice)}
+                        disabled={!canOperateEvent}
                       >
                         {choice.is_withdrawn ? 'Restore' : 'Withdraw'}
                       </button>
@@ -770,6 +855,7 @@ export function AdminBallotPage() {
                   type="number"
                   min={0}
                   value={manualCounts[choice.id] ?? '0'}
+                  disabled={!canOperateEvent}
                   onChange={(e) =>
                     setManualCounts((prev) => ({
                       ...prev,
@@ -785,9 +871,10 @@ export function AdminBallotPage() {
                 value={manualNotes}
                 onChange={(e) => setManualNotes(e.target.value)}
                 placeholder="Example: Internet outage during vote #3. Manual count by tellers."
+                disabled={!canOperateEvent}
               />
             </label>
-            <button type="submit" disabled={ballot.status !== 'MANUAL_FALLBACK'}>
+            <button type="submit" disabled={ballot.status !== 'MANUAL_FALLBACK' || !canOperateEvent}>
               Record Manual Totals and Close Round
             </button>
           </form>
@@ -836,7 +923,7 @@ export function AdminBallotPage() {
         </button>
         <div className="accordion-content">
           <p className="error">Delete this ballot and all of its votes.</p>
-          <button className="secondary" onClick={deleteBallot}>Delete ballot</button>
+          <button className="secondary" onClick={deleteBallot} disabled={!isPaidActive}>Delete ballot</button>
         </div>
       </section>
     </main>

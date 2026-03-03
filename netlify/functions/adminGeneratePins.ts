@@ -1,4 +1,5 @@
 import type { Handler } from '@netlify/functions'
+import { getEntitlementFromAuthHeader } from './_entitlement'
 import { supabaseAdmin } from './_supabase'
 
 type Body = {
@@ -12,22 +13,13 @@ function generate4DigitPin() {
     .padStart(4, '0')
 }
 
-async function validateAdmin(authHeader: string | undefined) {
-  const token = authHeader?.replace('Bearer ', '').trim()
-  if (!token) return null
-
-  const { data, error } = await supabaseAdmin.auth.getUser(token)
-  if (error || !data.user) return null
-  return data.user
-}
-
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
   }
 
-  const user = await validateAdmin(event.headers.authorization)
-  if (!user) {
+  const entitlement = await getEntitlementFromAuthHeader(event.headers.authorization)
+  if (!entitlement) {
     return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) }
   }
 
@@ -41,7 +33,7 @@ export const handler: Handler = async (event) => {
 
   const { data: eventRow, error: eventError } = await supabaseAdmin
     .from('events')
-    .select('id,org_id,created_by')
+    .select('id,org_id')
     .eq('id', eventId)
     .single()
 
@@ -49,23 +41,14 @@ export const handler: Handler = async (event) => {
     return { statusCode: 403, body: JSON.stringify({ error: 'Event not found or forbidden' }) }
   }
 
-  let canManage = false
-  if (eventRow.org_id) {
-    const { data: membership } = await supabaseAdmin
-      .from('org_members')
-      .select('role')
-      .eq('org_id', eventRow.org_id)
-      .eq('user_id', user.id)
-      .in('role', ['OWNER', 'ADMIN'])
-      .maybeSingle()
-
-    canManage = !!membership
-  } else {
-    // Backward compatibility for pre-org events.
-    canManage = eventRow.created_by === user.id
-  }
-
-  if (!canManage) {
+  const operate = await entitlement.canOperateEvent(eventId)
+  if (!operate.allowed) {
+    console.warn('adminGeneratePins denied', {
+      userId: entitlement.userId,
+      orgId: entitlement.orgId,
+      eventId,
+      reason: operate.reason
+    })
     return { statusCode: 403, body: JSON.stringify({ error: 'Event not found or forbidden' }) }
   }
 

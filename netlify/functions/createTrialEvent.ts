@@ -1,16 +1,9 @@
 import type { Handler } from '@netlify/functions'
+import { getEntitlementFromAuthHeader } from './_entitlement'
 import { supabaseAdmin } from './_supabase'
 
 function randomSuffix(length = 6) {
   return Math.random().toString(36).slice(2, 2 + length)
-}
-
-async function validateAdmin(authHeader: string | undefined) {
-  const token = authHeader?.replace('Bearer ', '').trim()
-  if (!token) return null
-  const { data, error } = await supabaseAdmin.auth.getUser(token)
-  if (error || !data.user) return null
-  return data.user
 }
 
 async function getExistingTrialBallotSlug(eventId: string) {
@@ -30,25 +23,12 @@ export const handler: Handler = async (event) => {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
   }
 
-  const user = await validateAdmin(event.headers.authorization)
-  if (!user) {
+  const entitlement = await getEntitlementFromAuthHeader(event.headers.authorization)
+  if (!entitlement) {
     return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) }
   }
 
-  const { data: membership, error: memberError } = await supabaseAdmin
-    .from('org_members')
-    .select('org_id,role')
-    .eq('user_id', user.id)
-    .in('role', ['OWNER', 'ADMIN'])
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle()
-
-  if (memberError || !membership?.org_id) {
-    return { statusCode: 403, body: JSON.stringify({ error: memberError?.message ?? 'No organization access found' }) }
-  }
-
-  const orgId = membership.org_id
+  const orgId = entitlement.orgId
   const { data: org, error: orgError } = await supabaseAdmin
     .from('organizations')
     .select('id,trial_event_id')
@@ -68,12 +48,21 @@ export const handler: Handler = async (event) => {
     }
   }
 
+  if (!entitlement.canCreateEvents) {
+    console.warn('createTrialEvent denied', {
+      userId: entitlement.userId,
+      orgId: entitlement.orgId,
+      reason: entitlement.reason
+    })
+    return { statusCode: 403, body: JSON.stringify({ error: 'Subscription inactive. Trial event cannot be created.' }) }
+  }
+
   const today = new Date().toISOString().slice(0, 10)
   const { data: createdEvent, error: eventInsertError } = await supabaseAdmin
     .from('events')
     .insert({
       org_id: orgId,
-      created_by: user.id,
+      created_by: entitlement.userId,
       name: 'Free Trial Event',
       date: today,
       location: 'Trial',
@@ -149,4 +138,3 @@ export const handler: Handler = async (event) => {
     body: JSON.stringify({ eventId: createdEvent.id, slug: starterSlug })
   }
 }
-
