@@ -6,6 +6,9 @@ import { AdminEventPage } from './pages/AdminEventPage'
 import { AdminBallotPage } from './pages/AdminBallotPage'
 import { VotePage } from './pages/VotePage'
 import { DisplayPage } from './pages/DisplayPage'
+import { DemoLandingPage } from './demo/DemoLandingPage'
+import { DemoVotePage } from './demo/DemoVotePage'
+import { DemoDisplayPage } from './demo/DemoDisplayPage'
 
 export function App() {
   return (
@@ -17,6 +20,9 @@ export function App() {
       <Route path="/admin/ballots/:id" element={<AdminBallotPage />} />
       <Route path="/vote/:slug" element={<VotePage />} />
       <Route path="/display/:slug" element={<DisplayPage />} />
+      <Route path="/demo" element={<DemoLandingPage />} />
+      <Route path="/demo/vote" element={<DemoVotePage />} />
+      <Route path="/demo/display" element={<DemoDisplayPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

@@ -758,6 +758,30 @@ td {
   word-break: break-all;
 }
 
+.demo-banner {
+  width: min(1100px, 100%);
+  margin: 0 auto 0.8rem auto;
+  background: #fff1cc;
+  border: 1px solid #f0c36d;
+  border-radius: 10px;
+  padding: 0.65rem 0.8rem;
+  color: #6b4a03;
+  font-weight: 700;
+}
+
+.demo-banner-links {
+  margin-top: 0.4rem;
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  font-weight: 600;
+}
+
+.demo-banner-links a {
+  color: #8a4b00;
+  text-decoration: underline;
+}
+
 @media (max-width: 640px) {
   .vote-card {
     width: min(94vw, 420px);
@@ -788,5 +812,9 @@ td {
   .ballot-admin-qr-actions {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .demo-banner {
+    font-size: 0.92rem;
   }
 }
