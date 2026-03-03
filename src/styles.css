@@ -462,6 +462,42 @@ button:disabled {
   padding: 0.75rem;
 }
 
+.choice-item {
+  align-items: center;
+}
+
+.choice-item-withdrawn {
+  background: #f1f4f8;
+  border-color: #c4cedd;
+}
+
+.choice-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.choice-order {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.choice-label {
+  font-weight: 600;
+}
+
+.choice-label-withdrawn {
+  color: #6b7280;
+  text-decoration: line-through;
+}
+
+.choice-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
 .radio-row {
   display: flex;
   gap: 0.5rem;

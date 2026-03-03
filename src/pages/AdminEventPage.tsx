@@ -21,26 +21,25 @@ type PinRow = {
   created_at: string
 }
 
-type ExportVoteRow = {
+type ExportSummaryRow = {
   ballot_id: string
-  choice_id: string
-  vote_round: number
-  created_at: string
-}
-
-type ExportBallotRow = {
-  id: string
-  title: string
+  ballot_title: string
   incumbent_name: string | null
-  slug: string
+  ballot_slug: string
+  vote_round: number
   majority_rule: 'SIMPLE' | 'TWO_THIRDS'
+  total_votes: number
+  election_reached_at: string | null
+  winner_choice_id: string | null
+  winner_label: string | null
   status: 'DRAFT' | 'OPEN' | 'CLOSED'
-}
-
-type ExportChoiceRow = {
-  id: string
-  ballot_id: string
-  label: string
+  counts: Array<{
+    choice_id: string
+    label: string
+    votes: number
+    pct: number
+    is_withdrawn: boolean
+  }>
 }
 
 function slugify(input: string) {
@@ -229,117 +228,25 @@ export function AdminEventPage() {
     await load()
   }
 
-  function determineWinnerChoiceId(counts: Map<string, number>, total: number, rule: 'SIMPLE' | 'TWO_THIRDS') {
-    if (total <= 0 || counts.size === 0) return null
-    const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1])
-    const topVotes = sorted[0][1]
-    const topChoices = sorted.filter(([, v]) => v === topVotes)
-    if (topChoices.length > 1) return null
-
-    const pct = topVotes / total
-    const passes = rule === 'SIMPLE' ? pct > 0.5 : pct >= 2 / 3
-    return passes ? sorted[0][0] : null
-  }
-
   async function onExportResults() {
     setError(null)
     setExporting(true)
     try {
-      const { data: ballotsData, error: ballotsError } = await supabase
-        .from('ballots')
-        .select('id,title,incumbent_name,slug,majority_rule,status')
-        .eq('event_id', eventId)
+      const { data, error: exportError } = await supabase.rpc('export_event_results_admin', {
+        p_event_id: eventId
+      })
+      if (exportError || !data) throw exportError ?? new Error('Export failed')
 
-      if (ballotsError) throw ballotsError
-      const ballots = (ballotsData ?? []) as ExportBallotRow[]
-      const ballotIds = ballots.map((b) => b.id)
-
-      const { data: choicesData, error: choicesError } = await supabase
-        .from('choices')
-        .select('id,ballot_id,label')
-        .in('ballot_id', ballotIds.length > 0 ? ballotIds : ['00000000-0000-0000-0000-000000000000'])
-
-      if (choicesError) throw choicesError
-      const choices = (choicesData ?? []) as ExportChoiceRow[]
-
-      const { data: votesData, error: votesError } = await supabase
-        .from('votes')
-        .select('ballot_id,choice_id,vote_round,created_at')
-        .in('ballot_id', ballotIds.length > 0 ? ballotIds : ['00000000-0000-0000-0000-000000000000'])
-        .order('created_at', { ascending: true })
-
-      if (votesError) throw votesError
-      const votes = (votesData ?? []) as ExportVoteRow[]
-
-      const choiceLabel = new Map(choices.map((c) => [c.id, c.label]))
-      const votesByBallotRound = new Map<string, ExportVoteRow[]>()
-      for (const vote of votes) {
-        const key = `${vote.ballot_id}:${vote.vote_round}`
-        const arr = votesByBallotRound.get(key) ?? []
-        arr.push(vote)
-        votesByBallotRound.set(key, arr)
-      }
-
-      const roundSummaries: Array<Record<string, unknown>> = []
-      for (const ballot of ballots) {
-        const rounds = Array.from(votesByBallotRound.keys())
-          .filter((k) => k.startsWith(`${ballot.id}:`))
-          .map((k) => Number(k.split(':')[1]))
-          .sort((a, b) => a - b)
-
-        for (const round of rounds) {
-          const key = `${ballot.id}:${round}`
-          const roundVotes = votesByBallotRound.get(key) ?? []
-          const counts = new Map<string, number>()
-          let winnerReachedAt: string | null = null
-          let runningTotal = 0
-
-          for (const vote of roundVotes) {
-            runningTotal += 1
-            counts.set(vote.choice_id, (counts.get(vote.choice_id) ?? 0) + 1)
-            const winnerAtThisVote = determineWinnerChoiceId(counts, runningTotal, ballot.majority_rule)
-            if (!winnerReachedAt && winnerAtThisVote) {
-              winnerReachedAt = vote.created_at
-            }
-          }
-
-          const totalVotes = roundVotes.length
-          const finalWinnerChoiceId = determineWinnerChoiceId(counts, totalVotes, ballot.majority_rule)
-          roundSummaries.push({
-            ballot_id: ballot.id,
-            ballot_title: ballot.title,
-            incumbent_name: ballot.incumbent_name,
-            ballot_slug: ballot.slug,
-            vote_round: round,
-            majority_rule: ballot.majority_rule,
-            total_votes: totalVotes,
-            election_reached_at: winnerReachedAt,
-            winner_choice_id: finalWinnerChoiceId,
-            winner_label: finalWinnerChoiceId ? (choiceLabel.get(finalWinnerChoiceId) ?? null) : null,
-            status: ballot.status
-          })
-        }
-      }
-
-      const voteLog = votes.map((vote) => ({
-        ballot_id: vote.ballot_id,
-        vote_round: vote.vote_round,
-        choice_id: vote.choice_id,
-        choice_label: choiceLabel.get(vote.choice_id) ?? null,
-        created_at: vote.created_at
-      }))
-
-      const payload = {
-        exported_at: new Date().toISOString(),
+      const payload = data as {
+        exported_at: string
         event: {
-          id: eventId,
-          name: eventName,
-          date: eventDate || null,
-          location: eventLocation || null,
-          voting_staff_names: votingStaffNames || null
-        },
-        summaries: roundSummaries,
-        votes: voteLog
+          id: string
+          name: string
+          date: string | null
+          location: string | null
+          voting_staff_names: string | null
+        }
+        summaries: ExportSummaryRow[]
       }
 
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
@@ -436,7 +343,7 @@ export function AdminEventPage() {
         </div>
 
         <h2>Ballots</h2>
-        <p className="subtitle">Includes every vote record and the timestamp each election threshold was first reached when exported.</p>
+        <p className="subtitle">Includes round summaries, counts per choice, and the timestamp each election threshold was first reached.</p>
 
         {ballots.map((ballot) => (
           <div className="ballot-item" key={ballot.id}>
@@ -502,7 +409,7 @@ export function AdminEventPage() {
             {exporting ? 'Exporting...' : 'Export All Voting Results'}
           </button>
           <p className="subtitle" style={{ marginTop: '10px' }}>
-            Download full vote records including timestamps for when each threshold was reached.
+            Download aggregated round results and threshold timestamps for record keeping.
           </p>
         </div>
       </section>

@@ -23,12 +23,18 @@ type BallotData = {
   results_visibility: 'LIVE' | 'CLOSED_ONLY' | null
 }
 
-type ChoiceRow = { id: string; label: string; sort_order: number }
+type ChoiceRow = {
+  id: string
+  label: string
+  sort_order: number
+  is_withdrawn: boolean
+  withdrawn_at: string | null
+}
 type RoundHistory = {
   round: number
   total_votes: number
   winner_label: string | null
-  rows: Array<{ choice_id: string; label: string; votes: number; pct: number }>
+  rows: Array<{ choice_id: string; label: string; votes: number; pct: number; is_withdrawn?: boolean }>
 }
 
 export function AdminBallotPage() {
@@ -41,6 +47,8 @@ export function AdminBallotPage() {
   const [results, setResults] = useState<BallotResults | null>(null)
   const [roundHistory, setRoundHistory] = useState<RoundHistory[]>([])
   const [newChoice, setNewChoice] = useState('')
+  const [editingChoiceId, setEditingChoiceId] = useState<string | null>(null)
+  const [editingChoiceLabel, setEditingChoiceLabel] = useState('')
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editIncumbentName, setEditIncumbentName] = useState('')
@@ -81,7 +89,7 @@ export function AdminBallotPage() {
 
     const { data: choiceData, error: choiceError } = await supabase
       .from('choices')
-      .select('id,label,sort_order')
+      .select('id,label,sort_order,is_withdrawn,withdrawn_at')
       .eq('ballot_id', ballotId)
       .order('sort_order', { ascending: true })
 
@@ -124,7 +132,7 @@ export function AdminBallotPage() {
     setEditIncumbentName(ballotData.incumbent_name ?? '')
     setChoices(choiceData ?? [])
     await loadResults(ballotData.slug)
-    await loadRoundHistory(ballotData.id, choiceData ?? [], ballotData.majority_rule, ballotData.vote_round ?? 1)
+    await loadRoundHistory(ballotData.id, ballotData.majority_rule, ballotData.vote_round ?? 1)
     setLoading(false)
   }
 
@@ -139,60 +147,58 @@ export function AdminBallotPage() {
 
   async function loadRoundHistory(
     currentBallotId: string,
-    currentChoices: ChoiceRow[],
     majorityRule: 'SIMPLE' | 'TWO_THIRDS',
     currentRound: number
   ) {
-    const { data, error: votesError } = await supabase
-      .from('votes')
-      .select('vote_round,choice_id')
-      .eq('ballot_id', currentBallotId)
+    const { data, error: historyError } = await supabase.rpc('get_ballot_round_history_admin', {
+      p_ballot_id: currentBallotId
+    })
 
-    if (votesError) {
-      setError(votesError.message)
+    if (historyError || !data) {
+      setError(historyError?.message ?? 'Unable to load round history')
       return
     }
 
-    const rows = data ?? []
-    const choiceLabel = new Map(currentChoices.map((c) => [c.id, c.label]))
-    const grouped = new Map<number, Map<string, number>>()
-
-    for (const vote of rows) {
-      const round = Math.max(1, Number(vote.vote_round ?? 1))
-      const byChoice = grouped.get(round) ?? new Map<string, number>()
-      byChoice.set(vote.choice_id, (byChoice.get(vote.choice_id) ?? 0) + 1)
-      grouped.set(round, byChoice)
-    }
+    const rounds = Array.isArray((data as { rounds?: unknown[] }).rounds)
+      ? ((data as { rounds: Array<{ vote_round: number; total_votes: number; rows: Array<{ choice_id: string; label: string; votes: number; pct: number; is_withdrawn?: boolean }> }> }).rounds)
+      : []
 
     const history: RoundHistory[] = []
-    for (const [round, counts] of grouped.entries()) {
+    for (const roundData of rounds) {
+      const round = Math.max(1, Number(roundData.vote_round ?? 1))
       if (round === currentRound) continue
-      const total = Array.from(counts.values()).reduce((a, b) => a + b, 0)
+
       const resultLike: BallotResults = {
         ballot_id: currentBallotId,
         vote_round: round,
-        total_votes: total,
-        rows: currentChoices.map((c) => {
-          const votesForChoice = counts.get(c.id) ?? 0
-          return {
-            choice_id: c.id,
-            label: choiceLabel.get(c.id) ?? c.label,
-            votes: votesForChoice,
-            pct: total > 0 ? votesForChoice / total : 0
-          }
-        }),
+        total_votes: Number(roundData.total_votes ?? 0),
+        rows: roundData.rows.map((r) => ({
+          choice_id: r.choice_id,
+          label: r.label,
+          votes: Number(r.votes ?? 0),
+          pct: Number(r.pct ?? 0)
+        })),
         winner_choice_id: null,
         winner_label: null,
         top_pct: null,
         has_tie: false,
         majority_rule: majorityRule
       }
+
       const computed = computeWinner(resultLike)
       history.push({
         round,
         total_votes: computed.total_votes,
         winner_label: computed.winner_label,
-        rows: [...computed.rows].sort((a, b) => b.votes - a.votes)
+        rows: roundData.rows
+          .map((r) => ({
+            choice_id: r.choice_id,
+            label: r.label,
+            votes: Number(r.votes ?? 0),
+            pct: Number(r.pct ?? 0),
+            is_withdrawn: !!r.is_withdrawn
+          }))
+          .sort((a, b) => b.votes - a.votes)
       })
     }
 
@@ -213,7 +219,7 @@ export function AdminBallotPage() {
         { event: 'INSERT', schema: 'public', table: 'votes', filter: `ballot_id=eq.${ballot.id}` },
         async () => {
           await loadResults(ballot.slug)
-          await loadRoundHistory(ballot.id, choices, ballot.majority_rule, ballot.vote_round)
+          await loadRoundHistory(ballot.id, ballot.majority_rule, ballot.vote_round)
         }
       )
       .subscribe()
@@ -221,7 +227,7 @@ export function AdminBallotPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [ballot?.id, choices, ballot?.majority_rule, ballot?.vote_round])
+  }, [ballot?.id, ballot?.majority_rule, ballot?.vote_round])
 
   useEffect(() => {
     if (!ballot) return
@@ -371,7 +377,7 @@ export function AdminBallotPage() {
     const nextOrder = choices.length + 1
     const { error: insertError } = await supabase
       .from('choices')
-      .insert({ ballot_id: ballot.id, label: newChoice.trim(), sort_order: nextOrder })
+      .insert({ ballot_id: ballot.id, label: newChoice.trim(), sort_order: nextOrder, is_withdrawn: false })
 
     if (insertError) {
       setError(insertError.message)
@@ -379,6 +385,52 @@ export function AdminBallotPage() {
     }
 
     setNewChoice('')
+    await load()
+  }
+
+  function startEditChoice(choice: ChoiceRow) {
+    setEditingChoiceId(choice.id)
+    setEditingChoiceLabel(choice.label)
+  }
+
+  function cancelEditChoice() {
+    setEditingChoiceId(null)
+    setEditingChoiceLabel('')
+  }
+
+  async function saveChoiceLabel(choiceId: string) {
+    const nextLabel = editingChoiceLabel.trim()
+    if (!nextLabel) {
+      setError('Choice label cannot be empty')
+      return
+    }
+    const { error: updateError } = await supabase.from('choices').update({ label: nextLabel }).eq('id', choiceId)
+    if (updateError) {
+      setError(updateError.message)
+      return
+    }
+    cancelEditChoice()
+    await load()
+  }
+
+  async function toggleChoiceWithdraw(choice: ChoiceRow) {
+    const nextWithdrawn = !choice.is_withdrawn
+    const message = nextWithdrawn
+      ? `Mark "${choice.label}" as withdrawn? It will be hidden from voter and public results pages.`
+      : `Restore "${choice.label}" so it appears in voter and public results pages again?`
+
+    if (!window.confirm(message)) return
+
+    const payload = nextWithdrawn
+      ? { is_withdrawn: true, withdrawn_at: new Date().toISOString() }
+      : { is_withdrawn: false, withdrawn_at: null as string | null }
+
+    const { error: updateError } = await supabase.from('choices').update(payload).eq('id', choice.id)
+    if (updateError) {
+      setError(updateError.message)
+      return
+    }
+
     await load()
   }
 
@@ -508,7 +560,42 @@ export function AdminBallotPage() {
           </form>
           <ul className="list">
             {choices.map((choice) => (
-              <li key={choice.id}>{choice.sort_order}. {choice.label}</li>
+              <li key={choice.id} className={`choice-item ${choice.is_withdrawn ? 'choice-item-withdrawn' : ''}`}>
+                <div className="choice-main">
+                  <span className="choice-order">{choice.sort_order}.</span>
+                  {editingChoiceId === choice.id ? (
+                    <input
+                      value={editingChoiceLabel}
+                      onChange={(e) => setEditingChoiceLabel(e.target.value)}
+                      aria-label={`Edit label for ${choice.label}`}
+                    />
+                  ) : (
+                    <span className={`choice-label ${choice.is_withdrawn ? 'choice-label-withdrawn' : ''}`}>
+                      {choice.label}
+                      {choice.is_withdrawn ? ' (withdrawn)' : ''}
+                    </span>
+                  )}
+                </div>
+                <div className="choice-actions">
+                  {editingChoiceId === choice.id ? (
+                    <>
+                      <button type="button" onClick={() => saveChoiceLabel(choice.id)}>Save</button>
+                      <button type="button" className="secondary" onClick={cancelEditChoice}>Cancel</button>
+                    </>
+                  ) : (
+                    <>
+                      <button type="button" onClick={() => startEditChoice(choice)}>Edit</button>
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => toggleChoiceWithdraw(choice)}
+                      >
+                        {choice.is_withdrawn ? 'Restore' : 'Withdraw'}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </li>
             ))}
           </ul>
         </div>
@@ -578,7 +665,7 @@ export function AdminBallotPage() {
                   </thead>
                   <tbody>
                     {round.rows.map((row) => (
-                      <tr key={`${round.round}-${row.choice_id}`}>
+                      <tr key={`${round.round}-${row.choice_id}`} className={row.is_withdrawn ? 'choice-item-withdrawn' : ''}>
                         <td>{row.label}</td>
                         <td>{row.votes}</td>
                         <td>{(row.pct * 100).toFixed(1)}%</td>
