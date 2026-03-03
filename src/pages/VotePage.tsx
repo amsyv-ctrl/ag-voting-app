@@ -76,6 +76,7 @@ export function VotePage() {
         <p className="vote-info">Current Vote: #{Math.max(1, ballot.vote_round || 1)}</p>
         <p className="vote-info">Event: {ballot.event_name}</p>
         <p className="vote-info">Ballot: {ballot.title}</p>
+        {ballot.incumbent_name && <p className="vote-info">Incumbent: {ballot.incumbent_name}</p>}
         <p className="vote-info">Round Label: {roundLabel(ballot.vote_round)} vote</p>
         <p className="vote-info">PIN Required: {ballot.requires_pin ? 'Yes' : 'No'}</p>
         {ballot.description && <p className="vote-description">{ballot.description}</p>}

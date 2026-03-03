@@ -86,33 +86,45 @@ export function DisplayPage() {
   if (!ballot || !results) return <main className="display-page"><p>Loading...</p></main>
 
   const rows = [...results.rows].sort((a, b) => b.votes - a.votes)
-  const showWinner = results.ballot_status === 'CLOSED' && !!results.winner_label
+  const isClosed = results.ballot_status === 'CLOSED'
+  const showWinner = isClosed && !!results.winner_label
+  const requiredVotes = results.total_votes === 0
+    ? 0
+    : results.majority_rule === 'SIMPLE'
+      ? Math.floor(results.total_votes / 2) + 1
+      : Math.ceil((results.total_votes * 2) / 3)
+  const requiredRuleLabel = results.majority_rule === 'SIMPLE' ? 'Simple majority' : 'Two-thirds majority'
 
   return (
     <main className="display-page">
       <section className="display-main">
         <h1 className="display-event">{ballot.event_name}</h1>
         <p className="display-ballot-title">{ballot.title}</p>
+        {ballot.incumbent_name && <p className="display-status">Incumbent: {ballot.incumbent_name}</p>}
         <p className="display-status">Current Vote: #{results.vote_round} ({roundLabel(results.vote_round)} vote)</p>
         <p className="display-status">Total Votes: {results.total_votes}</p>
         {secondsToClose !== null && <p className="display-status display-close">Closing in: {secondsToClose}s</p>}
 
-        {results.hidden_until_closed ? (
-          <p className="display-no-winner">Results hidden until ballot is closed.</p>
-        ) : showWinner ? (
+        {!isClosed ? (
+          <p className="display-hidden-note">Voting in progress. Results will display when this vote is closed.</p>
+        ) : (
+          <p className="display-threshold">
+            Votes cast: <strong>{results.total_votes}</strong> | Needed for election:{' '}
+            <strong>{requiredVotes}</strong> ({requiredRuleLabel})
+          </p>
+        )}
+        {showWinner && (
           <div className="display-winner-wrap">
             <p className="display-winner-kicker">Election Reached</p>
             <p className="display-winner-name">{results.winner_label}</p>
           </div>
-        ) : (
-          <p className="display-no-winner">No winner yet{results.has_tie ? ' (tie)' : ''}</p>
         )}
 
         <section className="display-results">
-          {results.hidden_until_closed ? (
+          {!isClosed ? (
             <article className="display-hidden-state">
               <p>Voting in progress</p>
-              <p>Live results hidden</p>
+              <p>Results are hidden until this vote is closed.</p>
             </article>
           ) : (
             rows.map((row) => {
