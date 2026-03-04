@@ -4,7 +4,7 @@ import { ApiError, fetchBallotPublic, submitVote } from '../lib/api'
 import { roundLabel } from '../lib/roundLabel'
 import type { PublicBallot } from '../types'
 
-const RESET_MS = 1500
+const SUCCESS_RESET_SECONDS = 10
 
 export function VotePage() {
   const { slug } = useParams()
@@ -17,6 +17,18 @@ export function VotePage() {
   const [submitting, setSubmitting] = useState(false)
   const [confirmation, setConfirmation] = useState<{ message: string; submittedAt: string; receipt: string } | null>(null)
   const [trialLimitReached, setTrialLimitReached] = useState(false)
+  const [secondsRemaining, setSecondsRemaining] = useState(SUCCESS_RESET_SECONDS)
+  const [copied, setCopied] = useState(false)
+  const canUseClipboard = typeof navigator !== 'undefined' && !!navigator.clipboard?.writeText
+
+  function resetForNextVoter() {
+    setPin('')
+    setChoiceId(ballot?.choices?.[0]?.id ?? '')
+    setConfirmation(null)
+    setError(null)
+    setSecondsRemaining(SUCCESS_RESET_SECONDS)
+    setCopied(false)
+  }
 
   useEffect(() => {
     fetchBallotPublic(ballotSlug)
@@ -31,15 +43,26 @@ export function VotePage() {
 
   useEffect(() => {
     if (!confirmation) return
-    const timer = window.setTimeout(() => {
-      setPin('')
-      setChoiceId(ballot?.choices?.[0]?.id ?? '')
-      setConfirmation(null)
-      setError(null)
-    }, RESET_MS)
+    setSecondsRemaining(SUCCESS_RESET_SECONDS)
+    const timer = window.setInterval(() => {
+      setSecondsRemaining((prev) => {
+        if (prev <= 1) {
+          window.clearInterval(timer)
+          resetForNextVoter()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
 
-    return () => window.clearTimeout(timer)
+    return () => window.clearInterval(timer)
   }, [confirmation, ballot?.choices])
+
+  useEffect(() => {
+    if (!copied) return
+    const timer = window.setTimeout(() => setCopied(false), 1200)
+    return () => window.clearTimeout(timer)
+  }, [copied])
 
   const isClosed = useMemo(() => {
     if (!ballot) return false
@@ -70,6 +93,16 @@ export function VotePage() {
     }
   }
 
+  async function onCopyReceipt() {
+    if (!confirmation || !canUseClipboard) return
+    try {
+      await navigator.clipboard.writeText(confirmation.receipt)
+      setCopied(true)
+    } catch {
+      setCopied(false)
+    }
+  }
+
   if (!ballot) {
     return <main className="vote-page"><div className="vote-card">Loading ballot...</div></main>
   }
@@ -89,9 +122,21 @@ export function VotePage() {
         {confirmation ? (
           <div className="success-box">
             <h2>Vote received</h2>
-            <p><strong>Receipt:</strong> {confirmation.receipt}</p>
-            <p className="muted">This receipt confirms your vote was recorded.</p>
-            <p>Resetting for the next voter...</p>
+            <p className="vote-receipt-line">
+              <strong>Receipt:</strong>{' '}
+              <span className="vote-receipt-code">{confirmation.receipt}</span>
+            </p>
+            <p className="muted">Please note your receipt before continuing.</p>
+            <div className="inline">
+              {canUseClipboard && (
+                <button type="button" className="secondary" onClick={onCopyReceipt}>
+                  Copy
+                </button>
+              )}
+              {copied && <span className="muted">Copied!</span>}
+              <button type="button" onClick={resetForNextVoter}>Done / Next voter</button>
+            </div>
+            <p className="muted">Auto-resetting in {secondsRemaining}s...</p>
           </div>
         ) : (
           <form onSubmit={onSubmit} className="stack">

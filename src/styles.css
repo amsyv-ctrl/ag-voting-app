@@ -499,6 +499,18 @@ button:disabled {
   padding: 0.75rem;
 }
 
+.vote-receipt-line {
+  margin: 0.35rem 0 0.45rem;
+}
+
+.vote-receipt-code {
+  display: inline-block;
+  font-family: Orbitron, Inter, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.08em;
+  color: #0f3f7a;
+}
+
 .winner {
   font-weight: 700;
   color: #0d5f2b;
