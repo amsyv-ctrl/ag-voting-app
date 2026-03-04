@@ -54,8 +54,11 @@ export function AdminLoginPage() {
   const [menuEventId, setMenuEventId] = useState<string | null>(null)
   const [archiveTarget, setArchiveTarget] = useState<EventRow | null>(null)
   const [isArchiving, setIsArchiving] = useState(false)
+  const [hasAnyBallot, setHasAnyBallot] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
   const menuFirstItemRef = useRef<HTMLButtonElement | null>(null)
+  const createEventFormRef = useRef<HTMLFormElement | null>(null)
+  const createEventNameRef = useRef<HTMLInputElement | null>(null)
 
   const [newName, setNewName] = useState('')
   const [newDate, setNewDate] = useState('')
@@ -110,6 +113,24 @@ export function AdminLoginPage() {
     }
 
     setArchivedEvents(archivedData ?? [])
+
+    if ((data ?? []).length === 0) {
+      setHasAnyBallot(false)
+      return
+    }
+
+    const eventIds = (data ?? []).map((event) => event.id)
+    const { count, error: ballotCountError } = await supabase
+      .from('ballots')
+      .select('id', { count: 'exact', head: true })
+      .in('event_id', eventIds)
+      .is('deleted_at', null)
+
+    if (ballotCountError) {
+      setError(ballotCountError.message)
+      return
+    }
+    setHasAnyBallot((count ?? 0) > 0)
   }
 
   useEffect(() => {
@@ -276,6 +297,7 @@ export function AdminLoginPage() {
     setHasSession(false)
     setEvents([])
     setArchivedEvents([])
+    setHasAnyBallot(false)
     setProfile(null)
   }
 
@@ -298,6 +320,11 @@ export function AdminLoginPage() {
     } finally {
       setIsArchiving(false)
     }
+  }
+
+  function jumpToCreateEvent() {
+    createEventFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    window.setTimeout(() => createEventNameRef.current?.focus(), 200)
   }
 
   if (!ready) return <main className="auth-page"><div className="auth-container"><p>Loading...</p></div></main>
@@ -412,15 +439,43 @@ export function AdminLoginPage() {
               </div>
             )}
 
-            <form onSubmit={onCreateEvent} className="stack">
-              <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Event name" required />
+            {error && <p className="error">{error}</p>}
+            {notice && <p className="winner">{notice}</p>}
+
+            <form ref={createEventFormRef} onSubmit={onCreateEvent} className="stack">
+              <input ref={createEventNameRef} value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Event name" required />
               <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} required />
               <input value={newLocation} onChange={(e) => setNewLocation(e.target.value)} placeholder="Location" required />
               <button type="submit">Create Event</button>
             </form>
 
-            {error && <p className="error">{error}</p>}
-            {notice && <p className="winner">{notice}</p>}
+            {!hasAnyBallot ? (
+              <div className="card" style={{ marginTop: '1rem' }}>
+                <h3>Welcome — let’s run your first vote</h3>
+                <p className="muted">Create an event, add your first ballot, and you’ll be ready to vote in minutes.</p>
+                <div style={{ marginTop: '1rem', display: 'grid', gap: '1rem' }}>
+                  <div>
+                    <p><strong>1. Create your first event</strong></p>
+                    <p className="muted">An event is a meeting or session (board meeting, business meeting, conference).</p>
+                    <button type="button" onClick={jumpToCreateEvent}>Create Event</button>
+                  </div>
+                  <div>
+                    <p><strong>2. Add your first ballot</strong></p>
+                    <p className="muted">A ballot is a single decision or election. Add candidates/choices and open voting when ready.</p>
+                    {events.length === 0 ? (
+                      <>
+                        <button type="button" className="secondary" disabled>Create Ballot</button>
+                        <p className="muted" style={{ marginTop: '0.5rem' }}>Create an event first</p>
+                      </>
+                    ) : (
+                      <Link to={`/admin/events/${events[0].id}#create-ballot`}>
+                        <button type="button" className="secondary">Create Ballot</button>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             <div className="event-list">
               {events.map((event) => (

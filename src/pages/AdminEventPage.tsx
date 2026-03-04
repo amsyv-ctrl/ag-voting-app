@@ -816,7 +816,7 @@ export function AdminEventPage() {
           )
         )}
 
-        <div className="ballot-item ballot-create-card">
+        <div id="create-ballot" className="ballot-item ballot-create-card">
           <div className="ballot-header">Create New Ballot</div>
           <form onSubmit={onCreateBallot} className="stack" style={{ marginTop: '15px' }}>
             <label>
