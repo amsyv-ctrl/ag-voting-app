@@ -109,3 +109,19 @@ export async function createTrialEvent(accessToken: string): Promise<{ eventId: 
 
   return handleJson<{ eventId: string; slug: string | null }>(res)
 }
+
+export async function createCheckoutSession(
+  accessToken: string,
+  plan: 'STARTER' | 'GROWTH' | 'NETWORK'
+): Promise<{ url: string }> {
+  const res = await fetch(`${API_BASE}/createCheckoutSession`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ plan })
+  })
+
+  return handleJson<{ url: string }>(res)
+}

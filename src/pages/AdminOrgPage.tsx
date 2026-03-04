@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { bootstrapOrg, createTrialEvent } from '../lib/api'
+import { bootstrapOrg, createCheckoutSession, createTrialEvent } from '../lib/api'
 import { getAccessToken, requireSession } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 
@@ -46,6 +46,7 @@ export function AdminOrgPage() {
   })
   const [savingProfile, setSavingProfile] = useState(false)
   const [creatingTrialEvent, setCreatingTrialEvent] = useState(false)
+  const [checkoutLoadingPlan, setCheckoutLoadingPlan] = useState<'STARTER' | 'GROWTH' | 'NETWORK' | null>(null)
 
   async function load() {
     setError(null)
@@ -147,6 +148,30 @@ export function AdminOrgPage() {
     setNotice('Profile updated.')
   }
 
+  async function onCheckout(plan: 'STARTER' | 'GROWTH' | 'NETWORK') {
+    setNotice(null)
+    setError(null)
+    setCheckoutLoadingPlan(plan)
+
+    const token = await getAccessToken()
+    if (!token) {
+      setError('No session token found.')
+      setCheckoutLoadingPlan(null)
+      return
+    }
+
+    try {
+      const data = await createCheckoutSession(token, plan)
+      if (!data.url) {
+        throw new Error('Checkout URL was not returned.')
+      }
+      window.location.href = data.url
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not start checkout')
+      setCheckoutLoadingPlan(null)
+    }
+  }
+
   if (loading) {
     return (
       <main className="page">
@@ -205,6 +230,22 @@ export function AdminOrgPage() {
             <p><strong>Active:</strong> {org.is_active ? 'Yes' : 'No'}</p>
           </>
         )}
+      </section>
+
+      <section className="card">
+        <h2>Subscription</h2>
+        <p className="muted">Choose a plan to activate full access and remove trial limits.</p>
+        <div className="inline">
+          <button type="button" onClick={() => onCheckout('STARTER')} disabled={checkoutLoadingPlan !== null}>
+            {checkoutLoadingPlan === 'STARTER' ? 'Redirecting...' : 'Starter'}
+          </button>
+          <button type="button" onClick={() => onCheckout('GROWTH')} disabled={checkoutLoadingPlan !== null}>
+            {checkoutLoadingPlan === 'GROWTH' ? 'Redirecting...' : 'Growth'}
+          </button>
+          <button type="button" onClick={() => onCheckout('NETWORK')} disabled={checkoutLoadingPlan !== null}>
+            {checkoutLoadingPlan === 'NETWORK' ? 'Redirecting...' : 'Network'}
+          </button>
+        </div>
       </section>
 
       <section className="card">
