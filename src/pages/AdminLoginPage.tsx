@@ -38,6 +38,7 @@ export function AdminLoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [events, setEvents] = useState<EventRow[]>([])
+  const [archivedEvents, setArchivedEvents] = useState<EventRow[]>([])
   const [profile, setProfile] = useState<AdminProfileRow | null>(null)
   const [hasSession, setHasSession] = useState(false)
   const [ready, setReady] = useState(false)
@@ -56,6 +57,7 @@ export function AdminLoginPage() {
     if (!sessionData.session) {
       setHasSession(false)
       setEvents([])
+      setArchivedEvents([])
       setProfile(null)
       return
     }
@@ -86,6 +88,19 @@ export function AdminLoginPage() {
     }
 
     setEvents(data ?? [])
+
+    const { data: archivedData, error: archivedEventsError } = await supabase
+      .from('events')
+      .select('id,org_id,name,date,location,is_trial_event,archived_at,archived_by')
+      .not('archived_at', 'is', null)
+      .order('archived_at', { ascending: false })
+
+    if (archivedEventsError) {
+      setError(archivedEventsError.message)
+      return
+    }
+
+    setArchivedEvents(archivedData ?? [])
   }
 
   useEffect(() => {
@@ -233,6 +248,7 @@ export function AdminLoginPage() {
     await supabase.auth.signOut()
     setHasSession(false)
     setEvents([])
+    setArchivedEvents([])
     setProfile(null)
   }
 
@@ -384,6 +400,31 @@ export function AdminLoginPage() {
                 </div>
               ))}
             </div>
+            <details className="event-archive-section">
+              <summary>Archived events ({archivedEvents.length})</summary>
+              {archivedEvents.length === 0 ? (
+                <p className="muted" style={{ marginTop: '0.6rem' }}>No archived events.</p>
+              ) : (
+                <div className="event-list" style={{ marginTop: '0.6rem' }}>
+                  {archivedEvents.map((event) => (
+                    <div className="event-item" key={event.id}>
+                      <div className="event-item-main">
+                        <strong>{event.name}</strong>
+                        <div>{event.location || 'No location'} - {event.date || 'No date'}</div>
+                        <div className="muted">
+                          Archived: {event.archived_at ? new Date(event.archived_at).toLocaleString() : 'N/A'}
+                        </div>
+                      </div>
+                      <div className="event-row-actions">
+                        <Link to={`/admin/events/${event.id}`}>
+                          <button className="secondary">Open</button>
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </details>
           </div>
         )}
       </section>
