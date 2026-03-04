@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { adminGeneratePins } from '../lib/api'
 import { getAccessToken, requireSession } from '../lib/auth'
+import { OperatorRunbook } from '../components/OperatorRunbook'
 
 type BallotRow = {
   id: string
@@ -513,6 +514,8 @@ export function AdminEventPage() {
             </details>
           </div>
         </div>
+
+        <OperatorRunbook context="event" eventId={eventId} />
 
         <h2>Ballots</h2>
         <p className="subtitle">Includes round summaries, counts per choice, and the timestamp each election threshold was first reached.</p>

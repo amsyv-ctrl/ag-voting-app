@@ -5,6 +5,7 @@ import { roundLabel } from '../lib/roundLabel'
 import { supabase } from '../lib/supabase'
 import { computeWinner } from '../lib/winner'
 import type { BallotResults } from '../types'
+import { OperatorRunbook } from '../components/OperatorRunbook'
 
 type BallotData = {
   id: string
@@ -693,6 +694,7 @@ export function AdminBallotPage() {
             )}
           </div>
         </div>
+        <OperatorRunbook context="ballot" ballotId={ballot.id} round={ballot.vote_round} />
         <Link to={`/admin/events/${ballot.event_id}`}>Back to event</Link>
         {error && <p className="error">{error}</p>}
       </section>
