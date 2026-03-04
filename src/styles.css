@@ -249,6 +249,104 @@ a {
   background: #f1f3f5;
 }
 
+.event-item-main {
+  min-width: 0;
+}
+
+.event-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.event-actions-menu-wrap {
+  position: relative;
+}
+
+.icon-kebab-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  background: #fff;
+  color: #4b5563;
+  font-size: 24px;
+  line-height: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.icon-kebab-btn:hover {
+  background: #f4f6f8;
+}
+
+.event-actions-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 170px;
+  border: 1px solid #d0deef;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(16, 33, 59, 0.15);
+  padding: 0.35rem;
+  z-index: 20;
+}
+
+.event-actions-menu-item {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: #1f2937;
+  padding: 0.55rem 0.6rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.event-actions-menu-item:hover {
+  background: #f4f6f8;
+}
+
+.event-actions-menu-item-danger {
+  color: #b02a37;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  z-index: 40;
+}
+
+.modal-card {
+  width: min(460px, 100%);
+  background: #fff;
+  border: 1px solid #d0deef;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.2);
+}
+
+.modal-card h3 {
+  margin: 0 0 0.4rem 0;
+}
+
+.modal-card p {
+  margin: 0;
+  color: #5f6772;
+}
+
+.modal-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;

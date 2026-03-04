@@ -150,6 +150,22 @@ export async function createPortalSession(accessToken: string): Promise<{ url: s
   return handleJson<{ url: string }>(res)
 }
 
+export async function archiveEvent(
+  accessToken: string,
+  eventId: string
+): Promise<{ ok: boolean; eventId: string; closedOpenBallots: number }> {
+  const res = await fetch(`${API_BASE}/archiveEvent`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ eventId })
+  })
+
+  return handleJson<{ ok: boolean; eventId: string; closedOpenBallots: number }>(res)
+}
+
 export async function verifyReceipt(
   accessToken: string,
   receiptCode: string

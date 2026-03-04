@@ -127,6 +127,7 @@ export function AdminEventPage() {
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [orgAccess, setOrgAccess] = useState<OrgAccessRow | null>(null)
+  const [eventArchivedAt, setEventArchivedAt] = useState<string | null>(null)
 
   const [editOpen, setEditOpen] = useState(false)
   const [pinsOpen, setPinsOpen] = useState(false)
@@ -143,7 +144,7 @@ export function AdminEventPage() {
 
     const { data: eventData, error: eventError } = await supabase
       .from('events')
-      .select('name,date,location,voting_staff_names,org_id,is_trial_event')
+      .select('name,date,location,voting_staff_names,org_id,is_trial_event,archived_at')
       .eq('id', eventId)
       .single()
 
@@ -155,6 +156,7 @@ export function AdminEventPage() {
     setEventDate(eventData.date ?? '')
     setEventLocation(eventData.location ?? '')
     setVotingStaffNames(eventData.voting_staff_names ?? '')
+    setEventArchivedAt(eventData.archived_at ?? null)
 
     const { data: orgData, error: orgError } = await supabase
       .from('organizations')
@@ -630,7 +632,8 @@ export function AdminEventPage() {
     orgAccess?.trial_event_id === eventId &&
     (orgAccess?.trial_votes_used ?? 0) < (orgAccess?.trial_votes_limit ?? 0)
   )
-  const canOperateEvent = isPaidActive || isTrialActiveForThisEvent
+  const hasEntitledEventAccess = isPaidActive || isTrialActiveForThisEvent
+  const canOperateEvent = hasEntitledEventAccess && !eventArchivedAt
   const isReadOnly = !canOperateEvent
 
   return (
@@ -645,7 +648,9 @@ export function AdminEventPage() {
         {orgAccess && (
           <p className={canOperateEvent ? 'muted' : 'error'}>
             {isReadOnly
-              ? 'Subscription inactive — this event is read-only. You can view/export, but cannot run new votes.'
+              ? eventArchivedAt
+                ? `This event is archived (${new Date(eventArchivedAt).toLocaleString()}) and is now read-only. You can still view/export results.`
+                : 'Subscription inactive — this event is read-only. You can view/export, but cannot run new votes.'
               : orgAccess.mode === 'TRIAL'
                 ? `Trial mode: ${orgAccess.trial_votes_used}/${orgAccess.trial_votes_limit} votes used on your trial event.`
                 : 'Paid active: full event controls enabled.'}

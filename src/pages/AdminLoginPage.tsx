@@ -1,6 +1,6 @@
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { bootstrapOrg } from '../lib/api'
+import { archiveEvent, bootstrapOrg } from '../lib/api'
 import { getAccessToken } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 
@@ -11,6 +11,8 @@ type EventRow = {
   date: string | null
   location: string | null
   is_trial_event: boolean
+  archived_at: string | null
+  archived_by: string | null
 }
 
 type AdminProfileRow = {
@@ -39,6 +41,11 @@ export function AdminLoginPage() {
   const [profile, setProfile] = useState<AdminProfileRow | null>(null)
   const [hasSession, setHasSession] = useState(false)
   const [ready, setReady] = useState(false)
+  const [menuEventId, setMenuEventId] = useState<string | null>(null)
+  const [archiveTarget, setArchiveTarget] = useState<EventRow | null>(null)
+  const [isArchiving, setIsArchiving] = useState(false)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+  const menuFirstItemRef = useRef<HTMLButtonElement | null>(null)
 
   const [newName, setNewName] = useState('')
   const [newDate, setNewDate] = useState('')
@@ -69,7 +76,8 @@ export function AdminLoginPage() {
 
     const { data, error: eventsError } = await supabase
       .from('events')
-      .select('id,org_id,name,date,location,is_trial_event')
+      .select('id,org_id,name,date,location,is_trial_event,archived_at,archived_by')
+      .is('archived_at', null)
       .order('created_at', { ascending: false })
 
     if (eventsError) {
@@ -98,6 +106,29 @@ export function AdminLoginPage() {
       setSearchParams({})
     }
   }, [authMode, setSearchParams])
+
+  useEffect(() => {
+    if (!menuEventId) return
+    menuFirstItemRef.current?.focus()
+
+    function handleOutsideClick(ev: MouseEvent) {
+      if (!menuRef.current) return
+      if (!menuRef.current.contains(ev.target as Node)) {
+        setMenuEventId(null)
+      }
+    }
+
+    function handleEsc(ev: KeyboardEvent) {
+      if (ev.key === 'Escape') setMenuEventId(null)
+    }
+
+    window.addEventListener('mousedown', handleOutsideClick)
+    window.addEventListener('keydown', handleEsc)
+    return () => {
+      window.removeEventListener('mousedown', handleOutsideClick)
+      window.removeEventListener('keydown', handleEsc)
+    }
+  }, [menuEventId])
 
   async function onLogin(e: FormEvent) {
     e.preventDefault()
@@ -205,6 +236,27 @@ export function AdminLoginPage() {
     setProfile(null)
   }
 
+  async function onConfirmArchiveEvent() {
+    if (!archiveTarget) return
+    setError(null)
+    setIsArchiving(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) {
+        setError('Session missing. Please sign in again.')
+        return
+      }
+      await archiveEvent(token, archiveTarget.id)
+      setNotice('Event archived')
+      setArchiveTarget(null)
+      await loadEvents()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not archive event')
+    } finally {
+      setIsArchiving(false)
+    }
+  }
+
   if (!ready) return <main className="auth-page"><div className="auth-container"><p>Loading...</p></div></main>
 
   return (
@@ -286,22 +338,74 @@ export function AdminLoginPage() {
               <button type="submit">Create Event</button>
             </form>
 
+            {error && <p className="error">{error}</p>}
+            {notice && <p className="winner">{notice}</p>}
+
             <div className="event-list">
               {events.map((event) => (
                 <div className="event-item" key={event.id}>
-                  <div>
+                  <div className="event-item-main">
                     <strong>{event.name}</strong>
                     <div>{event.location || 'No location'} - {event.date || 'No date'}</div>
                   </div>
-                  <Link to={`/admin/events/${event.id}`}>
-                    <button className="secondary">Open</button>
-                  </Link>
+                  <div className="event-row-actions">
+                    <Link to={`/admin/events/${event.id}`}>
+                      <button className="secondary">Open</button>
+                    </Link>
+                    <div className="event-actions-menu-wrap">
+                      <button
+                        type="button"
+                        className="icon-kebab-btn"
+                        aria-label={`Event actions for ${event.name}`}
+                        aria-haspopup="menu"
+                        aria-expanded={menuEventId === event.id}
+                        onClick={() => setMenuEventId((curr) => (curr === event.id ? null : event.id))}
+                      >
+                        &hellip;
+                      </button>
+                      {menuEventId === event.id && (
+                        <div className="event-actions-menu" role="menu" ref={menuRef}>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            className="event-actions-menu-item event-actions-menu-item-danger"
+                            ref={menuFirstItemRef}
+                            onClick={() => {
+                              setMenuEventId(null)
+                              setArchiveTarget(event)
+                            }}
+                          >
+                            Archive event
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         )}
       </section>
+      {archiveTarget && (
+        <div className="modal-backdrop" role="presentation">
+          <div className="modal-card" role="dialog" aria-modal="true" aria-labelledby="archive-event-title">
+            <h3 id="archive-event-title">Archive this event?</h3>
+            <p>
+              Archiving will close any open votes and make the event read-only.
+              You can still view and export results.
+            </p>
+            <div className="modal-actions">
+              <button type="button" className="secondary" onClick={() => setArchiveTarget(null)} disabled={isArchiving}>
+                Cancel
+              </button>
+              <button type="button" className="danger-btn" onClick={onConfirmArchiveEvent} disabled={isArchiving}>
+                {isArchiving ? 'Archiving...' : 'Archive'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
