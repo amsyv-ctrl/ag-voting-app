@@ -104,7 +104,7 @@ export const handler: Handler = async (event) => {
   if (!org) {
     const metadata = (user.user_metadata || {}) as Record<string, unknown>
     const organizationName = pickString(metadata.organization_name) ?? defaultOrgName(user.email)
-    const role = pickString(metadata.signup_role)
+    const signupRole = pickString(metadata.signup_role)
     const estimatedVotingSize = pickString(metadata.estimated_voting_size)
     const organizationType = pickString(metadata.organization_type)
     const country = pickString(metadata.country)
@@ -121,7 +121,7 @@ export const handler: Handler = async (event) => {
         created_by: user.id,
         mode: 'TRIAL',
         is_active: false,
-        signup_role: role,
+        signup_role: signupRole,
         estimated_voting_size: estimatedVotingSize,
         organization_type: organizationType,
         country,
