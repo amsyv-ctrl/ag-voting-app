@@ -8,6 +8,8 @@ import type { BallotResults } from '../types'
 import { OperatorRunbook } from '../components/OperatorRunbook'
 import { getAccessToken } from '../lib/auth'
 import { logElectionAudit, sealBallotRound } from '../lib/api'
+import { AdminLayout } from '../components/AdminLayout'
+import { PageHero } from '../components/PageHero'
 
 type BallotData = {
   id: string
@@ -634,21 +636,25 @@ export function AdminBallotPage() {
   }
 
   if (loading && !ballot) {
-    return <main className="ballot-admin-page"><p>Loading ballot...</p></main>
+    return (
+      <AdminLayout>
+        <section className="ui-card"><p>Loading ballot...</p></section>
+      </AdminLayout>
+    )
   }
 
   if (!ballot) {
     return (
-      <main className="ballot-admin-page">
-        <section className="ballot-admin-card">
+      <AdminLayout breadcrumb={['Events', 'Ballot']}>
+        <section className="ui-card">
           <h1>Unable to load ballot</h1>
           {error && <p className="error">{error}</p>}
           <div className="inline">
-            <button onClick={() => load()}>Retry</button>
+            <button className="btn btn-primary" onClick={() => load()}>Retry</button>
             <Link to="/admin">Back to admin</Link>
           </div>
         </section>
-      </main>
+      </AdminLayout>
     )
   }
 
@@ -669,7 +675,16 @@ export function AdminBallotPage() {
       : 'status-badge-closed'
 
   return (
-    <main className="ballot-admin-page">
+    <AdminLayout breadcrumb={['Events', ballot.event_name, ballot.title]}>
+      <PageHero
+        title={ballot.title}
+        subtitle="Open/close rounds, view results, and seal records."
+        rightActions={
+          <Link to={`/admin/events/${ballot.event_id}`}>
+            <button className="btn btn-secondary secondary" type="button">Back to event</button>
+          </Link>
+        }
+      />
       <section className="ballot-admin-card ballot-admin-hero">
         <h1>{ballot.event_name}</h1>
         <h2>{ballot.title}</h2>
@@ -716,8 +731,8 @@ export function AdminBallotPage() {
             <p><strong>Threshold:</strong> {thresholdLabel(ballot.majority_rule)}</p>
             <p className="muted">Common practice: confirm bylaws if only top few candidates proceed to runoff.</p>
             <div className="inline">
-              <button onClick={openNewVoteRound} disabled={!canOperateEvent}>Start runoff round</button>
-              <button className="secondary" onClick={() => setRunoffDismissed(true)}>Keep closed</button>
+              <button className="btn btn-primary" onClick={openNewVoteRound} disabled={!canOperateEvent}>Start runoff round</button>
+              <button className="btn btn-secondary secondary" onClick={() => setRunoffDismissed(true)}>Keep closed</button>
             </div>
           </div>
         )}
@@ -747,20 +762,19 @@ export function AdminBallotPage() {
           <div className="inline ballot-admin-actions">
             {ballot.status === 'OPEN' ? (
               <>
-                <button className="secondary" onClick={closeBallot} disabled={!canOperateEvent}>Close current vote (10s delay)</button>
-                <button className="secondary" onClick={switchToManualFallbackMode} disabled={!canOperateEvent}>Switch to Manual Count Mode</button>
+                <button className="btn btn-secondary secondary" onClick={closeBallot} disabled={!canOperateEvent}>Close current vote (10s delay)</button>
+                <button className="btn btn-secondary secondary" onClick={switchToManualFallbackMode} disabled={!canOperateEvent}>Switch to Manual Count Mode</button>
               </>
             ) : ballot.status === 'MANUAL_FALLBACK' ? (
               <p className="muted">Manual fallback mode active. Record manual totals in the Manual Fallback section.</p>
             ) : (
-              <button onClick={openNewVoteRound} disabled={!canOperateEvent}>
+              <button className="btn btn-primary" onClick={openNewVoteRound} disabled={!canOperateEvent}>
                 {ballot.status === 'DRAFT' ? 'Open Vote #1' : `Open Vote #${(ballot.vote_round ?? 1) + 1}`}
               </button>
             )}
           </div>
         </div>
         <OperatorRunbook context="ballot" ballotId={ballot.id} round={ballot.vote_round} />
-        <Link to={`/admin/events/${ballot.event_id}`}>Back to event</Link>
         {error && <p className="error">{error}</p>}
       </section>
 
@@ -770,8 +784,8 @@ export function AdminBallotPage() {
           <span className="accordion-icon">&#9654;</span>
         </button>
         <div className="accordion-content">
-          <form onSubmit={onSaveBallotDetails} className="stack" style={{ marginTop: '0.8rem' }}>
-            <label className="inline">
+          <form onSubmit={onSaveBallotDetails} className="form-grid" style={{ marginTop: '0.8rem' }}>
+            <label className="inline" style={{ gridColumn: '1 / -1' }}>
               <input
                 type="checkbox"
                 checked={ballot.requires_pin}
@@ -780,7 +794,7 @@ export function AdminBallotPage() {
               />
               Require PIN for this vote
             </label>
-            <fieldset>
+            <fieldset style={{ gridColumn: '1 / -1' }}>
               <legend>Results visibility (required before opening vote)</legend>
               <label className="radio-row">
                 <input
@@ -805,22 +819,25 @@ export function AdminBallotPage() {
             </fieldset>
             <label>
               Vote name
-              <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} required disabled={!canOperateEvent} />
+              <input className="input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} required disabled={!canOperateEvent} />
             </label>
             <label>
               Ballot description
-              <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} disabled={!canOperateEvent} />
+              <textarea className="textarea" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} disabled={!canOperateEvent} />
             </label>
             <label>
               Incumbent name
               <input
+                className="input"
                 value={editIncumbentName}
                 onChange={(e) => setEditIncumbentName(e.target.value)}
                 placeholder="Incumbent name (optional)"
                 disabled={!canOperateEvent}
               />
             </label>
-            <button type="submit" disabled={!canOperateEvent}>Save Ballot Details</button>
+            <div className="form-actions form-row-full">
+              <button className="btn btn-primary" type="submit" disabled={!canOperateEvent}>Save Ballot Details</button>
+            </div>
           </form>
         </div>
       </section>
@@ -831,9 +848,9 @@ export function AdminBallotPage() {
           <span className="accordion-icon">&#9654;</span>
         </button>
         <div className="accordion-content">
-          <form onSubmit={onAddChoice} className="stack inline">
-            <input value={newChoice} onChange={(e) => setNewChoice(e.target.value)} placeholder="Choice label" disabled={!canOperateEvent} />
-            <button type="submit" disabled={!canOperateEvent}>Add</button>
+          <form onSubmit={onAddChoice} className="form-actions">
+            <input className="input" value={newChoice} onChange={(e) => setNewChoice(e.target.value)} placeholder="Choice label" disabled={!canOperateEvent} />
+            <button className="btn btn-primary" type="submit" disabled={!canOperateEvent}>Add</button>
           </form>
           <ul className="list">
             {choices.map((choice) => (
@@ -857,15 +874,15 @@ export function AdminBallotPage() {
                 <div className="choice-actions">
                   {editingChoiceId === choice.id ? (
                     <>
-                      <button type="button" onClick={() => saveChoiceLabel(choice.id)} disabled={!canOperateEvent}>Save</button>
-                      <button type="button" className="secondary" onClick={cancelEditChoice}>Cancel</button>
+                      <button className="btn btn-primary" type="button" onClick={() => saveChoiceLabel(choice.id)} disabled={!canOperateEvent}>Save</button>
+                      <button className="btn btn-secondary secondary" type="button" onClick={cancelEditChoice}>Cancel</button>
                     </>
                   ) : (
                     <>
-                      <button type="button" onClick={() => startEditChoice(choice)} disabled={!canOperateEvent}>Edit</button>
+                      <button className="btn btn-primary" type="button" onClick={() => startEditChoice(choice)} disabled={!canOperateEvent}>Edit</button>
                       <button
                         type="button"
-                        className="secondary"
+                        className="btn btn-secondary secondary"
                         onClick={() => toggleChoiceWithdraw(choice)}
                         disabled={!canOperateEvent}
                       >
@@ -942,11 +959,12 @@ export function AdminBallotPage() {
           <p className="muted">
             Use this only if internet/session flow fails. Record a manual count and finalize the round.
           </p>
-          <form onSubmit={finalizeManualRound} className="stack">
+          <form onSubmit={finalizeManualRound} className="form-grid">
             {choices.filter((choice) => !choice.is_withdrawn).map((choice) => (
               <label key={choice.id} className="manual-row">
                 <span>{choice.label}</span>
                 <input
+                  className="input"
                   type="number"
                   min={0}
                   value={manualCounts[choice.id] ?? '0'}
@@ -963,15 +981,18 @@ export function AdminBallotPage() {
             <label>
               Notes (reason / context)
               <textarea
+                className="textarea"
                 value={manualNotes}
                 onChange={(e) => setManualNotes(e.target.value)}
                 placeholder="Example: Internet outage during vote #3. Manual count by tellers."
                 disabled={!canOperateEvent}
               />
             </label>
-            <button type="submit" disabled={ballot.status !== 'MANUAL_FALLBACK' || !canOperateEvent}>
-              Record Manual Totals and Close Round
-            </button>
+            <div className="form-actions form-row-full">
+              <button className="btn btn-primary" type="submit" disabled={ballot.status !== 'MANUAL_FALLBACK' || !canOperateEvent}>
+                Record Manual Totals and Close Round
+              </button>
+            </div>
           </form>
         </div>
       </section>
@@ -1018,9 +1039,9 @@ export function AdminBallotPage() {
         </button>
         <div className="accordion-content">
           <p className="error">Delete this ballot and all of its votes.</p>
-          <button className="secondary" onClick={deleteBallot} disabled={!isPaidActive}>Delete ballot</button>
+          <button className="btn btn-danger" onClick={deleteBallot} disabled={!isPaidActive}>Delete ballot</button>
         </div>
       </section>
-    </main>
+    </AdminLayout>
   )
 }

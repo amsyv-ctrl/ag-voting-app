@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase'
 import { adminGeneratePins, verifyReceipt } from '../lib/api'
 import { getAccessToken, requireSession } from '../lib/auth'
 import { OperatorRunbook } from '../components/OperatorRunbook'
+import { AdminLayout } from '../components/AdminLayout'
+import { PageHero } from '../components/PageHero'
 
 type BallotRow = {
   id: string
@@ -637,14 +639,17 @@ export function AdminEventPage() {
   const isReadOnly = !canOperateEvent
 
   return (
-    <main className="event-page">
-      <section className="event-container">
-        <Link to="/admin" className="back-link">&larr; Back to Admin</Link>
-        <h1>{eventName || 'Event'}</h1>
-        <p className="subtitle">
-          Manage ballots and delegate PINs.
-          {votingStaffNames ? <><br />Voting Team: {votingStaffNames}</> : null}
-        </p>
+    <AdminLayout breadcrumb={['Events', eventName || 'Event']}>
+      <PageHero
+        title={eventName || 'Event'}
+        subtitle={`Manage ballots, PINs, and exports.${votingStaffNames ? ` Voting Team: ${votingStaffNames}` : ''}`}
+        rightActions={
+          <Link to="/admin">
+            <button className="btn btn-secondary secondary" type="button">Back to events</button>
+          </Link>
+        }
+      />
+      <section className="form-section">
         {orgAccess && (
           <p className={canOperateEvent ? 'muted' : 'error'}>
             {isReadOnly
@@ -664,29 +669,32 @@ export function AdminEventPage() {
             <span className="accordion-icon">&#9654;</span>
           </button>
           <div className="accordion-content">
-            <form onSubmit={onUpdateEvent} className="stack">
-              <label>
+            <form onSubmit={onUpdateEvent} className="form-grid">
+              <label className="form-row">
                 Event name
-                <input value={eventName} onChange={(e) => setEventName(e.target.value)} required disabled={!canOperateEvent} />
+                <input className="input" value={eventName} onChange={(e) => setEventName(e.target.value)} required disabled={!canOperateEvent} />
               </label>
-              <label>
+              <label className="form-row">
                 Event date
-                <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} disabled={!canOperateEvent} />
+                <input className="input" type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} disabled={!canOperateEvent} />
               </label>
-              <label>
+              <label className="form-row">
                 Event location
-                <input value={eventLocation} onChange={(e) => setEventLocation(e.target.value)} placeholder="Location" disabled={!canOperateEvent} />
+                <input className="input" value={eventLocation} onChange={(e) => setEventLocation(e.target.value)} placeholder="Location" disabled={!canOperateEvent} />
               </label>
-              <label>
+              <label className="form-row">
                 Names running voting
                 <input
+                  className="input"
                   value={votingStaffNames}
                   onChange={(e) => setVotingStaffNames(e.target.value)}
                   placeholder="Example: Yisrael Vincent"
                   disabled={!canOperateEvent}
                 />
               </label>
-              <button type="submit" disabled={!canOperateEvent}>Save Event Details</button>
+              <div className="form-actions form-row-full">
+                <button className="btn btn-primary" type="submit" disabled={!canOperateEvent}>Save Event Details</button>
+              </div>
             </form>
           </div>
         </div>
@@ -698,9 +706,9 @@ export function AdminEventPage() {
           </button>
           <div className="accordion-content">
             <p>Generate 4-digit PINs. Active PINs for this event: <strong>{activePins.length}</strong></p>
-            <form className="pin-section" onSubmit={onGeneratePins}>
+            <form className="form-actions" onSubmit={onGeneratePins}>
               <input
-                className="pin-input"
+                className="input pin-input"
                 type="number"
                 min={1}
                 max={500}
@@ -708,9 +716,11 @@ export function AdminEventPage() {
                 onChange={(e) => setPinCount(Math.max(1, Math.min(Number(e.target.value), 500)))}
                 disabled={!canOperateEvent}
               />
-              <button type="submit" disabled={!canOperateEvent}>Generate</button>
+              <button className="btn btn-primary" type="submit" disabled={!canOperateEvent}>Generate</button>
             </form>
-            <button className="danger-btn" style={{ marginTop: '10px' }} onClick={onDeleteAllPins} disabled={!canOperateEvent}>Delete All PINs</button>
+            <div className="form-actions" style={{ marginTop: '10px' }}>
+              <button className="btn btn-danger danger-btn" onClick={onDeleteAllPins} disabled={!canOperateEvent}>Delete All PINs</button>
+            </div>
             {pinsOutput.length > 0 && (
               <details>
                 <summary>Show newly generated PINs ({pinsOutput.length})</summary>
@@ -738,14 +748,14 @@ export function AdminEventPage() {
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
             <button
               type="button"
-              className={ballotsView === 'ACTIVE' ? '' : 'secondary-btn'}
+              className={ballotsView === 'ACTIVE' ? 'btn btn-primary' : 'btn btn-secondary secondary-btn'}
               onClick={() => setBallotsView('ACTIVE')}
             >
               Active ({ballots.length})
             </button>
             <button
               type="button"
-              className={ballotsView === 'ARCHIVED' ? '' : 'secondary-btn'}
+              className={ballotsView === 'ARCHIVED' ? 'btn btn-primary' : 'btn btn-secondary secondary-btn'}
               onClick={() => setBallotsView('ARCHIVED')}
             >
               Archived ({archivedBallots.length})
@@ -763,16 +773,16 @@ export function AdminEventPage() {
               <div className="ballot-item" key={ballot.id}>
                 <div className="ballot-header">
                   <span>{ballot.title}</span>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button
-                      className="danger-btn"
+                    <div className="form-actions">
+                      <button
+                        className="btn btn-danger danger-btn"
                       onClick={() => onArchiveBallot(ballot.id, ballot.title)}
                       disabled={!canOperateEvent}
                     >
                       Archive
                     </button>
                     <Link to={`/admin/ballots/${ballot.id}`}>
-                      <button className="secondary-btn">Manage</button>
+                      <button className="btn btn-secondary secondary-btn">Manage</button>
                     </Link>
                   </div>
                 </div>
@@ -797,7 +807,7 @@ export function AdminEventPage() {
                 <div className="ballot-header">
                   <span>{ballot.title}</span>
                   <button
-                    className="secondary-btn"
+                    className="btn btn-secondary secondary-btn"
                     onClick={() => onRestoreBallot(ballot.id, ballot.title)}
                     disabled={!canOperateEvent}
                   >
@@ -818,55 +828,62 @@ export function AdminEventPage() {
 
         <div id="create-ballot" className="ballot-item ballot-create-card">
           <div className="ballot-header">Create New Ballot</div>
-          <form onSubmit={onCreateBallot} className="stack" style={{ marginTop: '15px' }}>
-            <label>
+          <form onSubmit={onCreateBallot} className="form-grid" style={{ marginTop: '15px' }}>
+            <label className="form-row">
               Ballot title
-              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ballot title" required disabled={!canOperateEvent} />
+              <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ballot title" required disabled={!canOperateEvent} />
             </label>
-            <label>
+            <label className="form-row">
               Description
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" disabled={!canOperateEvent} />
+              <textarea className="textarea" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" disabled={!canOperateEvent} />
             </label>
-            <label>
+            <label className="form-row">
               Incumbent name
               <input
+                className="input"
                 value={incumbentName}
                 onChange={(e) => setIncumbentName(e.target.value)}
                 placeholder="Incumbent name (optional)"
                 disabled={!canOperateEvent}
               />
             </label>
-            <label>
+            <label className="form-row">
               Ballot type
-              <select value={ballotType} onChange={(e) => setBallotType(e.target.value as 'YES_NO' | 'PICK_ONE')} disabled={!canOperateEvent}>
+              <select className="select" value={ballotType} onChange={(e) => setBallotType(e.target.value as 'YES_NO' | 'PICK_ONE')} disabled={!canOperateEvent}>
                 <option value="PICK_ONE">Pick one candidate</option>
                 <option value="YES_NO">Yes / No</option>
               </select>
             </label>
-            <label>
+            <label className="form-row">
               Majority rule
-              <select value={majorityRule} onChange={(e) => setMajorityRule(e.target.value as 'SIMPLE' | 'TWO_THIRDS')} disabled={!canOperateEvent}>
+              <select className="select" value={majorityRule} onChange={(e) => setMajorityRule(e.target.value as 'SIMPLE' | 'TWO_THIRDS')} disabled={!canOperateEvent}>
                 <option value="SIMPLE">Simple majority (&gt;50%)</option>
                 <option value="TWO_THIRDS">Two thirds (≥66.67%)</option>
               </select>
             </label>
-            <label className="checkbox-label">
+            <label className="checkbox-label form-row-full">
               <input type="checkbox" checked={requiresPin} onChange={(e) => setRequiresPin(e.target.checked)} disabled={!canOperateEvent} />
               Require PIN for this ballot
             </label>
-            <button type="submit" style={{ marginTop: '10px' }} disabled={!canOperateEvent}>Create Ballot</button>
+            <div className="form-actions form-row-full">
+              <button className="btn btn-primary" type="submit" disabled={!canOperateEvent}>Create Ballot</button>
+            </div>
           </form>
         </div>
 
         <div className="ballot-item">
           <div className="ballot-header">Verify Receipt</div>
-          <form onSubmit={onVerifyReceipt} className="stack inline" style={{ marginTop: '0.75rem' }}>
-            <input
-              value={receiptCodeInput}
-              onChange={(e) => setReceiptCodeInput(e.target.value.toUpperCase())}
-              placeholder="Receipt code (e.g. 7F3A-92C1)"
-            />
-            <button type="submit" className="secondary-btn" disabled={verifyingReceipt}>
+          <form onSubmit={onVerifyReceipt} className="form-actions" style={{ marginTop: '0.75rem' }}>
+            <label className="form-row" style={{ flex: '1 1 320px', margin: 0 }}>
+              Verify receipt
+              <input
+                className="input"
+                value={receiptCodeInput}
+                onChange={(e) => setReceiptCodeInput(e.target.value.toUpperCase())}
+                placeholder="Receipt code (e.g. 7F3A-92C1)"
+              />
+            </label>
+            <button type="submit" className="btn btn-secondary secondary-btn" disabled={verifyingReceipt}>
               {verifyingReceipt ? 'Checking...' : 'Check'}
             </button>
           </form>
@@ -883,11 +900,11 @@ export function AdminEventPage() {
         </div>
 
         <div className="export-section">
-          <button onClick={onExportOfficialRecord} disabled={exportingOfficial}>
+          <button className="btn btn-primary" onClick={onExportOfficialRecord} disabled={exportingOfficial}>
             {exportingOfficial ? 'Exporting Official Record...' : 'Export Official Record (JSON)'}
           </button>
           <div style={{ height: '0.6rem' }} />
-          <button className="secondary-btn" onClick={onExportResults} disabled={exporting}>
+          <button className="btn btn-secondary secondary-btn" onClick={onExportResults} disabled={exporting}>
             {exporting ? 'Exporting...' : 'Export All Voting Results (CSV)'}
           </button>
           <p className="subtitle" style={{ marginTop: '10px' }}>
@@ -895,6 +912,6 @@ export function AdminEventPage() {
           </p>
         </div>
       </section>
-    </main>
+    </AdminLayout>
   )
 }

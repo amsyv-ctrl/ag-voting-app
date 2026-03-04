@@ -3,6 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { archiveEvent, bootstrapOrg } from '../lib/api'
 import { getAccessToken } from '../lib/auth'
 import { supabase } from '../lib/supabase'
+import { AdminLayout } from '../components/AdminLayout'
+import { PageHero } from '../components/PageHero'
 
 type EventRow = {
   id: string
@@ -329,10 +331,10 @@ export function AdminLoginPage() {
 
   if (!ready) return <main className="auth-page"><div className="auth-container"><p>Loading...</p></div></main>
 
-  return (
-    <main className="auth-page">
-      <section className="auth-container">
-        {!hasSession ? (
+  if (!hasSession) {
+    return (
+      <main className="auth-page">
+        <section className="auth-container">
           <div>
             <h1 className="auth-title">AG Voting Admin</h1>
             <p className="muted">Log in or register to manage voting sessions and events.</p>
@@ -418,20 +420,25 @@ export function AdminLoginPage() {
               </form>
             )}
           </div>
-        ) : (
-          <div>
-            <div className="auth-header-row">
-              <h1 className="auth-title">Events</h1>
-              <div className="auth-header-actions">
-                <Link to="/admin/org">
-                  <button className="secondary" type="button">Account</button>
-                </Link>
-                <button className="logout-btn" onClick={onLogout}>Sign Out</button>
-              </div>
-            </div>
+        </section>
+      </main>
+    )
+  }
 
+  return (
+    <AdminLayout breadcrumb={['Events']} onSignOut={onLogout}>
+      <PageHero
+        title="Events"
+        subtitle="Create and manage events"
+        rightActions={
+          <Link to="/admin/org">
+            <button className="btn btn-secondary secondary" type="button">Account</button>
+          </Link>
+        }
+      />
+      <section className="form-section">
             {profile && (
-              <div className="card">
+              <div className="ui-card">
                 <h3>Admin Profile</h3>
                 <p><strong>Name:</strong> {profile.first_name} {profile.last_name}</p>
                 <p><strong>Network:</strong> {profile.network}</p>
@@ -442,11 +449,22 @@ export function AdminLoginPage() {
             {error && <p className="error">{error}</p>}
             {notice && <p className="winner">{notice}</p>}
 
-            <form ref={createEventFormRef} onSubmit={onCreateEvent} className="stack">
-              <input ref={createEventNameRef} value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Event name" required />
-              <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} required />
-              <input value={newLocation} onChange={(e) => setNewLocation(e.target.value)} placeholder="Location" required />
-              <button type="submit">Create Event</button>
+            <form ref={createEventFormRef} onSubmit={onCreateEvent} className="form-grid">
+              <label className="form-row">
+                Event name
+                <input className="input" ref={createEventNameRef} value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Event name" required />
+              </label>
+              <label className="form-row">
+                Date
+                <input className="input" type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} required />
+              </label>
+              <label className="form-row">
+                Location
+                <input className="input" value={newLocation} onChange={(e) => setNewLocation(e.target.value)} placeholder="Location" required />
+              </label>
+              <div className="form-actions form-row-full">
+                <button className="btn btn-primary" type="submit">Create Event</button>
+              </div>
             </form>
 
             {!hasAnyBallot ? (
@@ -457,19 +475,19 @@ export function AdminLoginPage() {
                   <div>
                     <p><strong>1. Create your first event</strong></p>
                     <p className="muted">An event is a meeting or session (board meeting, business meeting, conference).</p>
-                    <button type="button" onClick={jumpToCreateEvent}>Create Event</button>
+                    <button className="btn btn-primary" type="button" onClick={jumpToCreateEvent}>Create Event</button>
                   </div>
                   <div>
                     <p><strong>2. Add your first ballot</strong></p>
                     <p className="muted">A ballot is a single decision or election. Add candidates/choices and open voting when ready.</p>
                     {events.length === 0 ? (
                       <>
-                        <button type="button" className="secondary" disabled>Create Ballot</button>
+                        <button type="button" className="btn btn-secondary secondary" disabled>Create Ballot</button>
                         <p className="muted" style={{ marginTop: '0.5rem' }}>Create an event first</p>
                       </>
                     ) : (
                       <Link to={`/admin/events/${events[0].id}#create-ballot`}>
-                        <button type="button" className="secondary">Create Ballot</button>
+                        <button type="button" className="btn btn-secondary secondary">Create Ballot</button>
                       </Link>
                     )}
                   </div>
@@ -486,7 +504,7 @@ export function AdminLoginPage() {
                   </div>
                   <div className="event-row-actions">
                     <Link to={`/admin/events/${event.id}`}>
-                      <button className="secondary">Open</button>
+                      <button className="btn btn-secondary secondary">Open</button>
                     </Link>
                     <div className="event-actions-menu-wrap">
                       <button
@@ -537,7 +555,7 @@ export function AdminLoginPage() {
                       </div>
                       <div className="event-row-actions">
                         <Link to={`/admin/events/${event.id}`}>
-                          <button className="secondary">Open</button>
+                          <button className="btn btn-secondary secondary">Open</button>
                         </Link>
                       </div>
                     </div>
@@ -545,8 +563,6 @@ export function AdminLoginPage() {
                 </div>
               )}
             </details>
-          </div>
-        )}
       </section>
       {archiveTarget && (
         <div className="modal-backdrop" role="presentation">
@@ -557,16 +573,16 @@ export function AdminLoginPage() {
               You can still view and export results.
             </p>
             <div className="modal-actions">
-              <button type="button" className="secondary" onClick={() => setArchiveTarget(null)} disabled={isArchiving}>
+              <button type="button" className="btn btn-secondary secondary" onClick={() => setArchiveTarget(null)} disabled={isArchiving}>
                 Cancel
               </button>
-              <button type="button" className="danger-btn" onClick={onConfirmArchiveEvent} disabled={isArchiving}>
+              <button type="button" className="btn btn-danger danger-btn" onClick={onConfirmArchiveEvent} disabled={isArchiving}>
                 {isArchiving ? 'Archiving...' : 'Archive'}
               </button>
             </div>
           </div>
         </div>
       )}
-    </main>
+    </AdminLayout>
   )
 }

@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { bootstrapOrg, createCheckoutSession, createPortalSession, createTrialEvent } from '../lib/api'
 import { getAccessToken, requireSession } from '../lib/auth'
 import { supabase } from '../lib/supabase'
+import { AdminLayout } from '../components/AdminLayout'
+import { PageHero } from '../components/PageHero'
 
 type OrgState = {
   id: string
@@ -213,12 +215,12 @@ export function AdminOrgPage() {
 
   if (loading) {
     return (
-      <main className="page">
-        <section className="card">
-          <h1>Organization Dashboard</h1>
+      <AdminLayout>
+        <section className="ui-card">
+          <h1>Account</h1>
           <p>Loading organization...</p>
         </section>
-      </main>
+      </AdminLayout>
     )
   }
 
@@ -237,17 +239,20 @@ export function AdminOrgPage() {
   const showManageSubscription = !!(org && (org.mode === 'PAID' || org.stripe_customer_id))
 
   return (
-    <main className="page">
-      <section className="card">
-        <div className="auth-header-row">
-          <h1>Organization Dashboard</h1>
-          <div className="auth-header-actions">
-            <Link to="/admin">
-              <button className="secondary" type="button">Events</button>
-            </Link>
-            <button className="logout-btn" onClick={onSignOut}>Sign Out</button>
-          </div>
-        </div>
+    <AdminLayout
+      breadcrumb={['Events', 'Account']}
+      onSignOut={onSignOut}
+    >
+      <PageHero
+        title="Account"
+        subtitle="Manage subscription, trial usage, and profile settings."
+        rightActions={
+          <Link to="/admin">
+            <button className="btn btn-secondary secondary" type="button">Events</button>
+          </Link>
+        }
+      />
+      <section className="form-section">
         {org && (
           <p className={isReadOnly ? 'error' : 'muted'}>
             {isReadOnly
@@ -290,23 +295,23 @@ export function AdminOrgPage() {
         )}
       </section>
 
-      <section className="card">
+      <section className="form-section">
         <h2>Subscription</h2>
-        <p className="muted">Choose a plan to activate full access and remove trial limits.</p>
-        <div className="inline">
-          <button type="button" onClick={() => onCheckout('STARTER')} disabled={checkoutLoadingPlan !== null}>
+        <p className="helper-text">Choose a plan to activate full access and remove trial limits.</p>
+        <div className="form-actions">
+          <button className="btn btn-primary" type="button" onClick={() => onCheckout('STARTER')} disabled={checkoutLoadingPlan !== null}>
             {checkoutLoadingPlan === 'STARTER' ? 'Redirecting...' : 'Starter'}
           </button>
-          <button type="button" onClick={() => onCheckout('GROWTH')} disabled={checkoutLoadingPlan !== null}>
+          <button className="btn btn-primary" type="button" onClick={() => onCheckout('GROWTH')} disabled={checkoutLoadingPlan !== null}>
             {checkoutLoadingPlan === 'GROWTH' ? 'Redirecting...' : 'Growth'}
           </button>
-          <button type="button" onClick={() => onCheckout('NETWORK')} disabled={checkoutLoadingPlan !== null}>
+          <button className="btn btn-primary" type="button" onClick={() => onCheckout('NETWORK')} disabled={checkoutLoadingPlan !== null}>
             {checkoutLoadingPlan === 'NETWORK' ? 'Redirecting...' : 'Network'}
           </button>
         </div>
         {showManageSubscription && (
-          <div style={{ marginTop: '0.8rem' }}>
-            <button type="button" className="secondary" onClick={onManageSubscription} disabled={portalLoading}>
+          <div className="form-actions" style={{ marginTop: '0.8rem' }}>
+            <button className="btn btn-secondary" type="button" onClick={onManageSubscription} disabled={portalLoading}>
               {portalLoading ? 'Opening portal...' : 'Manage subscription'}
             </button>
           </div>
@@ -316,7 +321,7 @@ export function AdminOrgPage() {
         </p>
       </section>
 
-      <section className="card">
+      <section className="form-section">
         <h2>Trial Onboarding</h2>
         {!org?.trial_event_id ? (
           <p className="muted">Trial not started.</p>
@@ -325,8 +330,9 @@ export function AdminOrgPage() {
         ) : (
           <p className="muted">Trial active: {org.trial_votes_used}/{org.trial_votes_limit} votes used.</p>
         )}
-        <div className="inline">
+        <div className="form-actions">
           <button
+            className="btn btn-primary"
             onClick={onCreateTrialEvent}
             disabled={creatingTrialEvent || !canStartTrialEvent}
           >
@@ -334,48 +340,54 @@ export function AdminOrgPage() {
           </button>
           {org?.trial_event_id && (
             <Link to={`/admin/events/${org.trial_event_id}`}>
-              <button className="secondary" type="button">Go to trial event</button>
+              <button className="btn btn-secondary" type="button">Go to trial event</button>
             </Link>
           )}
         </div>
       </section>
 
-      <section className="card">
+      <section className="form-section">
         <h2>Edit Profile</h2>
-        <div className="stack">
-          <label>
+        <div className="form-grid">
+          <label className="form-row">
             First name
             <input
+              className="input"
               value={profile.first_name}
               onChange={(e) => setProfile((p) => ({ ...p, first_name: e.target.value }))}
             />
           </label>
-          <label>
+          <label className="form-row">
             Last name
             <input
+              className="input"
               value={profile.last_name}
               onChange={(e) => setProfile((p) => ({ ...p, last_name: e.target.value }))}
             />
           </label>
-          <label>
+          <label className="form-row">
             Network
             <input
+              className="input"
               value={profile.network}
               onChange={(e) => setProfile((p) => ({ ...p, network: e.target.value }))}
             />
           </label>
-          <label>
+          <label className="form-row form-row-full">
             Address
             <textarea
+              className="textarea"
               value={profile.address}
               onChange={(e) => setProfile((p) => ({ ...p, address: e.target.value }))}
             />
           </label>
-          <button onClick={onSaveProfile} disabled={savingProfile}>
-            {savingProfile ? 'Saving...' : 'Save Profile'}
-          </button>
+          <div className="form-actions form-row-full">
+            <button className="btn btn-primary" onClick={onSaveProfile} disabled={savingProfile}>
+              {savingProfile ? 'Saving...' : 'Save Profile'}
+            </button>
+          </div>
         </div>
       </section>
-    </main>
+    </AdminLayout>
   )
 }
