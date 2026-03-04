@@ -194,3 +194,24 @@ export async function sealBallotRound(
 
   return handleJson<{ seal_short: string; seal_hash: string; total_votes: number }>(res)
 }
+
+export async function logElectionAudit(
+  accessToken: string,
+  payload: {
+    action: string
+    event_id?: string | null
+    ballot_id?: string | null
+    metadata?: Record<string, unknown>
+  }
+): Promise<{ ok: boolean }> {
+  const res = await fetch(`${API_BASE}/logElectionAudit`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  })
+
+  return handleJson<{ ok: boolean }>(res)
+}

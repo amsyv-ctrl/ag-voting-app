@@ -7,7 +7,7 @@ import { computeWinner } from '../lib/winner'
 import type { BallotResults } from '../types'
 import { OperatorRunbook } from '../components/OperatorRunbook'
 import { getAccessToken } from '../lib/auth'
-import { sealBallotRound } from '../lib/api'
+import { logElectionAudit, sealBallotRound } from '../lib/api'
 
 type BallotData = {
   id: string
@@ -417,6 +417,19 @@ export function AdminBallotPage() {
     if (updateError) {
       setError(updateError.message)
       return
+    }
+    const token = await getAccessToken()
+    if (token) {
+      try {
+        await logElectionAudit(token, {
+          action: 'BALLOT_OPENED',
+          event_id: ballot.event_id,
+          ballot_id: ballot.id,
+          metadata: { round: nextRound }
+        })
+      } catch {
+        // Do not block operator flow on audit write failures.
+      }
     }
     await load()
   }

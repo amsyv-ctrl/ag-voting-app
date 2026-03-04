@@ -75,6 +75,42 @@ export const handler: Handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: 'Sealing failed' }) }
   }
 
+  const { data: ballotInfo } = await supabaseAdmin
+    .from('ballots')
+    .select('event_id,majority_rule')
+    .eq('id', ballotId)
+    .maybeSingle()
+
+  const eventId = ballotInfo?.event_id ?? null
+  const majorityRule = ballotInfo?.majority_rule ?? null
+
+  await supabaseAdmin
+    .from('election_audit_log')
+    .insert([
+      {
+        org_id: membership.org_id,
+        event_id: eventId,
+        ballot_id: ballotId,
+        action: 'BALLOT_CLOSED',
+        actor_user_id: user.id,
+        metadata: { round }
+      },
+      {
+        org_id: membership.org_id,
+        event_id: eventId,
+        ballot_id: ballotId,
+        action: 'BALLOT_ROUND_SEALED',
+        actor_user_id: user.id,
+        metadata: {
+          round,
+          seal_short: seal.seal_short,
+          seal_hash: seal.seal_hash,
+          total_votes: seal.total_votes,
+          majority_rule: majorityRule
+        }
+      }
+    ])
+
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },
