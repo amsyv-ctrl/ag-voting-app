@@ -13,6 +13,8 @@ type BallotRow = {
   status: 'DRAFT' | 'OPEN' | 'CLOSED' | 'MANUAL_FALLBACK'
   requires_pin: boolean
   created_at: string
+  deleted_at?: string | null
+  deleted_by?: string | null
 }
 
 type OrgAccessRow = {
@@ -105,6 +107,7 @@ export function AdminEventPage() {
   const [eventLocation, setEventLocation] = useState('')
   const [votingStaffNames, setVotingStaffNames] = useState('')
   const [ballots, setBallots] = useState<BallotRow[]>([])
+  const [archivedBallots, setArchivedBallots] = useState<BallotRow[]>([])
   const [activePins, setActivePins] = useState<PinRow[]>([])
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -175,6 +178,20 @@ export function AdminEventPage() {
     }
 
     setBallots(ballotData ?? [])
+
+    const { data: archivedData, error: archivedError } = await supabase
+      .from('ballots')
+      .select('id,title,incumbent_name,slug,status,requires_pin,created_at,deleted_at,deleted_by')
+      .eq('event_id', eventId)
+      .not('deleted_at', 'is', null)
+      .order('deleted_at', { ascending: false })
+
+    if (archivedError) {
+      setError(archivedError.message)
+      return
+    }
+
+    setArchivedBallots(archivedData ?? [])
 
     const { data: pinData, error: pinError } = await supabase
       .from('pins')
@@ -302,6 +319,28 @@ export function AdminEventPage() {
 
     if (updateError) {
       setError(updateError.message)
+      return
+    }
+
+    await load()
+  }
+
+  async function onRestoreBallot(ballotId: string, ballotTitle: string) {
+    if (!canOperateEvent) {
+      setError('Subscription inactive. This event is read-only.')
+      return
+    }
+    const confirmed = window.confirm(`Restore archived ballot "${ballotTitle}"?`)
+    if (!confirmed) return
+
+    setError(null)
+    const { error: restoreError } = await supabase
+      .from('ballots')
+      .update({ deleted_at: null, deleted_by: null })
+      .eq('id', ballotId)
+
+    if (restoreError) {
+      setError(restoreError.message)
       return
     }
 
@@ -666,6 +705,33 @@ export function AdminEventPage() {
             </div>
           </div>
         ))}
+
+        <div className="ballot-item">
+          <div className="ballot-header">Archived Ballots</div>
+          {archivedBallots.length === 0 ? (
+            <p className="muted" style={{ marginTop: '0.75rem' }}>No archived ballots.</p>
+          ) : (
+            <div style={{ marginTop: '0.75rem', display: 'grid', gap: '0.75rem' }}>
+              {archivedBallots.map((ballot) => (
+                <div key={ballot.id} style={{ border: '1px solid rgba(148, 163, 184, 0.35)', borderRadius: '10px', padding: '0.75rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', alignItems: 'center' }}>
+                    <div>
+                      <strong>{ballot.title}</strong>
+                      <div className="muted">Archived: {ballot.deleted_at ? new Date(ballot.deleted_at).toLocaleString() : 'N/A'}</div>
+                    </div>
+                    <button
+                      className="secondary-btn"
+                      onClick={() => onRestoreBallot(ballot.id, ballot.title)}
+                      disabled={!canOperateEvent}
+                    >
+                      Restore
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="ballot-item ballot-create-card">
           <div className="ballot-header">Create New Ballot</div>
