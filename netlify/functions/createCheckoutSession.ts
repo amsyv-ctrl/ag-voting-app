@@ -110,9 +110,9 @@ export const handler: Handler = async (event) => {
     allow_promotion_codes: true,
     success_url: successUrl,
     cancel_url: cancelUrl,
-    metadata: { org_id: org.id },
+    metadata: { org_id: org.id, price_id: priceId },
     subscription_data: {
-      metadata: { org_id: org.id }
+      metadata: { org_id: org.id, price_id: priceId }
     }
   })
 

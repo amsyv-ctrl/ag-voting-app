@@ -65,6 +65,7 @@ export const handler: Handler = async (event) => {
       case 'checkout.session.completed': {
         const session = stripeEvent.data.object as Stripe.Checkout.Session
         const orgId = session.metadata?.org_id || null
+        const metadataPriceId = session.metadata?.price_id || null
         const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null
         const subscriptionId = typeof session.subscription === 'string'
           ? session.subscription
@@ -72,12 +73,21 @@ export const handler: Handler = async (event) => {
 
         let currentPeriodEnd: string | null = null
         let status = 'active'
-        let stripePriceId: string | null = null
+        let stripePriceId: string | null = metadataPriceId
         if (subscriptionId) {
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId)
-          currentPeriodEnd = toIsoFromUnix(subscription.current_period_end)
-          status = subscription.status
-          stripePriceId = subscription.items.data[0]?.price?.id ?? null
+          try {
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+            currentPeriodEnd = toIsoFromUnix(subscription.current_period_end)
+            status = subscription.status
+            stripePriceId = subscription.items.data[0]?.price?.id ?? metadataPriceId
+          } catch (subErr) {
+            console.error('stripeWebhook checkout subscription lookup failed', {
+              subscriptionId,
+              orgId,
+              customerId,
+              error: subErr instanceof Error ? subErr.message : String(subErr)
+            })
+          }
         }
 
         const patch = {
@@ -102,11 +112,12 @@ export const handler: Handler = async (event) => {
         const subscription = stripeEvent.data.object as Stripe.Subscription
         const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id
         const orgId = subscription.metadata?.org_id || null
+        const metadataPriceId = subscription.metadata?.price_id || null
         const status = subscription.status
 
         const patch = {
           stripe_subscription_id: subscription.id,
-          stripe_price_id: subscription.items.data[0]?.price?.id ?? null,
+          stripe_price_id: subscription.items.data[0]?.price?.id ?? metadataPriceId,
           subscription_status: status,
           current_period_end: toIsoFromUnix(subscription.current_period_end),
           mode: 'PAID',
@@ -125,9 +136,10 @@ export const handler: Handler = async (event) => {
         const subscription = stripeEvent.data.object as Stripe.Subscription
         const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id
         const orgId = subscription.metadata?.org_id || null
+        const metadataPriceId = subscription.metadata?.price_id || null
         const patch = {
           stripe_subscription_id: subscription.id,
-          stripe_price_id: subscription.items.data[0]?.price?.id ?? null,
+          stripe_price_id: subscription.items.data[0]?.price?.id ?? metadataPriceId,
           subscription_status: 'canceled',
           current_period_end: toIsoFromUnix(subscription.current_period_end),
           is_active: false
