@@ -76,12 +76,23 @@ export type OrgBootstrapResponse = {
     name: string
     mode: 'DEMO' | 'TRIAL' | 'PAID'
     stripe_customer_id: string | null
+    stripe_price_id: string | null
     trial_event_id: string | null
     trial_votes_used: number
     trial_votes_limit: number
     subscription_status: string | null
     current_period_end: string | null
     is_active: boolean
+  }
+  usage: {
+    plan_name: 'STARTER' | 'GROWTH' | 'NETWORK' | 'TRIAL' | 'UNKNOWN'
+    billing_period_start: string | null
+    votes_used: number
+    allowance: number
+    remaining: number
+    overage_votes: number
+    estimated_overage_cents: number
+    warning_80: boolean
   }
   role: 'OWNER' | 'ADMIN' | 'STAFF'
   created: boolean

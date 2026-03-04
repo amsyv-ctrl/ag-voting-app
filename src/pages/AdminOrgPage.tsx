@@ -17,6 +17,17 @@ type OrgState = {
   is_active: boolean
 }
 
+type UsageState = {
+  plan_name: 'STARTER' | 'GROWTH' | 'NETWORK' | 'TRIAL' | 'UNKNOWN'
+  billing_period_start: string | null
+  votes_used: number
+  allowance: number
+  remaining: number
+  overage_votes: number
+  estimated_overage_cents: number
+  warning_80: boolean
+}
+
 type ProfileState = {
   first_name: string
   last_name: string
@@ -39,6 +50,7 @@ export function AdminOrgPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [role, setRole] = useState<'OWNER' | 'ADMIN' | 'STAFF' | null>(null)
   const [org, setOrg] = useState<OrgState | null>(null)
+  const [usage, setUsage] = useState<UsageState | null>(null)
   const [profile, setProfile] = useState<ProfileState>({
     first_name: '',
     last_name: '',
@@ -70,6 +82,7 @@ export function AdminOrgPage() {
       const data = await bootstrapOrg(token)
       setRole(data.role)
       setOrg(data.org)
+      setUsage(data.usage)
 
       const { data: profileData, error: profileError } = await supabase
         .from('admin_profiles')
@@ -255,6 +268,24 @@ export function AdminOrgPage() {
             <p><strong>Subscription status:</strong> {org.subscription_status ?? 'N/A'}</p>
             <p><strong>Current period end:</strong> {formatDate(org.current_period_end)}</p>
             <p><strong>Active:</strong> {org.is_active ? 'Yes' : 'No'}</p>
+          </>
+        )}
+        {usage && (
+          <>
+            <hr />
+            <p><strong>Plan:</strong> {usage.plan_name}</p>
+            <p><strong>Votes used this year:</strong> {usage.votes_used} / {usage.allowance}</p>
+            {usage.overage_votes > 0 ? (
+              <p className="error">
+                <strong>Overage:</strong> {usage.overage_votes} votes (${(usage.estimated_overage_cents / 100).toFixed(2)})
+              </p>
+            ) : (
+              <p className="muted">{usage.remaining} votes remaining before overage.</p>
+            )}
+            <p className="muted">Overage billed at $0.50 per vote.</p>
+            {usage.warning_80 && usage.overage_votes === 0 && (
+              <p className="error">Warning: usage is above 80% of plan allowance.</p>
+            )}
           </>
         )}
       </section>

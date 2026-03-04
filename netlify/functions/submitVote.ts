@@ -9,6 +9,22 @@ type Body = {
   deviceFingerprintHash?: string | null
 }
 
+const STARTER_ALLOWANCE = 500
+const GROWTH_ALLOWANCE = 2000
+const NETWORK_ALLOWANCE = 5000
+const OVERAGE_RATE_CENTS = 50
+
+function allowanceFromOrg(org: { mode: string; stripe_price_id: string | null; trial_votes_limit?: number | null }) {
+  if (org.mode === 'TRIAL') {
+    return Math.max(org.trial_votes_limit ?? 100, 0)
+  }
+
+  if (org.stripe_price_id === process.env.STRIPE_PRICE_STARTER) return STARTER_ALLOWANCE
+  if (org.stripe_price_id === process.env.STRIPE_PRICE_GROWTH) return GROWTH_ALLOWANCE
+  if (org.stripe_price_id === process.env.STRIPE_PRICE_NETWORK) return NETWORK_ALLOWANCE
+  return 0
+}
+
 function getIp(event: Parameters<Handler>[0]) {
   return (
     event.headers['x-nf-client-connection-ip'] ||
@@ -83,7 +99,7 @@ export const handler: Handler = async (event) => {
 
   const { data: orgRow, error: orgLookupError } = await supabaseAdmin
     .from('organizations')
-    .select('id,mode,trial_event_id')
+    .select('id,mode,trial_event_id,trial_votes_limit,stripe_price_id')
     .eq('id', eventRow.org_id)
     .maybeSingle()
 
@@ -161,6 +177,34 @@ export const handler: Handler = async (event) => {
   }
 
   registerSuccess(rateKey)
+
+  const allowance = allowanceFromOrg(orgRow)
+  const { data: usageData, error: usageError } = await supabaseAdmin.rpc('increment_org_vote_usage', {
+    p_org_id: orgRow.id,
+    p_allowance: allowance,
+    p_overage_rate_cents: OVERAGE_RATE_CENTS
+  })
+
+  if (usageError) {
+    console.error('submitVote usage increment RPC failed', {
+      slug,
+      ballotId: ballotRow.id,
+      eventId: eventRow.id,
+      orgId: orgRow.id,
+      error: usageError.message
+    })
+  } else {
+    const usage = Array.isArray(usageData) ? usageData[0] : usageData
+    if ((usage?.overage_votes ?? 0) > 0) {
+      console.warn('submitVote overage detected', {
+        orgId: orgRow.id,
+        billingPeriodStart: usage?.billing_period_start ?? null,
+        voteCount: usage?.vote_count ?? null,
+        overageVotes: usage?.overage_votes ?? 0
+      })
+    }
+  }
+
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },

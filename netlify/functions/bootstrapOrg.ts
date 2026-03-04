@@ -6,12 +6,45 @@ type OrgRow = {
   name: string
   mode: 'DEMO' | 'TRIAL' | 'PAID'
   stripe_customer_id: string | null
+  stripe_price_id: string | null
   trial_event_id: string | null
   trial_votes_used: number
   trial_votes_limit: number
   subscription_status: string | null
   current_period_end: string | null
   is_active: boolean
+}
+
+type UsageSummary = {
+  plan_name: 'STARTER' | 'GROWTH' | 'NETWORK' | 'TRIAL' | 'UNKNOWN'
+  billing_period_start: string | null
+  votes_used: number
+  allowance: number
+  remaining: number
+  overage_votes: number
+  estimated_overage_cents: number
+  warning_80: boolean
+}
+
+const STARTER_ALLOWANCE = 500
+const GROWTH_ALLOWANCE = 2000
+const NETWORK_ALLOWANCE = 5000
+const OVERAGE_RATE_CENTS = 50
+
+function planFromOrg(org: OrgRow): UsageSummary['plan_name'] {
+  if (org.mode === 'TRIAL') return 'TRIAL'
+  if (org.stripe_price_id && org.stripe_price_id === process.env.STRIPE_PRICE_STARTER) return 'STARTER'
+  if (org.stripe_price_id && org.stripe_price_id === process.env.STRIPE_PRICE_GROWTH) return 'GROWTH'
+  if (org.stripe_price_id && org.stripe_price_id === process.env.STRIPE_PRICE_NETWORK) return 'NETWORK'
+  return 'UNKNOWN'
+}
+
+function allowanceFromPlan(plan: UsageSummary['plan_name'], org: OrgRow) {
+  if (plan === 'STARTER') return STARTER_ALLOWANCE
+  if (plan === 'GROWTH') return GROWTH_ALLOWANCE
+  if (plan === 'NETWORK') return NETWORK_ALLOWANCE
+  if (plan === 'TRIAL') return Math.max(org.trial_votes_limit || 100, 0)
+  return 0
 }
 
 function defaultOrgName(email: string | null | undefined) {
@@ -52,7 +85,7 @@ export const handler: Handler = async (event) => {
   if (membership?.org_id) {
     const { data: orgData, error: orgError } = await supabaseAdmin
       .from('organizations')
-      .select('id,name,mode,stripe_customer_id,trial_event_id,trial_votes_used,trial_votes_limit,subscription_status,current_period_end,is_active')
+      .select('id,name,mode,stripe_customer_id,stripe_price_id,trial_event_id,trial_votes_used,trial_votes_limit,subscription_status,current_period_end,is_active')
       .eq('id', membership.org_id)
       .single()
 
@@ -71,7 +104,7 @@ export const handler: Handler = async (event) => {
         mode: 'TRIAL',
         is_active: false
       })
-      .select('id,name,mode,stripe_customer_id,trial_event_id,trial_votes_used,trial_votes_limit,subscription_status,current_period_end,is_active')
+      .select('id,name,mode,stripe_customer_id,stripe_price_id,trial_event_id,trial_votes_used,trial_votes_limit,subscription_status,current_period_end,is_active')
       .single()
 
     if (createOrgError || !createdOrg) {
@@ -94,9 +127,34 @@ export const handler: Handler = async (event) => {
     role = 'OWNER'
   }
 
+  const planName = planFromOrg(org)
+  const allowance = allowanceFromPlan(planName, org)
+
+  const { data: usageRows, error: usageError } = await supabaseAdmin.rpc('get_org_vote_usage', {
+    p_org_id: org.id,
+    p_allowance: allowance,
+    p_overage_rate_cents: OVERAGE_RATE_CENTS
+  })
+
+  if (usageError) {
+    return { statusCode: 500, body: JSON.stringify({ error: usageError.message }) }
+  }
+
+  const usageRow = (Array.isArray(usageRows) ? usageRows[0] : usageRows) ?? null
+  const usage: UsageSummary = {
+    plan_name: planName,
+    billing_period_start: usageRow?.billing_period_start ?? null,
+    votes_used: usageRow?.vote_count ?? 0,
+    allowance: usageRow?.allowance ?? allowance,
+    remaining: usageRow?.remaining ?? Math.max(allowance, 0),
+    overage_votes: usageRow?.overage_votes ?? 0,
+    estimated_overage_cents: usageRow?.estimated_overage_cents ?? 0,
+    warning_80: !!usageRow?.warning_80
+  }
+
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ org, role, created: !membership?.org_id })
+    body: JSON.stringify({ org, role, usage, created: !membership?.org_id })
   }
 }

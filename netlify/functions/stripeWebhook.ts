@@ -72,15 +72,18 @@ export const handler: Handler = async (event) => {
 
         let currentPeriodEnd: string | null = null
         let status = 'active'
+        let stripePriceId: string | null = null
         if (subscriptionId) {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId)
           currentPeriodEnd = toIsoFromUnix(subscription.current_period_end)
           status = subscription.status
+          stripePriceId = subscription.items.data[0]?.price?.id ?? null
         }
 
         const patch = {
           stripe_customer_id: customerId,
           stripe_subscription_id: subscriptionId,
+          stripe_price_id: stripePriceId,
           subscription_status: status,
           current_period_end: currentPeriodEnd,
           mode: 'PAID',
@@ -103,6 +106,7 @@ export const handler: Handler = async (event) => {
 
         const patch = {
           stripe_subscription_id: subscription.id,
+          stripe_price_id: subscription.items.data[0]?.price?.id ?? null,
           subscription_status: status,
           current_period_end: toIsoFromUnix(subscription.current_period_end),
           mode: 'PAID',
@@ -123,6 +127,7 @@ export const handler: Handler = async (event) => {
         const orgId = subscription.metadata?.org_id || null
         const patch = {
           stripe_subscription_id: subscription.id,
+          stripe_price_id: subscription.items.data[0]?.price?.id ?? null,
           subscription_status: 'canceled',
           current_period_end: toIsoFromUnix(subscription.current_period_end),
           is_active: false
