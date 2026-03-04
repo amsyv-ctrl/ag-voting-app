@@ -149,3 +149,31 @@ export async function createPortalSession(accessToken: string): Promise<{ url: s
 
   return handleJson<{ url: string }>(res)
 }
+
+export async function verifyReceipt(
+  accessToken: string,
+  receiptCode: string
+): Promise<{
+  found: boolean
+  ballot_id?: string
+  event_id?: string
+  round?: number
+  created_at?: string
+}> {
+  const res = await fetch(`${API_BASE}/verifyReceipt`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ receipt_code: receiptCode })
+  })
+
+  return handleJson<{
+    found: boolean
+    ballot_id?: string
+    event_id?: string
+    round?: number
+    created_at?: string
+  }>(res)
+}

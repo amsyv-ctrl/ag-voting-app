@@ -1,7 +1,7 @@
 import { FormEvent, useMemo, useState, useEffect } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { adminGeneratePins } from '../lib/api'
+import { adminGeneratePins, verifyReceipt } from '../lib/api'
 import { getAccessToken, requireSession } from '../lib/auth'
 import { OperatorRunbook } from '../components/OperatorRunbook'
 
@@ -63,6 +63,14 @@ type ExportSummaryRow = {
   }>
 }
 
+type ReceiptLookupResult = {
+  found: boolean
+  ballot_id?: string
+  event_id?: string
+  round?: number
+  created_at?: string
+}
+
 function csvCell(value: unknown) {
   const s = String(value ?? '')
   return `"${s.replace(/"/g, '""')}"`
@@ -95,6 +103,10 @@ export function AdminEventPage() {
   const [requiresPin, setRequiresPin] = useState(true)
   const [pinCount, setPinCount] = useState(100)
   const [pinsOutput, setPinsOutput] = useState<string[]>([])
+  const [receiptCodeInput, setReceiptCodeInput] = useState('')
+  const [verifyingReceipt, setVerifyingReceipt] = useState(false)
+  const [receiptLookupResult, setReceiptLookupResult] = useState<ReceiptLookupResult | null>(null)
+  const [receiptLookupError, setReceiptLookupError] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [orgAccess, setOrgAccess] = useState<OrgAccessRow | null>(null)
@@ -416,6 +428,33 @@ export function AdminEventPage() {
     }
   }
 
+  async function onVerifyReceipt(e: FormEvent) {
+    e.preventDefault()
+    setReceiptLookupError(null)
+    setReceiptLookupResult(null)
+    const token = await getAccessToken()
+    if (!token) {
+      navigate('/admin')
+      return
+    }
+
+    const input = receiptCodeInput.trim()
+    if (!input) {
+      setReceiptLookupError('Enter a receipt code.')
+      return
+    }
+
+    setVerifyingReceipt(true)
+    try {
+      const result = await verifyReceipt(token, input)
+      setReceiptLookupResult(result)
+    } catch (err) {
+      setReceiptLookupError(err instanceof Error ? err.message : 'Receipt lookup failed')
+    } finally {
+      setVerifyingReceipt(false)
+    }
+  }
+
   const isPaidActive = !!(orgAccess?.mode === 'PAID' && orgAccess?.is_active)
   const isTrialActiveForThisEvent = !!(
     orgAccess?.mode === 'TRIAL' &&
@@ -578,6 +617,30 @@ export function AdminEventPage() {
             </label>
             <button type="submit" style={{ marginTop: '10px' }} disabled={!canOperateEvent}>Create Ballot</button>
           </form>
+        </div>
+
+        <div className="ballot-item">
+          <div className="ballot-header">Verify Receipt</div>
+          <form onSubmit={onVerifyReceipt} className="stack inline" style={{ marginTop: '0.75rem' }}>
+            <input
+              value={receiptCodeInput}
+              onChange={(e) => setReceiptCodeInput(e.target.value.toUpperCase())}
+              placeholder="Receipt code (e.g. 7F3A-92C1)"
+            />
+            <button type="submit" className="secondary-btn" disabled={verifyingReceipt}>
+              {verifyingReceipt ? 'Checking...' : 'Check'}
+            </button>
+          </form>
+          {receiptLookupError && <p className="error">{receiptLookupError}</p>}
+          {receiptLookupResult && (
+            receiptLookupResult.found ? (
+              <p className="muted" style={{ marginTop: '0.6rem' }}>
+                Receipt found. Event: {receiptLookupResult.event_id} | Ballot: {receiptLookupResult.ballot_id} | Round: #{receiptLookupResult.round} | Recorded: {receiptLookupResult.created_at ? new Date(receiptLookupResult.created_at).toLocaleString() : 'N/A'}
+              </p>
+            ) : (
+              <p className="muted" style={{ marginTop: '0.6rem' }}>No matching receipt found in your organization scope.</p>
+            )
+          )}
         </div>
 
         <div className="export-section">
