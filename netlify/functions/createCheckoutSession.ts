@@ -107,6 +107,7 @@ export const handler: Handler = async (event) => {
     mode: 'subscription',
     customer: customerId,
     line_items: [{ price: priceId, quantity: 1 }],
+    allow_promotion_codes: true,
     success_url: successUrl,
     cancel_url: cancelUrl,
     metadata: { org_id: org.id },
@@ -121,4 +122,3 @@ export const handler: Handler = async (event) => {
     body: JSON.stringify({ url: session.url })
   }
 }
-
