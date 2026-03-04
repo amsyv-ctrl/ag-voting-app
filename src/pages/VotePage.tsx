@@ -4,7 +4,7 @@ import { ApiError, fetchBallotPublic, submitVote } from '../lib/api'
 import { roundLabel } from '../lib/roundLabel'
 import type { PublicBallot } from '../types'
 
-const RESET_MS = 3000
+const RESET_MS = 1500
 
 export function VotePage() {
   const { slug } = useParams()
@@ -89,8 +89,8 @@ export function VotePage() {
         {confirmation ? (
           <div className="success-box">
             <h2>Vote received</h2>
-            <p>{new Date(confirmation.submittedAt).toLocaleString()}</p>
             <p><strong>Receipt:</strong> {confirmation.receipt}</p>
+            <p className="muted">This receipt confirms your vote was recorded.</p>
             <p>Resetting for the next voter...</p>
           </div>
         ) : (
