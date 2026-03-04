@@ -350,6 +350,36 @@ export function AdminEventPage() {
     await load()
   }
 
+  async function onArchiveBallot(ballotId: string, ballotTitle: string) {
+    if (!canOperateEvent) {
+      setError('Subscription inactive. This event is read-only.')
+      return
+    }
+    const confirmed = window.confirm(
+      `Archive ballot "${ballotTitle}"?\n\nArchiving a ballot will close all open sessions and hide it from active lists.`
+    )
+    if (!confirmed) return
+
+    setError(null)
+    const nowIso = new Date().toISOString()
+    const { error: archiveError } = await supabase
+      .from('ballots')
+      .update({
+        status: 'CLOSED',
+        closes_at: nowIso,
+        deleted_at: nowIso,
+        deleted_by: currentUserId
+      })
+      .eq('id', ballotId)
+
+    if (archiveError) {
+      setError(archiveError.message)
+      return
+    }
+
+    await load()
+  }
+
   function archivedByLabel(ballot: BallotRow) {
     if (!ballot.deleted_by) return 'Unknown'
     if (ballot.deleted_by === currentUserId) return 'You'
@@ -728,9 +758,18 @@ export function AdminEventPage() {
               <div className="ballot-item" key={ballot.id}>
                 <div className="ballot-header">
                   <span>{ballot.title}</span>
-                  <Link to={`/admin/ballots/${ballot.id}`}>
-                    <button className="secondary-btn">Manage</button>
-                  </Link>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      className="danger-btn"
+                      onClick={() => onArchiveBallot(ballot.id, ballot.title)}
+                      disabled={!canOperateEvent}
+                    >
+                      Archive
+                    </button>
+                    <Link to={`/admin/ballots/${ballot.id}`}>
+                      <button className="secondary-btn">Manage</button>
+                    </Link>
+                  </div>
                 </div>
                 <div className="ballot-details">
                   Status: {ballot.status}<br />
