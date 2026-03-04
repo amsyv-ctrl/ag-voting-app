@@ -177,3 +177,20 @@ export async function verifyReceipt(
     created_at?: string
   }>(res)
 }
+
+export async function sealBallotRound(
+  accessToken: string,
+  ballotId: string,
+  round: number
+): Promise<{ seal_short: string; seal_hash: string; total_votes: number }> {
+  const res = await fetch(`${API_BASE}/sealBallotRound`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ ballot_id: ballotId, round })
+  })
+
+  return handleJson<{ seal_short: string; seal_hash: string; total_votes: number }>(res)
+}

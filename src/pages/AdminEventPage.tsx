@@ -63,6 +63,17 @@ type ExportSummaryRow = {
   }>
 }
 
+type SealRow = {
+  ballot_id: string
+  vote_round: number
+  seal_short: string
+  seal_hash: string
+  total_votes: number
+  counts: Record<string, number>
+  closed_at: string
+  threshold_required: 'SIMPLE' | 'TWO_THIRDS'
+}
+
 type ReceiptLookupResult = {
   found: boolean
   ballot_id?: string
@@ -316,6 +327,17 @@ export function AdminEventPage() {
         }
         summaries: ExportSummaryRow[]
       }
+
+      const { data: sealsData, error: sealsError } = await supabase
+        .from('election_result_seals')
+        .select('ballot_id,vote_round,seal_short,seal_hash,total_votes,counts,closed_at,threshold_required')
+        .eq('event_id', eventId)
+
+      if (sealsError) throw new Error(sealsError.message)
+      const sealByRound = new Map<string, SealRow>()
+      for (const seal of (sealsData ?? []) as SealRow[]) {
+        sealByRound.set(`${seal.ballot_id}:${seal.vote_round}`, seal)
+      }
       const rows: string[] = []
       rows.push([
         'event_id',
@@ -337,6 +359,12 @@ export function AdminEventPage() {
         'total_votes',
         'election_reached_at',
         'winner_label',
+        'seal_short',
+        'seal_hash',
+        'seal_closed_at',
+        'seal_threshold_required',
+        'seal_total_votes',
+        'seal_counts_json',
         'choice_label',
         'choice_votes',
         'choice_pct',
@@ -344,6 +372,7 @@ export function AdminEventPage() {
       ].map(csvCell).join(','))
 
       for (const summary of payload.summaries ?? []) {
+        const seal = sealByRound.get(`${summary.ballot_id}:${summary.vote_round}`)
         const choiceRows = summary.votes_per_choice ?? summary.counts ?? []
         if (choiceRows.length === 0) {
           rows.push([
@@ -366,6 +395,12 @@ export function AdminEventPage() {
             summary.total_votes,
             summary.election_reached_at ?? '',
             summary.winner_label ?? '',
+            seal?.seal_short ?? '',
+            seal?.seal_hash ?? '',
+            seal?.closed_at ?? '',
+            seal?.threshold_required ?? '',
+            seal?.total_votes ?? '',
+            seal ? JSON.stringify(seal.counts ?? {}) : '',
             '',
             '',
             '',
@@ -395,6 +430,12 @@ export function AdminEventPage() {
             summary.total_votes,
             summary.election_reached_at ?? '',
             summary.winner_label ?? '',
+            seal?.seal_short ?? '',
+            seal?.seal_hash ?? '',
+            seal?.closed_at ?? '',
+            seal?.threshold_required ?? '',
+            seal?.total_votes ?? '',
+            seal ? JSON.stringify(seal.counts ?? {}) : '',
             choice.label,
             choice.votes,
             (Number(choice.pct ?? 0) * 100).toFixed(2),

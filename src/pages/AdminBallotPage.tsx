@@ -6,6 +6,8 @@ import { supabase } from '../lib/supabase'
 import { computeWinner } from '../lib/winner'
 import type { BallotResults } from '../types'
 import { OperatorRunbook } from '../components/OperatorRunbook'
+import { getAccessToken } from '../lib/auth'
+import { sealBallotRound } from '../lib/api'
 
 type BallotData = {
   id: string
@@ -46,6 +48,12 @@ type OrgAccessRow = {
   trial_votes_limit: number
 }
 
+type IntegritySealRow = {
+  seal_short: string
+  seal_hash: string
+  total_votes: number
+}
+
 export function AdminBallotPage() {
   const { id } = useParams()
   const ballotId = id as string
@@ -72,6 +80,7 @@ export function AdminBallotPage() {
   const closeFinalizeInFlight = useRef(false)
   const [activeSection, setActiveSection] = useState<'edit' | 'choices' | 'results' | 'manual' | 'history' | 'danger' | null>('edit')
   const [runoffDismissed, setRunoffDismissed] = useState(false)
+  const [integritySeal, setIntegritySeal] = useState<IntegritySealRow | null>(null)
 
   const appBase = useMemo(() => window.location.origin, [])
 
@@ -182,6 +191,14 @@ export function AdminBallotPage() {
       if (!choice.is_withdrawn) nextCounts[choice.id] = manualCounts[choice.id] ?? '0'
     }
     setManualCounts(nextCounts)
+
+    const { data: sealData } = await supabase
+      .from('election_result_seals')
+      .select('seal_short,seal_hash,total_votes')
+      .eq('ballot_id', ballotData.id)
+      .eq('vote_round', ballotData.vote_round ?? 1)
+      .maybeSingle()
+    setIntegritySeal((sealData as IntegritySealRow | null) ?? null)
 
     const { count: pinCount, error: pinCountError } = await supabase
       .from('pins')
@@ -336,6 +353,8 @@ export function AdminBallotPage() {
           .eq('id', ballot.id)
         if (updateError) {
           setError(updateError.message)
+        } else {
+          await sealRound(ballot.id, ballot.vote_round)
         }
         await load()
       } finally {
@@ -343,6 +362,24 @@ export function AdminBallotPage() {
       }
     })()
   }, [ballot, secondsToClose])
+
+  async function sealRound(ballotId: string, round: number) {
+    const token = await getAccessToken()
+    if (!token) {
+      setError('Session expired. Please sign in again.')
+      return
+    }
+    try {
+      const seal = await sealBallotRound(token, ballotId, round)
+      setIntegritySeal({
+        seal_short: seal.seal_short,
+        seal_hash: seal.seal_hash,
+        total_votes: seal.total_votes
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate integrity seal')
+    }
+  }
 
   async function closeBallot() {
     if (!ballot) return
@@ -433,6 +470,7 @@ export function AdminBallotPage() {
       return
     }
 
+    await sealRound(ballot.id, ballot.vote_round)
     await load()
   }
 
@@ -664,6 +702,12 @@ export function AdminBallotPage() {
         )}
         {secondsToClose !== null && (
           <p className="ballot-admin-close-countdown">Closing in: {secondsToClose}s</p>
+        )}
+        {ballot.status === 'CLOSED' && integritySeal && (
+          <div className="ballot-admin-runoff-panel">
+            <p><strong>Integrity Seal:</strong> {integritySeal.seal_short}</p>
+            <p className="muted">This seal verifies the recorded results for this round.</p>
+          </div>
         )}
         <p className="ballot-admin-url">
           Vote URL:{' '}

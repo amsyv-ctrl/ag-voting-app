@@ -45,6 +45,7 @@ Functions:
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPABASE_PROJECT_ID` (optional, reserved)
 - `VOTE_RECEIPT_SECRET` (required for tamper-evident vote receipts; `RECEIPT_SECRET` supported as fallback alias)
+- `SEAL_SECRET` (required for ballot integrity seals on closed rounds)
 
 Important:
 
