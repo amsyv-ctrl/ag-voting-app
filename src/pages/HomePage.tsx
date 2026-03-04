@@ -28,7 +28,7 @@ export function HomePage() {
   }, [])
 
   return (
-    <main className="landing-root bg-gray-950 text-gray-100 antialiased">
+    <main id="top" className="landing-root bg-gray-950 text-gray-100 antialiased">
       <Hero onOpenLogin={() => setLoginOpen(true)} />
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
       <ProblemSection />

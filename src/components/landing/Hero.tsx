@@ -10,7 +10,7 @@ export function Hero({ onOpenLogin }: HeroProps) {
     <>
       <nav className="fixed left-0 right-0 top-0 z-50 border-b border-gray-800 bg-gray-950/80 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
-          <div className="text-2xl font-bold text-blue-400">AG Voting</div>
+          <a href="#top" className="text-2xl font-bold text-blue-400 no-underline transition hover:text-blue-300">AG Voting</a>
           <div className="flex items-center gap-4 sm:gap-8">
             <a href="#how" className="hidden transition hover:text-blue-400 sm:inline">How It Works</a>
             <a href="#pricing" className="hidden transition hover:text-blue-400 sm:inline">Pricing</a>
@@ -47,7 +47,11 @@ export function Hero({ onOpenLogin }: HeroProps) {
               See How It Works
             </a>
           </div>
-          <button type="button" onClick={onOpenLogin} className="mb-16 text-lg text-blue-400 underline transition hover:text-blue-300">
+          <button
+            type="button"
+            onClick={onOpenLogin}
+            className="glow-hover mb-16 rounded-xl border border-blue-500 px-10 py-5 text-xl font-bold text-blue-300 transition hover:bg-blue-900/30"
+          >
             Already have an account? Login
           </button>
 
