@@ -118,6 +118,7 @@ export function AdminEventPage() {
   const [verifyingReceipt, setVerifyingReceipt] = useState(false)
   const [receiptLookupResult, setReceiptLookupResult] = useState<ReceiptLookupResult | null>(null)
   const [receiptLookupError, setReceiptLookupError] = useState<string | null>(null)
+  const [exportingOfficial, setExportingOfficial] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [orgAccess, setOrgAccess] = useState<OrgAccessRow | null>(null)
@@ -469,6 +470,53 @@ export function AdminEventPage() {
     }
   }
 
+  async function onExportOfficialRecord() {
+    setError(null)
+    setExportingOfficial(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) {
+        navigate('/admin')
+        return
+      }
+
+      const res = await fetch('/api/exportOfficialRecord', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ event_id: eventId })
+      })
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        const message =
+          typeof body?.error === 'string'
+            ? body.error
+            : typeof body?.message === 'string'
+              ? body.message
+              : 'Official record export failed'
+        throw new Error(message)
+      }
+
+      const blob = await res.blob()
+      const disposition = res.headers.get('content-disposition') || ''
+      const match = disposition.match(/filename="?([^"]+)"?/)
+      const filename = match?.[1] || `event_record_${eventId}.json`
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Official record export failed')
+    } finally {
+      setExportingOfficial(false)
+    }
+  }
+
   async function onVerifyReceipt(e: FormEvent) {
     e.preventDefault()
     setReceiptLookupError(null)
@@ -685,11 +733,15 @@ export function AdminEventPage() {
         </div>
 
         <div className="export-section">
+          <button onClick={onExportOfficialRecord} disabled={exportingOfficial}>
+            {exportingOfficial ? 'Exporting Official Record...' : 'Export Official Record (JSON)'}
+          </button>
+          <div style={{ height: '0.6rem' }} />
           <button className="secondary-btn" onClick={onExportResults} disabled={exporting}>
             {exporting ? 'Exporting...' : 'Export All Voting Results (CSV)'}
           </button>
           <p className="subtitle" style={{ marginTop: '10px' }}>
-            Download aggregated round results and threshold timestamps for record keeping.
+            JSON is the primary verifiable official record. CSV remains available as a convenience export.
           </p>
         </div>
       </section>
