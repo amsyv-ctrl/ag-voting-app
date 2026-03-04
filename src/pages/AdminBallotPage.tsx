@@ -70,6 +70,7 @@ export function AdminBallotPage() {
   const [orgAccess, setOrgAccess] = useState<OrgAccessRow | null>(null)
   const closeFinalizeInFlight = useRef(false)
   const [activeSection, setActiveSection] = useState<'edit' | 'choices' | 'results' | 'manual' | 'history' | 'danger' | null>('edit')
+  const [runoffDismissed, setRunoffDismissed] = useState(false)
 
   const appBase = useMemo(() => window.location.origin, [])
 
@@ -90,6 +91,10 @@ export function AdminBallotPage() {
     if (canOperateEvent) return true
     setError('Subscription inactive. This event is read-only.')
     return false
+  }
+
+  function thresholdLabel(rule: 'SIMPLE' | 'TWO_THIRDS') {
+    return rule === 'TWO_THIRDS' ? '2/3 majority required' : 'Simple majority (>50%) required'
   }
 
   async function load() {
@@ -289,6 +294,10 @@ export function AdminBallotPage() {
       supabase.removeChannel(channel)
     }
   }, [ballot?.id, ballot?.majority_rule, ballot?.vote_round, ballot?.status])
+
+  useEffect(() => {
+    setRunoffDismissed(false)
+  }, [ballot?.id, ballot?.vote_round, ballot?.status])
 
   useEffect(() => {
     if (!ballot) return
@@ -633,6 +642,25 @@ export function AdminBallotPage() {
             <p className="winner"><strong>Leader:</strong> {results.winner_label} ({(results.top_pct! * 100).toFixed(1)}%)</p>
           )}
         </div>
+        {ballot.status === 'CLOSED' && results?.winner_label && (
+          <div className="winner-banner">
+            <p className="winner-kicker">Election Reached</p>
+            <h3>{results.winner_label}</h3>
+            <p>{(results.top_pct! * 100).toFixed(1)}% · {thresholdLabel(ballot.majority_rule)}</p>
+          </div>
+        )}
+        {ballot.status === 'CLOSED' && !results?.winner_label && !runoffDismissed && (
+          <div className="ballot-admin-runoff-panel">
+            <h3>No candidate reached the required majority.</h3>
+            <p>A runoff round is required to complete this election.</p>
+            <p><strong>Threshold:</strong> {thresholdLabel(ballot.majority_rule)}</p>
+            <p className="muted">Common practice: confirm bylaws if only top few candidates proceed to runoff.</p>
+            <div className="inline">
+              <button onClick={openNewVoteRound} disabled={!canOperateEvent}>Start runoff round</button>
+              <button className="secondary" onClick={() => setRunoffDismissed(true)}>Keep closed</button>
+            </div>
+          </div>
+        )}
         {secondsToClose !== null && (
           <p className="ballot-admin-close-countdown">Closing in: {secondsToClose}s</p>
         )}

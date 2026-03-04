@@ -342,6 +342,22 @@ a {
   margin-top: 0.75rem;
 }
 
+.ballot-admin-runoff-panel {
+  margin: 0.8rem 0;
+  padding: 0.8rem;
+  border: 1px solid #f0c97a;
+  border-radius: 10px;
+  background: #fff7e8;
+}
+
+.ballot-admin-runoff-panel h3 {
+  margin: 0 0 0.35rem 0;
+}
+
+.ballot-admin-runoff-panel p {
+  margin: 0.3rem 0;
+}
+
 .ballot-admin-close-countdown {
   margin: 0.6rem 0;
   color: #b42318;
