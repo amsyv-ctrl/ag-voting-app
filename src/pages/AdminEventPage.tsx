@@ -108,6 +108,8 @@ export function AdminEventPage() {
   const [votingStaffNames, setVotingStaffNames] = useState('')
   const [ballots, setBallots] = useState<BallotRow[]>([])
   const [archivedBallots, setArchivedBallots] = useState<BallotRow[]>([])
+  const [ballotsView, setBallotsView] = useState<'ACTIVE' | 'ARCHIVED'>('ACTIVE')
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [activePins, setActivePins] = useState<PinRow[]>([])
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -137,6 +139,7 @@ export function AdminEventPage() {
       navigate('/admin')
       return
     }
+    setCurrentUserId(session.user.id)
 
     const { data: eventData, error: eventError } = await supabase
       .from('events')
@@ -345,6 +348,13 @@ export function AdminEventPage() {
     }
 
     await load()
+  }
+
+  function archivedByLabel(ballot: BallotRow) {
+    if (!ballot.deleted_by) return 'Unknown'
+    if (ballot.deleted_by === currentUserId) return 'You'
+    const id = ballot.deleted_by
+    return `${id.slice(0, 8)}...${id.slice(-4)}`
   }
 
   async function onExportResults() {
@@ -688,50 +698,79 @@ export function AdminEventPage() {
         <h2>Ballots</h2>
         <p className="subtitle">Includes round summaries, counts per choice, and the timestamp each election threshold was first reached.</p>
 
-        {ballots.map((ballot) => (
-          <div className="ballot-item" key={ballot.id}>
-            <div className="ballot-header">
-              <span>{ballot.title}</span>
-              <Link to={`/admin/ballots/${ballot.id}`}>
-                <button className="secondary-btn">Manage</button>
-              </Link>
-            </div>
-            <div className="ballot-details">
-              Status: {ballot.status}<br />
-              Incumbent: {ballot.incumbent_name || 'N/A'}<br />
-              PIN required: {ballot.requires_pin ? 'Yes' : 'No'}<br />
-              Vote URL: <span className="url">{appBase}/vote/{ballot.slug}</span><br />
-              Display URL: <span className="url">{appBase}/display/{ballot.slug}</span>
-            </div>
+        <div className="ballot-item" style={{ marginBottom: '1rem' }}>
+          <div className="ballot-header">Ballot View</div>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+            <button
+              type="button"
+              className={ballotsView === 'ACTIVE' ? '' : 'secondary-btn'}
+              onClick={() => setBallotsView('ACTIVE')}
+            >
+              Active ({ballots.length})
+            </button>
+            <button
+              type="button"
+              className={ballotsView === 'ARCHIVED' ? '' : 'secondary-btn'}
+              onClick={() => setBallotsView('ARCHIVED')}
+            >
+              Archived ({archivedBallots.length})
+            </button>
           </div>
-        ))}
-
-        <div className="ballot-item">
-          <div className="ballot-header">Archived Ballots</div>
-          {archivedBallots.length === 0 ? (
-            <p className="muted" style={{ marginTop: '0.75rem' }}>No archived ballots.</p>
-          ) : (
-            <div style={{ marginTop: '0.75rem', display: 'grid', gap: '0.75rem' }}>
-              {archivedBallots.map((ballot) => (
-                <div key={ballot.id} style={{ border: '1px solid rgba(148, 163, 184, 0.35)', borderRadius: '10px', padding: '0.75rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', alignItems: 'center' }}>
-                    <div>
-                      <strong>{ballot.title}</strong>
-                      <div className="muted">Archived: {ballot.deleted_at ? new Date(ballot.deleted_at).toLocaleString() : 'N/A'}</div>
-                    </div>
-                    <button
-                      className="secondary-btn"
-                      onClick={() => onRestoreBallot(ballot.id, ballot.title)}
-                      disabled={!canOperateEvent}
-                    >
-                      Restore
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
+
+        {ballotsView === 'ACTIVE' ? (
+          ballots.length === 0 ? (
+            <div className="ballot-item">
+              <p className="muted">No active ballots yet.</p>
+            </div>
+          ) : (
+            ballots.map((ballot) => (
+              <div className="ballot-item" key={ballot.id}>
+                <div className="ballot-header">
+                  <span>{ballot.title}</span>
+                  <Link to={`/admin/ballots/${ballot.id}`}>
+                    <button className="secondary-btn">Manage</button>
+                  </Link>
+                </div>
+                <div className="ballot-details">
+                  Status: {ballot.status}<br />
+                  Incumbent: {ballot.incumbent_name || 'N/A'}<br />
+                  PIN required: {ballot.requires_pin ? 'Yes' : 'No'}<br />
+                  Vote URL: <span className="url">{appBase}/vote/{ballot.slug}</span><br />
+                  Display URL: <span className="url">{appBase}/display/{ballot.slug}</span>
+                </div>
+              </div>
+            ))
+          )
+        ) : (
+          archivedBallots.length === 0 ? (
+            <div className="ballot-item">
+              <p className="muted">No archived ballots.</p>
+            </div>
+          ) : (
+            archivedBallots.map((ballot) => (
+              <div className="ballot-item" key={ballot.id}>
+                <div className="ballot-header">
+                  <span>{ballot.title}</span>
+                  <button
+                    className="secondary-btn"
+                    onClick={() => onRestoreBallot(ballot.id, ballot.title)}
+                    disabled={!canOperateEvent}
+                  >
+                    Restore
+                  </button>
+                </div>
+                <div className="ballot-details">
+                  Archived: {ballot.deleted_at ? new Date(ballot.deleted_at).toLocaleString() : 'N/A'}<br />
+                  Archived by: {archivedByLabel(ballot)}<br />
+                  Last status: {ballot.status}<br />
+                  Incumbent: {ballot.incumbent_name || 'N/A'}<br />
+                  PIN required: {ballot.requires_pin ? 'Yes' : 'No'}
+                </div>
+              </div>
+            ))
+          )
+        )}
 
         <div className="ballot-item ballot-create-card">
           <div className="ballot-header">Create New Ballot</div>
