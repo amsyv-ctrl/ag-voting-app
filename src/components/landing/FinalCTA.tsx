@@ -11,7 +11,7 @@ export function FinalCTA() {
           <br />
           Start your free trial today and see how smooth governance voting can be.
         </p>
-        <Link to="/signup" className="glow-hover inline-block rounded-2xl bg-blue-600 px-16 py-8 text-3xl font-bold transition hover:bg-blue-700">
+        <Link to="/admin?mode=register" className="glow-hover inline-block rounded-2xl bg-blue-600 px-16 py-8 text-3xl font-bold text-white no-underline transition hover:bg-blue-700">
           Create Your First Event
         </Link>
       </SectionMotion>

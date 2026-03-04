@@ -12,7 +12,7 @@ export function ProblemSection() {
     <section className="bg-gray-900 py-24">
       <SectionMotion className="mx-auto w-full max-w-5xl px-6">
         <h2 className="mb-16 text-center text-5xl font-bold md:text-6xl">Voting Shouldn’t Slow Down Your Meeting</h2>
-        <div className="mx-auto max-w-4xl rounded-2xl border border-gray-700 bg-gray-800/60 p-10 md:p-12">
+        <div className="glow-hover mx-auto max-w-4xl rounded-2xl border border-gray-700 bg-gray-800/60 p-10 md:p-12">
           <p className="mb-10 text-center text-xl leading-relaxed text-gray-300">
             Most churches and ministry networks still rely on paper ballots, hand counting, or outside vendors to run elections.
             <br className="hidden md:block" />

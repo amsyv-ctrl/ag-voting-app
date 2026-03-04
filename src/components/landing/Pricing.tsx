@@ -30,7 +30,7 @@ export function Pricing() {
           </SectionMotion>
         </div>
         <p className="mb-10 mt-12 text-xl">Overages are billed at $0.50 per vote.</p>
-        <Link to="/signup" className="glow-hover inline-block rounded-xl bg-blue-600 px-12 py-6 text-2xl font-bold transition hover:bg-blue-700">Start Your Free Trial</Link>
+        <Link to="/admin?mode=register" className="glow-hover inline-block rounded-xl bg-blue-600 px-12 py-6 text-2xl font-bold text-white no-underline transition hover:bg-blue-700">Start Your Free Trial</Link>
       </div>
     </section>
   )

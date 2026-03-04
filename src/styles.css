@@ -25,11 +25,11 @@ body {
 
 .landing-hero-overlay {
   background:
-    linear-gradient(to bottom right, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.95)),
+    linear-gradient(to bottom right, rgba(15, 23, 42, 0.62), rgba(15, 23, 42, 0.76)),
     radial-gradient(rgba(59, 130, 246, 0.08) 1px, transparent 1px),
     url('/hero-ordination-2024.jpg') center/cover no-repeat;
   background-size: auto, 3px 3px, cover;
-  background-blend-mode: multiply, normal, normal;
+  background-blend-mode: normal, normal, normal;
 }
 
 .glow-hover {

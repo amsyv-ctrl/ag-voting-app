@@ -40,10 +40,10 @@ export function Hero({ onOpenLogin }: HeroProps) {
             Replace paper ballots and manual counting with a simple system that keeps meetings moving.
           </p>
           <div className="mb-12 flex flex-col justify-center gap-6 sm:flex-row">
-            <Link to="/signup" className="glow-hover rounded-xl bg-blue-600 px-10 py-5 text-xl font-bold transition hover:bg-blue-700">
+            <Link to="/admin?mode=register" className="glow-hover rounded-xl bg-blue-600 px-10 py-5 text-xl font-bold text-white no-underline transition hover:bg-blue-700">
               Start a Free Trial
             </Link>
-            <a href="#how" className="glow-hover rounded-xl border border-blue-500 px-10 py-5 text-xl font-bold transition hover:bg-blue-900/30">
+            <a href="#how" className="glow-hover rounded-xl border border-blue-500 px-10 py-5 text-xl font-bold text-blue-300 no-underline transition hover:bg-blue-900/30">
               See How It Works
             </a>
           </div>
@@ -51,7 +51,7 @@ export function Hero({ onOpenLogin }: HeroProps) {
             Already have an account? Login
           </button>
 
-          <div className="absolute bottom-12 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-full border border-gray-700 bg-gray-900/60 px-6 py-3 shadow-lg backdrop-blur-md">
+          <div className="mx-auto mb-6 flex w-fit items-center gap-3 rounded-full border border-gray-700 bg-gray-900/60 px-6 py-3 shadow-lg backdrop-blur-md">
             <div className="h-4 w-4 animate-pulse-slow rounded-full bg-green-500 ring-2 ring-green-400/50" />
             <span className="text-sm font-medium">Powered by <span className="font-semibold text-white">Architect Ministry Solutions</span></span>
           </div>

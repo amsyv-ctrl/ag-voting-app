@@ -4,7 +4,8 @@ import {
   EyeSlashIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { supabase } from '../../lib/supabase'
 import { SectionMotion } from './SectionMotion'
 
 type LoginModalProps = {
@@ -13,10 +14,12 @@ type LoginModalProps = {
 }
 
 export function LoginModal({ open, onClose }: LoginModalProps) {
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -35,11 +38,18 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
+    setError(null)
     setLoading(true)
     try {
-      console.log('Login submit stub', { email })
+      const { error: loginError } = await supabase.auth.signInWithPassword({ email, password })
+      if (loginError) {
+        setError(loginError.message)
+        return
+      }
+      onClose()
+      navigate('/admin')
     } finally {
-      setTimeout(() => setLoading(false), 350)
+      setLoading(false)
     }
   }
 
@@ -105,10 +115,11 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
               {loading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
+          {error && <p className="mt-4 text-center text-sm text-red-300">{error}</p>}
           <div className="mt-6 text-center text-sm">
             <a href="#" className="text-blue-400 transition hover:text-blue-300">Forgot password?</a>
             <span className="mx-3 text-gray-500">•</span>
-            <Link to="/signup" className="text-blue-400 transition hover:text-blue-300">Start Free Trial</Link>
+            <Link to="/admin?mode=register" className="text-blue-400 transition hover:text-blue-300">Start Free Trial</Link>
           </div>
         </div>
       </SectionMotion>
