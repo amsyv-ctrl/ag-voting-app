@@ -52,6 +52,12 @@ function defaultOrgName(email: string | null | undefined) {
   return `${base} org`
 }
 
+function pickString(input: unknown) {
+  if (typeof input !== 'string') return null
+  const trimmed = input.trim()
+  return trimmed.length > 0 ? trimmed : null
+}
+
 async function validateAdmin(authHeader: string | undefined) {
   const token = authHeader?.replace('Bearer ', '').trim()
   if (!token) return null
@@ -96,13 +102,34 @@ export const handler: Handler = async (event) => {
   }
 
   if (!org) {
+    const metadata = (user.user_metadata || {}) as Record<string, unknown>
+    const organizationName = pickString(metadata.organization_name) ?? defaultOrgName(user.email)
+    const role = pickString(metadata.signup_role)
+    const estimatedVotingSize = pickString(metadata.estimated_voting_size)
+    const organizationType = pickString(metadata.organization_type)
+    const country = pickString(metadata.country)
+    const addressLine1 = pickString(metadata.address_line1)
+    const addressLine2 = pickString(metadata.address_line2)
+    const city = pickString(metadata.city)
+    const stateRegion = pickString(metadata.state_region)
+    const postalCode = pickString(metadata.postal_code)
+
     const { data: createdOrg, error: createOrgError } = await supabaseAdmin
       .from('organizations')
       .insert({
-        name: defaultOrgName(user.email),
+        name: organizationName,
         created_by: user.id,
         mode: 'TRIAL',
-        is_active: false
+        is_active: false,
+        signup_role: role,
+        estimated_voting_size: estimatedVotingSize,
+        organization_type: organizationType,
+        country,
+        address_line1: addressLine1,
+        address_line2: addressLine2,
+        city,
+        state_region: stateRegion,
+        postal_code: postalCode
       })
       .select('id,name,mode,stripe_customer_id,stripe_price_id,trial_event_id,trial_votes_used,trial_votes_limit,subscription_status,current_period_end,is_active')
       .single()

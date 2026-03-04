@@ -33,7 +33,16 @@ export function AdminLoginPage() {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [network, setNetwork] = useState('')
-  const [address, setAddress] = useState('')
+  const [organizationName, setOrganizationName] = useState('')
+  const [signupRole, setSignupRole] = useState('')
+  const [estimatedVotingSize, setEstimatedVotingSize] = useState('')
+  const [organizationType, setOrganizationType] = useState('')
+  const [country, setCountry] = useState('')
+  const [addressLine1, setAddressLine1] = useState('')
+  const [addressLine2, setAddressLine2] = useState('')
+  const [city, setCity] = useState('')
+  const [stateRegion, setStateRegion] = useState('')
+  const [postalCode, setPostalCode] = useState('')
 
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -180,6 +189,14 @@ export function AdminLoginPage() {
     setError(null)
     setNotice(null)
 
+    const composedAddress = [
+      addressLine1.trim(),
+      addressLine2.trim(),
+      [city.trim(), stateRegion.trim(), postalCode.trim()].filter(Boolean).join(' ')
+    ]
+      .filter(Boolean)
+      .join(', ')
+
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
@@ -188,7 +205,17 @@ export function AdminLoginPage() {
           first_name: firstName,
           last_name: lastName,
           network,
-          address
+          address: composedAddress,
+          organization_name: organizationName,
+          signup_role: signupRole || null,
+          estimated_voting_size: estimatedVotingSize || null,
+          organization_type: organizationType || null,
+          country: country || null,
+          address_line1: addressLine1 || null,
+          address_line2: addressLine2 || null,
+          city: city || null,
+          state_region: stateRegion || null,
+          postal_code: postalCode || null
         }
       }
     })
@@ -312,7 +339,6 @@ export function AdminLoginPage() {
                 <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" required />
                 <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" required />
                 <input value={network} onChange={(e) => setNetwork(e.target.value)} placeholder="Network" required />
-                <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address" required />
                 <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 <input
                   type="password"
@@ -322,6 +348,45 @@ export function AdminLoginPage() {
                   minLength={8}
                   required
                 />
+                <input
+                  value={organizationName}
+                  onChange={(e) => setOrganizationName(e.target.value)}
+                  placeholder="Church or Organization Name"
+                  required
+                />
+                <select value={signupRole} onChange={(e) => setSignupRole(e.target.value)}>
+                  <option value="">Your Role (optional)</option>
+                  <option value="Lead Pastor">Lead Pastor</option>
+                  <option value="Executive Pastor">Executive Pastor</option>
+                  <option value="Church Staff">Church Staff</option>
+                  <option value="Board Member">Board Member</option>
+                  <option value="District / Network Staff">District / Network Staff</option>
+                  <option value="Other">Other</option>
+                </select>
+                <select value={estimatedVotingSize} onChange={(e) => setEstimatedVotingSize(e.target.value)}>
+                  <option value="">Estimated Voting Size (optional)</option>
+                  <option value="10–50">10–50</option>
+                  <option value="50–100">50–100</option>
+                  <option value="100–250">100–250</option>
+                  <option value="250–500">250–500</option>
+                  <option value="500+">500+</option>
+                </select>
+                <select value={organizationType} onChange={(e) => setOrganizationType(e.target.value)}>
+                  <option value="">Organization Type (optional)</option>
+                  <option value="Local Church">Local Church</option>
+                  <option value="District / Network">District / Network</option>
+                  <option value="Ministry Organization">Ministry Organization</option>
+                  <option value="Nonprofit Board">Nonprofit Board</option>
+                </select>
+                <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country (optional)" />
+                <input value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} placeholder="Address line 1" />
+                <input value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} placeholder="Address line 2 (optional)" />
+                <div className="inline">
+                  <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" />
+                  <input value={stateRegion} onChange={(e) => setStateRegion(e.target.value)} placeholder="State / Region" />
+                </div>
+                <input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="Postal code" />
+                <p className="muted" style={{ marginTop: '-0.25rem' }}>No credit card required to start your trial.</p>
                 <button type="submit">Create Admin Account</button>
               </form>
             )}
