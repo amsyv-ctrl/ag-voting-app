@@ -27,7 +27,7 @@ export function Hero({ onOpenLogin }: HeroProps) {
 
       <section className="landing-hero-overlay relative flex min-h-screen items-center justify-center pt-20">
         <SectionMotion className="relative mx-auto w-full max-w-5xl px-6 text-center">
-          <div className="rounded-2xl border border-gray-700/50 bg-black/40 p-10 backdrop-blur-md md:p-12">
+          <div className="rounded-2xl border border-gray-700/50 bg-black/25 p-10 backdrop-blur-sm md:p-12">
           <h1 className="text-glow mb-6 text-5xl font-extrabold leading-tight md:text-7xl">
             Run Church Elections<br />With Confidence
           </h1>
