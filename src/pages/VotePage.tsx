@@ -15,7 +15,7 @@ export function VotePage() {
   const [choiceId, setChoiceId] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [confirmation, setConfirmation] = useState<{ message: string; submittedAt: string } | null>(null)
+  const [confirmation, setConfirmation] = useState<{ message: string; submittedAt: string; receipt: string } | null>(null)
   const [trialLimitReached, setTrialLimitReached] = useState(false)
 
   useEffect(() => {
@@ -90,6 +90,7 @@ export function VotePage() {
           <div className="success-box">
             <h2>Vote received</h2>
             <p>{new Date(confirmation.submittedAt).toLocaleString()}</p>
+            <p><strong>Receipt:</strong> {confirmation.receipt}</p>
             <p>Resetting for the next voter...</p>
           </div>
         ) : (

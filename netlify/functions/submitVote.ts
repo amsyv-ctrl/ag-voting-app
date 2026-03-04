@@ -1,4 +1,5 @@
 import type { Handler } from '@netlify/functions'
+import { createHash, randomUUID } from 'node:crypto'
 import { checkLimit, registerFailure, registerSuccess } from './_rateLimit'
 import { supabaseAdmin } from './_supabase'
 
@@ -13,6 +14,7 @@ const STARTER_ALLOWANCE = 500
 const GROWTH_ALLOWANCE = 2000
 const NETWORK_ALLOWANCE = 5000
 const OVERAGE_RATE_CENTS = 50
+const receiptSecret = process.env.VOTE_RECEIPT_SECRET || process.env.RECEIPT_SECRET
 
 function allowanceFromOrg(org: { mode: string; stripe_price_id: string | null; trial_votes_limit?: number | null }) {
   if (org.mode === 'TRIAL') {
@@ -23,6 +25,48 @@ function allowanceFromOrg(org: { mode: string; stripe_price_id: string | null; t
   if (org.stripe_price_id === process.env.STRIPE_PRICE_GROWTH) return GROWTH_ALLOWANCE
   if (org.stripe_price_id === process.env.STRIPE_PRICE_NETWORK) return NETWORK_ALLOWANCE
   return 0
+}
+
+function sha256Hex(input: string) {
+  return createHash('sha256').update(input).digest('hex')
+}
+
+function toReceiptCode(hex: string, chars: number) {
+  const raw = hex.slice(0, chars).toUpperCase()
+  return `${raw.slice(0, 4)}-${raw.slice(4)}`
+}
+
+async function attachVoteReceipt(voteId: string, submittedAt: string) {
+  const lengths = [8, 10, 12, 14, 16, 20]
+  if (!receiptSecret) {
+    throw new Error('Missing VOTE_RECEIPT_SECRET/RECEIPT_SECRET')
+  }
+
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const nonce = attempt === 0 ? '' : `:${randomUUID()}`
+    const base = `${voteId}:${submittedAt}:${receiptSecret}${nonce}`
+    const hash = sha256Hex(base)
+    const chars = lengths[Math.min(attempt, lengths.length - 1)]
+    const code = toReceiptCode(hash, chars)
+
+    const { error } = await supabaseAdmin
+      .from('votes')
+      .update({ receipt_hash: hash, receipt_code: code })
+      .eq('id', voteId)
+      .is('receipt_hash', null)
+
+    if (!error) {
+      return { hash, code }
+    }
+
+    if (error.code === '23505') {
+      continue
+    }
+
+    throw new Error(error.message)
+  }
+
+  throw new Error('Could not generate a unique receipt code')
 }
 
 function getIp(event: Parameters<Handler>[0]) {
@@ -68,6 +112,12 @@ export const handler: Handler = async (event) => {
   if (!slug || !choiceId) {
     registerFailure(rateKey)
     return { statusCode: 400, body: JSON.stringify({ error: 'slug and choiceId are required' }) }
+  }
+  if (!receiptSecret) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Server configuration error: missing VOTE_RECEIPT_SECRET' })
+    }
   }
 
   const { data: ballotRow, error: ballotLookupError } = await supabaseAdmin
@@ -178,6 +228,33 @@ export const handler: Handler = async (event) => {
 
   registerSuccess(rateKey)
 
+  const voteId = typeof data?.voteId === 'string' ? data.voteId : null
+  const submittedAt = typeof data?.submittedAt === 'string' ? data.submittedAt : null
+  if (!voteId || !submittedAt) {
+    console.error('submitVote missing vote receipt source values', { voteId, submittedAt, slug })
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Vote was submitted but receipt generation failed' })
+    }
+  }
+
+  let receiptCode: string
+  try {
+    const receipt = await attachVoteReceipt(voteId, submittedAt)
+    receiptCode = receipt.code
+  } catch (receiptError) {
+    console.error('submitVote receipt generation failed', {
+      voteId,
+      submittedAt,
+      slug,
+      error: receiptError instanceof Error ? receiptError.message : String(receiptError)
+    })
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Vote was submitted but receipt generation failed' })
+    }
+  }
+
   const allowance = allowanceFromOrg(orgRow)
   const { data: usageData, error: usageError } = await supabaseAdmin.rpc('increment_org_vote_usage', {
     p_org_id: orgRow.id,
@@ -208,6 +285,6 @@ export const handler: Handler = async (event) => {
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: data.message, submittedAt: data.submittedAt })
+    body: JSON.stringify({ ok: true, message: data.message, submittedAt: data.submittedAt, receipt: receiptCode })
   }
 }

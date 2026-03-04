@@ -38,14 +38,14 @@ export async function submitVote(payload: {
   slug: string
   pin?: string
   choiceId: string
-}): Promise<{ message: string; submittedAt: string }> {
+}): Promise<{ ok: boolean; message: string; submittedAt: string; receipt: string }> {
   const res = await fetch(`${API_BASE}/submitVote`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   })
 
-  return handleJson<{ message: string; submittedAt: string }>(res)
+  return handleJson<{ ok: boolean; message: string; submittedAt: string; receipt: string }>(res)
 }
 
 export async function fetchBallotResults(slug: string): Promise<BallotResults> {
