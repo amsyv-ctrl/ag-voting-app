@@ -1,5 +1,5 @@
 import type { Handler } from '@netlify/functions'
-import { supabaseAnon } from './_supabase'
+import { supabaseAdmin, supabaseAnon } from './_supabase'
 
 export const handler: Handler = async (event) => {
   const slug = event.queryStringParameters?.slug
@@ -7,6 +7,16 @@ export const handler: Handler = async (event) => {
 
   if (!slug) {
     return { statusCode: 400, body: JSON.stringify({ error: 'Missing slug' }) }
+  }
+
+  const { data: ballotRow, error: ballotLookupError } = await supabaseAdmin
+    .from('ballots')
+    .select('id,deleted_at')
+    .eq('slug', slug)
+    .maybeSingle()
+
+  if (ballotLookupError || !ballotRow || ballotRow.deleted_at) {
+    return { statusCode: 404, body: JSON.stringify({ error: 'Ballot not found' }) }
   }
 
   const rpcName = includeResults ? 'get_ballot_results_public' : 'get_ballot_public'

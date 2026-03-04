@@ -121,6 +121,7 @@ export function AdminBallotPage() {
       .from('ballots')
       .select('id,event_id,slug,title,incumbent_name,description,status,majority_rule,opens_at,closes_at,vote_round,requires_pin,results_visibility')
       .eq('id', ballotId)
+      .is('deleted_at', null)
       .single()
 
     if (ballotError || !ballotData) {
@@ -508,12 +509,19 @@ export function AdminBallotPage() {
       return
     }
     const typed = window.prompt(
-      `Type DELETE to permanently remove ballot "${ballot.title}" and all associated vote records.`
+      `Type DELETE to archive ballot "${ballot.title}". It will be hidden from active lists but preserved for records.`
     )
     if (typed !== 'DELETE') {
       return
     }
-    const { error: deleteError } = await supabase.from('ballots').delete().eq('id', ballot.id)
+    const { data: sessionData } = await supabase.auth.getSession()
+    const { error: deleteError } = await supabase
+      .from('ballots')
+      .update({
+        deleted_at: new Date().toISOString(),
+        deleted_by: sessionData.session?.user.id ?? null
+      })
+      .eq('id', ballot.id)
     if (deleteError) {
       setError(deleteError.message)
       return

@@ -122,11 +122,11 @@ export const handler: Handler = async (event) => {
 
   const { data: ballotRow, error: ballotLookupError } = await supabaseAdmin
     .from('ballots')
-    .select('id,event_id')
+    .select('id,event_id,deleted_at')
     .eq('slug', slug)
     .maybeSingle()
 
-  if (ballotLookupError || !ballotRow?.event_id) {
+  if (ballotLookupError || !ballotRow?.event_id || ballotRow.deleted_at) {
     registerFailure(rateKey)
     return { statusCode: 400, body: JSON.stringify({ error: 'Ballot not found' }) }
   }
