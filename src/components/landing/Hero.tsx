@@ -27,16 +27,17 @@ export function Hero({ onOpenLogin }: HeroProps) {
 
       <section className="landing-hero-overlay relative flex min-h-screen items-center justify-center pt-20">
         <SectionMotion className="relative mx-auto w-full max-w-5xl px-6 text-center">
-          <h1 className="mb-6 text-5xl font-extrabold leading-tight md:text-7xl">
+          <div className="rounded-2xl border border-gray-700/50 bg-black/40 p-10 backdrop-blur-md md:p-12">
+          <h1 className="text-glow mb-6 text-5xl font-extrabold leading-tight md:text-7xl">
             Run Church Elections<br />With Confidence
           </h1>
-          <p className="mx-auto mb-8 max-w-3xl text-xl text-gray-300 md:text-2xl">
+          <p className="text-glow mx-auto mb-6 max-w-3xl text-2xl font-medium tracking-wide text-gray-200 md:text-3xl">
             A verifiable governance voting system designed for churches and ministry networks.
           </p>
-          <p className="mb-10 text-lg text-gray-400">
+          <p className="text-glow mb-8 text-xl font-semibold text-gray-100 md:text-2xl">
             Secure ballots, automatic runoff rounds, and sealed results — all from any phone.
           </p>
-          <p className="mb-12 text-xl font-medium">
+          <p className="text-glow mx-auto mb-12 max-w-4xl text-lg leading-relaxed text-gray-300 md:text-xl">
             Replace paper ballots and manual counting with a simple system that keeps meetings moving.
           </p>
           <div className="mb-12 flex flex-col justify-center gap-6 sm:flex-row">
@@ -58,6 +59,7 @@ export function Hero({ onOpenLogin }: HeroProps) {
           <div className="mx-auto mb-6 flex w-fit items-center gap-3 rounded-full border border-gray-700 bg-gray-900/60 px-6 py-3 shadow-lg backdrop-blur-md">
             <div className="h-4 w-4 animate-pulse-slow rounded-full bg-green-500 ring-2 ring-green-400/50" />
             <span className="text-sm font-medium">Powered by <span className="font-semibold text-white">Architect Ministry Solutions</span></span>
+          </div>
           </div>
         </SectionMotion>
       </section>
