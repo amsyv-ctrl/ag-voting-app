@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { bootstrapOrg, createCheckoutSession, createTrialEvent } from '../lib/api'
+import { bootstrapOrg, createCheckoutSession, createPortalSession, createTrialEvent } from '../lib/api'
 import { getAccessToken, requireSession } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 
@@ -8,6 +8,7 @@ type OrgState = {
   id: string
   name: string
   mode: 'DEMO' | 'TRIAL' | 'PAID'
+  stripe_customer_id: string | null
   trial_event_id: string | null
   trial_votes_used: number
   trial_votes_limit: number
@@ -47,6 +48,7 @@ export function AdminOrgPage() {
   const [savingProfile, setSavingProfile] = useState(false)
   const [creatingTrialEvent, setCreatingTrialEvent] = useState(false)
   const [checkoutLoadingPlan, setCheckoutLoadingPlan] = useState<'STARTER' | 'GROWTH' | 'NETWORK' | null>(null)
+  const [portalLoading, setPortalLoading] = useState(false)
 
   async function load() {
     setError(null)
@@ -172,6 +174,30 @@ export function AdminOrgPage() {
     }
   }
 
+  async function onManageSubscription() {
+    setNotice(null)
+    setError(null)
+    setPortalLoading(true)
+
+    const token = await getAccessToken()
+    if (!token) {
+      setError('No session token found.')
+      setPortalLoading(false)
+      return
+    }
+
+    try {
+      const data = await createPortalSession(token)
+      if (!data.url) {
+        throw new Error('Portal URL was not returned.')
+      }
+      window.location.href = data.url
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not open subscription portal')
+      setPortalLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <main className="page">
@@ -195,6 +221,7 @@ export function AdminOrgPage() {
     (org?.trial_votes_used ?? 0) < (org?.trial_votes_limit ?? 0)
   )
   const isReadOnly = !isPaidActive && !isTrialActive
+  const showManageSubscription = !!(org && (org.mode === 'PAID' || org.stripe_customer_id))
 
   return (
     <main className="page">
@@ -246,6 +273,16 @@ export function AdminOrgPage() {
             {checkoutLoadingPlan === 'NETWORK' ? 'Redirecting...' : 'Network'}
           </button>
         </div>
+        {showManageSubscription && (
+          <div style={{ marginTop: '0.8rem' }}>
+            <button type="button" className="secondary" onClick={onManageSubscription} disabled={portalLoading}>
+              {portalLoading ? 'Opening portal...' : 'Manage subscription'}
+            </button>
+          </div>
+        )}
+        <p className="muted" style={{ marginTop: '0.6rem' }}>
+          You can manage or cancel your subscription anytime. If you cancel, access remains active until the end of your billing period.
+        </p>
       </section>
 
       <section className="card">

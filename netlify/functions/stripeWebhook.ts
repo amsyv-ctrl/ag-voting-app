@@ -11,6 +11,10 @@ if (!stripeSecretKey || !webhookSecret) {
 
 const stripe = new Stripe(stripeSecretKey)
 
+function isEntitledStatus(status: Stripe.Subscription.Status | string) {
+  return status !== 'canceled' && status !== 'unpaid' && status !== 'incomplete_expired'
+}
+
 function toIsoFromUnix(value: number | null | undefined) {
   if (!value) return null
   return new Date(value * 1000).toISOString()
@@ -80,7 +84,7 @@ export const handler: Handler = async (event) => {
           subscription_status: status,
           current_period_end: currentPeriodEnd,
           mode: 'PAID',
-          is_active: status === 'active' || status === 'trialing'
+          is_active: isEntitledStatus(status)
         }
 
         if (orgId) {
@@ -102,7 +106,7 @@ export const handler: Handler = async (event) => {
           subscription_status: status,
           current_period_end: toIsoFromUnix(subscription.current_period_end),
           mode: 'PAID',
-          is_active: status === 'active' || status === 'trialing'
+          is_active: isEntitledStatus(status)
         }
 
         if (orgId) {
@@ -141,7 +145,7 @@ export const handler: Handler = async (event) => {
         const patch = {
           stripe_subscription_id: subscriptionId,
           subscription_status: 'past_due',
-          is_active: false
+          is_active: true
         }
 
         if (customerId) {
@@ -159,4 +163,3 @@ export const handler: Handler = async (event) => {
 
   return { statusCode: 200, body: 'ok' }
 }
-

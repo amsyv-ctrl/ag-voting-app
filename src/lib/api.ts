@@ -75,6 +75,7 @@ export type OrgBootstrapResponse = {
     id: string
     name: string
     mode: 'DEMO' | 'TRIAL' | 'PAID'
+    stripe_customer_id: string | null
     trial_event_id: string | null
     trial_votes_used: number
     trial_votes_limit: number
@@ -121,6 +122,18 @@ export async function createCheckoutSession(
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({ plan })
+  })
+
+  return handleJson<{ url: string }>(res)
+}
+
+export async function createPortalSession(accessToken: string): Promise<{ url: string }> {
+  const res = await fetch(`${API_BASE}/createPortalSession`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
   })
 
   return handleJson<{ url: string }>(res)
