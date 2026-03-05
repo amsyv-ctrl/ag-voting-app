@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { InfoTip } from './InfoTip'
 
 type RunbookContext = 'event' | 'ballot'
 
@@ -70,6 +71,9 @@ export function OperatorRunbook(props: OperatorRunbookProps) {
 
   const sections = props.context === 'event' ? EVENT_SECTIONS : BALLOT_SECTIONS
   const title = props.context === 'event' ? 'Operator Runbook (Event)' : 'Operator Runbook (Ballot)'
+  const helpText = props.context === 'event'
+    ? 'Use this checklist to reduce errors during live sessions.'
+    : 'Follow this checklist while opening, monitoring, and closing each vote round.'
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -106,7 +110,10 @@ export function OperatorRunbook(props: OperatorRunbookProps) {
     <section className="operator-runbook">
       <details open={isOpen} onToggle={(event) => setIsOpen((event.currentTarget as HTMLDetailsElement).open)}>
         <summary>
-          <span>{title}</span>
+          <span className="section-title-row">
+            <span>{title}</span>
+            <InfoTip text={helpText} />
+          </span>
         </summary>
         <div className="operator-runbook-content">
           {sections.map((section) => (
