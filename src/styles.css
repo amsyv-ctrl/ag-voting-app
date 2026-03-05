@@ -1485,13 +1485,29 @@ td {
   margin: 0 0 0.8rem 0;
 }
 
-.display-status {
-  font-size: clamp(1.2rem, 3vw, 2rem);
-  margin: 0.35rem 0;
+.display-meta-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.65rem;
+  margin: 0 0 0.9rem 0;
 }
 
-.display-close {
+.display-meta-pill {
+  margin: 0;
+  padding: 0.5rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: clamp(0.95rem, 2vw, 1.35rem);
+  line-height: 1.2;
+}
+
+.display-meta-pill-urgent {
   font-weight: 800;
+  color: #ffd6d6;
+  border-color: rgba(255, 107, 107, 0.45);
+  background: rgba(127, 29, 29, 0.35);
 }
 
 .display-winner-wrap {

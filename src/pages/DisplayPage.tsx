@@ -102,12 +102,14 @@ export function DisplayPage() {
         <section className="display-main">
           <h1 className="display-event">{ballot.event_name}</h1>
           <p className="display-ballot-title">{ballot.title}</p>
-          {ballot.incumbent_name && <p className="display-status">Incumbent: {ballot.incumbent_name}</p>}
-          <p className="display-status">Current Vote: #{results.vote_round} ({roundLabel(results.vote_round)} vote)</p>
-          <p className="display-status">PIN Required: {ballot.requires_pin ? 'Yes' : 'No'}</p>
-          <p className="display-status">Total Votes: {results.total_votes}</p>
-          {isClosed && <p className="display-status">Voting on this round is closed.</p>}
-          {secondsToClose !== null && <p className="display-status display-close">Closing in: {secondsToClose}s</p>}
+          <div className="display-meta-grid">
+            <p className="display-meta-pill">Vote #{results.vote_round} ({roundLabel(results.vote_round)} vote)</p>
+            <p className="display-meta-pill">PIN Required: {ballot.requires_pin ? 'Yes' : 'No'}</p>
+            <p className="display-meta-pill">Total Votes: {results.total_votes}</p>
+            {ballot.incumbent_name && <p className="display-meta-pill">Incumbent: {ballot.incumbent_name}</p>}
+            {isClosed && <p className="display-meta-pill">This round is closed</p>}
+            {secondsToClose !== null && <p className="display-meta-pill display-meta-pill-urgent">Closing in: {secondsToClose}s</p>}
+          </div>
 
           {shouldHideResults ? (
             <p className="display-hidden-note">Results hidden until ballot is closed.</p>
