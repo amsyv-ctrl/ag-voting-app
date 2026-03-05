@@ -98,65 +98,67 @@ export function DisplayPage() {
 
   return (
     <main className="display-page">
-      <section className="display-main">
-        <h1 className="display-event">{ballot.event_name}</h1>
-        <p className="display-ballot-title">{ballot.title}</p>
-        {ballot.incumbent_name && <p className="display-status">Incumbent: {ballot.incumbent_name}</p>}
-        <p className="display-status">Current Vote: #{results.vote_round} ({roundLabel(results.vote_round)} vote)</p>
-        <p className="display-status">Total Votes: {results.total_votes}</p>
-        {secondsToClose !== null && <p className="display-status display-close">Closing in: {secondsToClose}s</p>}
+      <div className="display-grid">
+        <section className="display-main">
+          <h1 className="display-event">{ballot.event_name}</h1>
+          <p className="display-ballot-title">{ballot.title}</p>
+          {ballot.incumbent_name && <p className="display-status">Incumbent: {ballot.incumbent_name}</p>}
+          <p className="display-status">Current Vote: #{results.vote_round} ({roundLabel(results.vote_round)} vote)</p>
+          <p className="display-status">Total Votes: {results.total_votes}</p>
+          {secondsToClose !== null && <p className="display-status display-close">Closing in: {secondsToClose}s</p>}
 
-        {shouldHideResults ? (
-          <p className="display-hidden-note">Results hidden until ballot is closed.</p>
-        ) : (
-          <p className="display-threshold">
-            Votes cast: <strong>{results.total_votes}</strong> | Needed for election:{' '}
-            <strong>{requiredVotes}</strong> ({requiredRuleLabel})
-          </p>
-        )}
-        {showWinner && !shouldHideResults && (
-          <div className="display-winner-wrap">
-            <p className="display-winner-kicker">Election Reached</p>
-            <p className="display-winner-name">{results.winner_label}</p>
-          </div>
-        )}
-
-        <section className="display-results">
           {shouldHideResults ? (
-            <article className="display-hidden-state">
-              <p>Voting in progress</p>
-              <p>Results are hidden until this vote is closed.</p>
-            </article>
+            <p className="display-hidden-note">Results hidden until ballot is closed.</p>
           ) : (
-            rows.map((row) => {
-              const pctText = (row.pct * 100).toFixed(1)
-              return (
-                <article key={row.choice_id} className="display-bar-container">
-                  <div className="display-bar-label">
-                    <span>{row.label}</span>
-                    <span>
-                      {row.votes} votes ({pctText}%)
-                    </span>
-                  </div>
-                  <div className="display-bar-track">
-                    <div className="display-bar-fill" style={{ width: `${pctText}%` }} />
-                  </div>
-                </article>
-              )
-            })
+            <p className="display-threshold">
+              Votes cast: <strong>{results.total_votes}</strong> | Needed for election:{' '}
+              <strong>{requiredVotes}</strong> ({requiredRuleLabel})
+            </p>
           )}
-        </section>
-      </section>
+          {showWinner && !shouldHideResults && (
+            <div className="display-winner-wrap">
+              <p className="display-winner-kicker">Election Reached</p>
+              <p className="display-winner-name">{results.winner_label}</p>
+            </div>
+          )}
 
-      <section className="display-qr-section">
-        <h2>Scan to Vote</h2>
-        {voteQrDataUrl ? (
-          <img className="display-qr" src={voteQrDataUrl} alt="QR code for ballot voting link" />
-        ) : (
-          <p>Generating QR code...</p>
-        )}
-        <p className="display-vote-url">{window.location.origin}/vote/{ballot.slug}</p>
-      </section>
+          <section className="display-results">
+            {shouldHideResults ? (
+              <article className="display-hidden-state">
+                <p>Voting in progress</p>
+                <p>Results are hidden until this vote is closed.</p>
+              </article>
+            ) : (
+              rows.map((row) => {
+                const pctText = (row.pct * 100).toFixed(1)
+                return (
+                  <article key={row.choice_id} className="display-bar-container">
+                    <div className="display-bar-label">
+                      <span>{row.label}</span>
+                      <span>
+                        {row.votes} votes ({pctText}%)
+                      </span>
+                    </div>
+                    <div className="display-bar-track">
+                      <div className="display-bar-fill" style={{ width: `${pctText}%` }} />
+                    </div>
+                  </article>
+                )
+              })
+            )}
+          </section>
+        </section>
+
+        <section className="display-qr-section">
+          <h2>Scan to Vote</h2>
+          {voteQrDataUrl ? (
+            <img className="display-qr" src={voteQrDataUrl} alt="QR code for ballot voting link" />
+          ) : (
+            <p>Generating QR code...</p>
+          )}
+          <p className="display-vote-url">{window.location.origin}/vote/{ballot.slug}</p>
+        </section>
+      </div>
     </main>
   )
 }

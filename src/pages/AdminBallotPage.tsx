@@ -10,6 +10,7 @@ import { getAccessToken } from '../lib/auth'
 import { logElectionAudit, sealBallotRound } from '../lib/api'
 import { AdminLayout } from '../components/AdminLayout'
 import { PageHero } from '../components/PageHero'
+import { InfoTip } from '../components/InfoTip'
 
 type BallotData = {
   id: string
@@ -770,6 +771,7 @@ export function AdminBallotPage() {
             {appBase}/display/{ballot.slug}
           </a>
         </p>
+        <p className="helper-text">Vote URL is for attendees. Display URL is for projector screens.</p>
         <div className="ballot-admin-qr-actions">
           {voteQrDataUrl && <img className="ballot-admin-qr" src={voteQrDataUrl} alt="Ballot QR code" width={180} height={180} />}
           <div className="inline ballot-admin-actions">
@@ -787,13 +789,20 @@ export function AdminBallotPage() {
             )}
           </div>
         </div>
+        <div className="section-title-row" style={{ marginBottom: '0.5rem' }}>
+          <span className="muted">Operator Runbook</span>
+          <InfoTip text="Follow this checklist while opening, monitoring, and closing each vote round." />
+        </div>
         <OperatorRunbook context="ballot" ballotId={ballot.id} round={ballot.vote_round} />
         {error && <p className="error">{error}</p>}
       </section>
 
       <section className={`accordion ${activeSection === 'edit' ? 'active' : ''}`}>
         <button type="button" className="accordion-header" onClick={() => toggleSection('edit')}>
-          Edit Ballot Details
+          <span className="section-title-row">
+            Edit Ballot Details
+            <InfoTip text="Configure PIN requirement and results visibility. For sensitive votes, hide results until closed." />
+          </span>
           <span className="accordion-icon">&#9654;</span>
         </button>
         <div className="accordion-content">
@@ -857,7 +866,10 @@ export function AdminBallotPage() {
 
       <section className={`accordion ${activeSection === 'choices' ? 'active' : ''}`}>
         <button type="button" className="accordion-header" onClick={() => toggleSection('choices')}>
-          Choices
+          <span className="section-title-row">
+            Choices
+            <InfoTip text="Add candidates/options. Withdrawn choices are hidden from voters but remain in records." />
+          </span>
           <span className="accordion-icon">&#9654;</span>
         </button>
         <div className="accordion-content">
@@ -912,7 +924,10 @@ export function AdminBallotPage() {
 
       <section className={`accordion ${activeSection === 'results' ? 'active' : ''}`}>
         <button type="button" className="accordion-header" onClick={() => toggleSection('results')}>
-          Live Results
+          <span className="section-title-row">
+            Live Results
+            <InfoTip text="Monitor participation and results. Close the round to generate an official sealed record." />
+          </span>
           <span className="accordion-icon">&#9654;</span>
         </button>
         <div className="accordion-content">
@@ -965,7 +980,10 @@ export function AdminBallotPage() {
 
       <section className={`accordion ${activeSection === 'manual' ? 'active' : ''}`}>
         <button type="button" className="accordion-header" onClick={() => toggleSection('manual')}>
-          Manual Fallback
+          <span className="section-title-row">
+            Manual Fallback
+            <InfoTip text="Use only for emergency manual count scenarios when digital voting is unavailable." />
+          </span>
           <span className="accordion-icon">&#9654;</span>
         </button>
         <div className="accordion-content">
@@ -1013,7 +1031,10 @@ export function AdminBallotPage() {
       {roundHistory.length > 0 && (
         <section className={`accordion ${activeSection === 'history' ? 'active' : ''}`}>
           <button type="button" className="accordion-header" onClick={() => toggleSection('history')}>
-            Previous Vote Rounds
+            <span className="section-title-row">
+              Previous Vote Rounds
+              <InfoTip text="If no option meets the threshold, open the next round to run a runoff." />
+            </span>
             <span className="accordion-icon">&#9654;</span>
           </button>
           <div className="accordion-content">
@@ -1047,7 +1068,10 @@ export function AdminBallotPage() {
 
       <section className={`accordion ${activeSection === 'danger' ? 'active' : ''}`}>
         <button type="button" className="accordion-header" onClick={() => toggleSection('danger')}>
-          Danger Zone
+          <span className="section-title-row">
+            Danger Zone
+            <InfoTip text="Archive/delete operations should be used carefully and only by authorized operators." />
+          </span>
           <span className="accordion-icon">&#9654;</span>
         </button>
         <div className="accordion-content">

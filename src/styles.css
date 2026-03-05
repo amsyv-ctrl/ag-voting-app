@@ -700,6 +700,7 @@ label.form-row {
 .event-row-actions .btn {
   width: auto;
   min-width: 100px;
+  min-height: 42px;
 }
 
 .event-actions-menu-wrap {
@@ -707,8 +708,9 @@ label.form-row {
 }
 
 .icon-kebab-btn {
-  width: 34px;
-  height: 34px;
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
   border-radius: 8px;
   border: 1px solid #ced4da;
   background: #fff;
@@ -717,6 +719,9 @@ label.form-row {
   line-height: 0;
   padding: 0;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .icon-kebab-btn:hover {
@@ -779,6 +784,153 @@ label.form-row {
   z-index: 40;
 }
 
+.compact-helper-card h3 {
+  margin: 0 0 0.5rem 0;
+}
+
+.compact-helper-card p {
+  margin: 0.2rem 0;
+}
+
+.section-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.info-tip {
+  position: relative;
+  display: inline-flex;
+}
+
+.info-tip-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 1px solid #93a8c4;
+  background: #f6f9ff;
+  color: #375173;
+  font-size: 0.75rem;
+  line-height: 1;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.info-tip-btn:hover {
+  background: #e8f0fd;
+}
+
+.info-tip-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 35;
+  width: min(280px, 72vw);
+  background: #0f172a;
+  color: #f8fafc;
+  border: 1px solid #2f4668;
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  font-size: 0.86rem;
+  line-height: 1.35;
+  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.35);
+}
+
+.subscription-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.9rem;
+}
+
+.subscription-card {
+  display: grid;
+  gap: 0.45rem;
+  align-content: start;
+}
+
+.subscription-card .btn {
+  margin-top: auto;
+}
+
+.stripe-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(15, 23, 42, 0.68);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.stripe-modal {
+  width: min(1100px, 96vw);
+  height: min(88vh, 860px);
+  background: #fff;
+  border: 1px solid #d0deef;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(2, 6, 23, 0.4);
+  overflow: hidden;
+  position: relative;
+  display: grid;
+  grid-template-rows: 1fr auto;
+}
+
+.stripe-modal-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+  font-size: 1.35rem;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.stripe-modal-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.stripe-modal-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.65rem;
+  background: rgba(255, 255, 255, 0.92);
+  z-index: 1;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 3px solid #bfdbfe;
+  border-top-color: #1d4ed8;
+  animation: spin 0.8s linear infinite;
+}
+
+.stripe-modal-fallback {
+  border-top: 1px solid #e2ebf5;
+  background: #f8fbff;
+  padding: 0.65rem 0.8rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
 .modal-card {
   width: min(460px, 100%);
   background: #fff;
@@ -812,6 +964,12 @@ label.form-row {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
@@ -1296,17 +1454,21 @@ td {
 .display-page {
   background: #001f3f;
   color: #fff;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  text-align: center;
   padding: 20px;
 }
 
-.display-main {
-  width: min(1200px, 100%);
+.display-grid {
+  width: min(1700px, 100%);
   margin: 0 auto;
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+.display-main {
+  width: 100%;
   animation: fadeInUp 0.4s ease-in-out;
+  text-align: center;
 }
 
 .display-event {
@@ -1414,7 +1576,7 @@ td {
 }
 
 .display-qr-section {
-  margin-top: auto;
+  margin-top: 0;
   padding: 20px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.1);
@@ -1501,5 +1663,22 @@ td {
   .operator-runbook details > summary {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@media (min-width: 900px) {
+  .subscription-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .display-grid {
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    gap: 1.2rem;
+  }
+
+  .display-qr-section {
+    position: sticky;
+    top: 20px;
+    align-self: start;
   }
 }

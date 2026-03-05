@@ -6,6 +6,7 @@ import { getAccessToken, requireSession } from '../lib/auth'
 import { OperatorRunbook } from '../components/OperatorRunbook'
 import { AdminLayout } from '../components/AdminLayout'
 import { PageHero } from '../components/PageHero'
+import { InfoTip } from '../components/InfoTip'
 
 type BallotRow = {
   id: string
@@ -755,7 +756,10 @@ export function AdminEventPage() {
 
         <div className={`accordion ${editOpen ? 'active' : ''}`}>
           <button type="button" className="accordion-header" onClick={() => setEditOpen((v) => !v)}>
-            Edit Event
+            <span className="section-title-row">
+              Edit Event
+              <InfoTip text="Update event details for this meeting session." />
+            </span>
             <span className="accordion-icon">&#9654;</span>
           </button>
           <div className="accordion-content">
@@ -791,7 +795,10 @@ export function AdminEventPage() {
 
         <div className={`accordion ${pinsOpen ? 'active' : ''}`}>
           <button type="button" className="accordion-header" onClick={() => setPinsOpen((v) => !v)}>
-            Manage PINs
+            <span className="section-title-row">
+              Manage PINs
+              <InfoTip text="Optional: require PINs for secure votes and one-vote-per-person control." />
+            </span>
             <span className="accordion-icon">&#9654;</span>
           </button>
           <div className="accordion-content">
@@ -869,10 +876,18 @@ export function AdminEventPage() {
           </div>
         </div>
 
+        <div className="section-title-row" style={{ marginBottom: '0.5rem' }}>
+          <span className="muted">Operator Runbook</span>
+          <InfoTip text="Use this checklist to reduce errors during live sessions." />
+        </div>
         <OperatorRunbook context="event" eventId={eventId} />
 
-        <h2>Ballots</h2>
+        <div className="section-title-row">
+          <h2 style={{ margin: 0 }}>Ballots</h2>
+          <InfoTip text="Use Manage to access attendee vote links and display links for projector screens." />
+        </div>
         <p className="subtitle">Includes round summaries, counts per choice, and the timestamp each election threshold was first reached.</p>
+        <p className="helper-text">Use “Manage” to access vote and display links. You can run the same ballot multiple rounds for runoff voting.</p>
 
         <div className="ballot-item" style={{ marginBottom: '1rem' }}>
           <div className="ballot-header">Ballot View</div>
@@ -958,7 +973,13 @@ export function AdminEventPage() {
         )}
 
         <div id="create-ballot" className="ballot-item ballot-create-card">
-          <div className="ballot-header">Create New Ballot</div>
+          <div className="ballot-header">
+            <span className="section-title-row">
+              Create New Ballot
+              <InfoTip text="Ballots are individual decisions or elections. Create as many as needed for this event." />
+            </span>
+          </div>
+          <p className="helper-text">Choose how a winner is determined (simple majority or 2/3). If no one meets the threshold, run a runoff round.</p>
           <form onSubmit={onCreateBallot} className="form-grid" style={{ marginTop: '15px' }}>
             <label className="form-row">
               Ballot title
@@ -1003,7 +1024,12 @@ export function AdminEventPage() {
         </div>
 
         <div className="ballot-item">
-          <div className="ballot-header">Verify Receipt</div>
+          <div className="ballot-header">
+            <span className="section-title-row">
+              Verify Receipt
+              <InfoTip text="Check that a receipt code exists without revealing voter choice." />
+            </span>
+          </div>
           <form onSubmit={onVerifyReceipt} className="form-actions" style={{ marginTop: '0.75rem' }}>
             <label className="form-row" style={{ flex: '1 1 320px', margin: 0 }}>
               Verify receipt
@@ -1031,6 +1057,10 @@ export function AdminEventPage() {
         </div>
 
         <div className="export-section">
+          <div className="section-title-row" style={{ justifyContent: 'center', marginBottom: '0.5rem' }}>
+            <strong>Exports</strong>
+            <InfoTip text="Export sealed official records for governance files and CSV convenience summaries." />
+          </div>
           <button className="btn btn-primary" onClick={onExportOfficialRecord} disabled={exportingOfficial}>
             {exportingOfficial ? 'Exporting Official Record...' : 'Export Official Record (JSON)'}
           </button>

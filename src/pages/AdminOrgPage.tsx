@@ -5,6 +5,7 @@ import { getAccessToken, requireSession } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 import { AdminLayout } from '../components/AdminLayout'
 import { PageHero } from '../components/PageHero'
+import { StripeModal } from '../components/StripeModal'
 
 type OrgState = {
   id: string
@@ -90,6 +91,8 @@ export function AdminOrgPage() {
   const [creatingTrialEvent, setCreatingTrialEvent] = useState(false)
   const [checkoutLoadingPlan, setCheckoutLoadingPlan] = useState<'STARTER' | 'GROWTH' | 'NETWORK' | null>(null)
   const [portalLoading, setPortalLoading] = useState(false)
+  const [stripeModalOpen, setStripeModalOpen] = useState(false)
+  const [stripeUrl, setStripeUrl] = useState<string | null>(null)
 
   async function load() {
     setError(null)
@@ -253,7 +256,9 @@ export function AdminOrgPage() {
       if (!data.url) {
         throw new Error('Checkout URL was not returned.')
       }
-      window.location.href = data.url
+      setStripeUrl(data.url)
+      setStripeModalOpen(true)
+      setCheckoutLoadingPlan(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not start checkout')
       setCheckoutLoadingPlan(null)
@@ -277,7 +282,9 @@ export function AdminOrgPage() {
       if (!data.url) {
         throw new Error('Portal URL was not returned.')
       }
-      window.location.href = data.url
+      setStripeUrl(data.url)
+      setStripeModalOpen(true)
+      setPortalLoading(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not open subscription portal')
       setPortalLoading(false)
@@ -370,8 +377,8 @@ export function AdminOrgPage() {
         <h2>Subscription</h2>
         <p className="helper-text">Choose a plan based on the number of votes your organization runs each year.</p>
         <p className="helper-text" style={{ marginTop: '0.35rem' }}>Built for church governance — not generic polling.</p>
-        <div className="form-grid" style={{ marginTop: '0.8rem' }}>
-          <article className="ui-card">
+        <div className="subscription-grid" style={{ marginTop: '0.8rem' }}>
+          <article className="ui-card subscription-card">
             <h3 style={{ marginTop: 0 }}>Starter</h3>
             <p className="muted">Best for churches and smaller organizations</p>
             <p><strong>$500 / year</strong></p>
@@ -382,10 +389,10 @@ export function AdminOrgPage() {
               <li>Vote receipts and integrity-sealed results</li>
             </ul>
             <button className="btn btn-primary" type="button" onClick={() => onCheckout('STARTER')} disabled={checkoutLoadingPlan !== null}>
-              {checkoutLoadingPlan === 'STARTER' ? 'Redirecting...' : 'Start Free Trial'}
+              {checkoutLoadingPlan === 'STARTER' ? 'Redirecting...' : 'Subscribe now'}
             </button>
           </article>
-          <article className="ui-card" style={{ borderColor: '#1d4ed8' }}>
+          <article className="ui-card subscription-card" style={{ borderColor: '#1d4ed8' }}>
             <h3 style={{ marginTop: 0 }}>Growth</h3>
             <p className="muted">Ideal for larger churches and regional ministries</p>
             <p><strong>$1,500 / year</strong></p>
@@ -396,10 +403,10 @@ export function AdminOrgPage() {
               <li>Great for annual meetings and board elections</li>
             </ul>
             <button className="btn btn-primary" type="button" onClick={() => onCheckout('GROWTH')} disabled={checkoutLoadingPlan !== null}>
-              {checkoutLoadingPlan === 'GROWTH' ? 'Redirecting...' : 'Start Free Trial'}
+              {checkoutLoadingPlan === 'GROWTH' ? 'Redirecting...' : 'Subscribe now'}
             </button>
           </article>
-          <article className="ui-card form-row-full">
+          <article className="ui-card subscription-card">
             <h3 style={{ marginTop: 0 }}>Network</h3>
             <p className="muted">Designed for district or network conferences</p>
             <p><strong>$3,000 / year</strong></p>
@@ -410,7 +417,7 @@ export function AdminOrgPage() {
               <li>Multiple runoff rounds and network-scale governance voting</li>
             </ul>
             <button className="btn btn-primary" type="button" onClick={() => onCheckout('NETWORK')} disabled={checkoutLoadingPlan !== null}>
-              {checkoutLoadingPlan === 'NETWORK' ? 'Redirecting...' : 'Start Free Trial'}
+              {checkoutLoadingPlan === 'NETWORK' ? 'Redirecting...' : 'Subscribe now'}
             </button>
           </article>
         </div>
@@ -587,6 +594,15 @@ export function AdminOrgPage() {
           </div>
         </div>
       </section>
+      <StripeModal
+        isOpen={stripeModalOpen}
+        url={stripeUrl}
+        onClose={() => {
+          setStripeModalOpen(false)
+          setStripeUrl(null)
+          load()
+        }}
+      />
     </AdminLayout>
   )
 }

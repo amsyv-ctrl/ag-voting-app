@@ -444,6 +444,12 @@ export function AdminLoginPage() {
           </Link>
         }
       />
+      <section className="ui-card compact-helper-card">
+        <h3>Getting started</h3>
+        <p className="muted">Create an event for a meeting or session (board meeting, annual business meeting, conference).</p>
+        <p className="muted">Inside each event you can create as many ballots as needed.</p>
+        <p className="muted">Schedule multiple events and manage them below.</p>
+      </section>
       <section className="form-section">
             {profile && (
               <div className="ui-card">
