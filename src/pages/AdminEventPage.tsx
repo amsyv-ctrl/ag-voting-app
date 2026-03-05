@@ -795,7 +795,12 @@ export function AdminEventPage() {
             <span className="accordion-icon">&#9654;</span>
           </button>
           <div className="accordion-content">
-            <p>Generate 4-digit PINs. Active PINs for this event: <strong>{activePinCount}</strong></p>
+            <p>
+              If ballot PINs are turned on, voters must enter their unique 4-digit PIN to vote.
+              Each PIN can vote one time per ballot, but works across all ballots in this event.
+              Distribute one PIN per registered voter at check-in. Active PINs for this event:{' '}
+              <strong>{activePinCount}</strong>.
+            </p>
             <form className="form-actions" onSubmit={onGeneratePins}>
               <input
                 className="input pin-input"
@@ -813,8 +818,8 @@ export function AdminEventPage() {
                 {exportingPins ? 'Exporting...' : 'Export PINs (CSV)'}
               </button>
             </div>
-            <form className="form-actions" style={{ marginTop: '10px' }} onSubmit={onDisablePin}>
-              <label className="form-row" style={{ flex: '1 1 220px', margin: 0 }}>
+            <form className="pin-disable-row" style={{ marginTop: '10px' }} onSubmit={onDisablePin}>
+              <label className="form-row" style={{ margin: 0 }}>
                 Disable PIN
                 <input
                   className="input"
@@ -831,7 +836,7 @@ export function AdminEventPage() {
                 {disablingPin ? 'Disabling...' : 'Disable'}
               </button>
             </form>
-            <p className="helper-text">Use if a PIN is lost and needs to be reissued.</p>
+            <p className="helper-text">Use if a PIN is lost and needs to be reissued. You can generate additional PINs here at any time.</p>
             <div className="form-actions" style={{ marginTop: '10px' }}>
               <button className="btn btn-danger danger-btn" onClick={onDeleteAllPins} disabled={!canOperateEvent}>Delete All PINs</button>
             </div>

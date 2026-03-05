@@ -27,14 +27,14 @@ body {
   background:
     linear-gradient(
       to bottom,
-      rgba(15, 23, 42, 0.72) 0%,
-      rgba(15, 23, 42, 0.66) 40%,
-      rgba(15, 23, 42, 0.78) 100%
+      rgba(15, 23, 42, 0.56) 0%,
+      rgba(15, 23, 42, 0.5) 40%,
+      rgba(15, 23, 42, 0.64) 100%
     ),
     radial-gradient(rgba(59, 130, 246, 0.08) 1px, transparent 1px),
     url('/hero-ordination-2024.jpg') center/cover no-repeat;
   background-size: auto, 3px 3px, cover;
-  background-blend-mode: multiply, normal, normal;
+  background-blend-mode: normal, normal, normal;
 }
 
 .text-glow {
@@ -157,6 +157,17 @@ a {
 .pin-input {
   width: 100%;
   max-width: 12rem;
+}
+
+.pin-disable-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: end;
+}
+
+.pin-disable-row .btn {
+  width: 100%;
 }
 
 .ballot-item {
@@ -635,6 +646,15 @@ label.form-row {
 
   .ui-grid-2 {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .pin-disable-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .pin-disable-row .btn {
+    width: auto;
+    min-width: 120px;
   }
 }
 

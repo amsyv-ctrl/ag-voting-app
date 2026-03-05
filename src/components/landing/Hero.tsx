@@ -71,14 +71,14 @@ export function Hero({ onOpenLogin }: HeroProps) {
           <button
             type="button"
             onClick={onOpenLogin}
-            className="glow-hover mb-16 rounded-xl border border-blue-500 px-10 py-5 text-xl font-bold text-blue-300 transition hover:bg-blue-900/30"
+            className="glow-hover mb-16 rounded-xl border border-blue-500 px-10 py-5 text-xl font-bold text-white transition hover:bg-blue-900/30"
           >
             Already have an account? Login
           </button>
 
           <div className="mb-10 grid gap-3 text-left sm:grid-cols-2 lg:grid-cols-3">
             {trustBadges.map((badge) => (
-              <article key={badge.title} className="rounded-xl border border-blue-500/30 bg-gray-900/55 p-4">
+              <article key={badge.title} className="glow-hover rounded-xl border border-blue-500/30 bg-gray-900/55 p-4">
                 <h3 className="mb-1 text-base font-bold text-blue-300">{badge.title}</h3>
                 <p className="text-sm text-gray-300">{badge.text}</p>
               </article>

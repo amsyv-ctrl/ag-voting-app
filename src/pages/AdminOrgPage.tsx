@@ -17,6 +17,15 @@ type OrgState = {
   subscription_status: string | null
   current_period_end: string | null
   is_active: boolean
+  signup_role: string | null
+  estimated_voting_size: string | null
+  organization_type: string | null
+  country: string | null
+  address_line1: string | null
+  address_line2: string | null
+  city: string | null
+  state_region: string | null
+  postal_code: string | null
 }
 
 type UsageState = {
@@ -34,7 +43,16 @@ type ProfileState = {
   first_name: string
   last_name: string
   network: string
-  address: string
+  organization_name: string
+  signup_role: string
+  estimated_voting_size: string
+  organization_type: string
+  country: string
+  address_line1: string
+  address_line2: string
+  city: string
+  state_region: string
+  postal_code: string
 }
 
 function formatDate(value: string | null) {
@@ -57,7 +75,16 @@ export function AdminOrgPage() {
     first_name: '',
     last_name: '',
     network: '',
-    address: ''
+    organization_name: '',
+    signup_role: '',
+    estimated_voting_size: '',
+    organization_type: '',
+    country: '',
+    address_line1: '',
+    address_line2: '',
+    city: '',
+    state_region: '',
+    postal_code: ''
   })
   const [savingProfile, setSavingProfile] = useState(false)
   const [creatingTrialEvent, setCreatingTrialEvent] = useState(false)
@@ -101,7 +128,16 @@ export function AdminOrgPage() {
           first_name: profileData.first_name ?? '',
           last_name: profileData.last_name ?? '',
           network: profileData.network ?? '',
-          address: profileData.address ?? ''
+          organization_name: data.org.name ?? '',
+          signup_role: data.org.signup_role ?? '',
+          estimated_voting_size: data.org.estimated_voting_size ?? '',
+          organization_type: data.org.organization_type ?? '',
+          country: data.org.country ?? '',
+          address_line1: data.org.address_line1 ?? '',
+          address_line2: data.org.address_line2 ?? '',
+          city: data.org.city ?? '',
+          state_region: data.org.state_region ?? '',
+          postal_code: data.org.postal_code ?? ''
         })
       }
     } catch (err) {
@@ -147,6 +183,14 @@ export function AdminOrgPage() {
     setNotice(null)
     setError(null)
     setSavingProfile(true)
+    const composedAddress = [
+      profile.address_line1.trim(),
+      profile.address_line2.trim(),
+      [profile.city.trim(), profile.state_region.trim(), profile.postal_code.trim()].filter(Boolean).join(' ')
+    ]
+      .filter(Boolean)
+      .join(', ')
+
     const { error: updateError } = await supabase
       .from('admin_profiles')
       .upsert({
@@ -154,15 +198,42 @@ export function AdminOrgPage() {
         first_name: profile.first_name,
         last_name: profile.last_name,
         network: profile.network,
-        address: profile.address
+        address: composedAddress || null
       })
 
-    setSavingProfile(false)
     if (updateError) {
+      setSavingProfile(false)
       setError(updateError.message)
       return
     }
+
+    if (org?.id) {
+      const { error: orgUpdateError } = await supabase
+        .from('organizations')
+        .update({
+          name: profile.organization_name.trim() || org.name,
+          signup_role: profile.signup_role || null,
+          estimated_voting_size: profile.estimated_voting_size || null,
+          organization_type: profile.organization_type || null,
+          country: profile.country || null,
+          address_line1: profile.address_line1 || null,
+          address_line2: profile.address_line2 || null,
+          city: profile.city || null,
+          state_region: profile.state_region || null,
+          postal_code: profile.postal_code || null
+        })
+        .eq('id', org.id)
+
+      if (orgUpdateError) {
+        setSavingProfile(false)
+        setError(orgUpdateError.message)
+        return
+      }
+    }
+
+    setSavingProfile(false)
     setNotice('Profile updated.')
+    await load()
   }
 
   async function onCheckout(plan: 'STARTER' | 'GROWTH' | 'NETWORK') {
@@ -297,17 +368,51 @@ export function AdminOrgPage() {
 
       <section className="form-section">
         <h2>Subscription</h2>
-        <p className="helper-text">Choose a plan to activate full access and remove trial limits.</p>
-        <div className="form-actions">
-          <button className="btn btn-primary" type="button" onClick={() => onCheckout('STARTER')} disabled={checkoutLoadingPlan !== null}>
-            {checkoutLoadingPlan === 'STARTER' ? 'Redirecting...' : 'Starter'}
-          </button>
-          <button className="btn btn-primary" type="button" onClick={() => onCheckout('GROWTH')} disabled={checkoutLoadingPlan !== null}>
-            {checkoutLoadingPlan === 'GROWTH' ? 'Redirecting...' : 'Growth'}
-          </button>
-          <button className="btn btn-primary" type="button" onClick={() => onCheckout('NETWORK')} disabled={checkoutLoadingPlan !== null}>
-            {checkoutLoadingPlan === 'NETWORK' ? 'Redirecting...' : 'Network'}
-          </button>
+        <p className="helper-text">Choose a plan based on the number of votes your organization runs each year.</p>
+        <p className="helper-text" style={{ marginTop: '0.35rem' }}>Built for church governance — not generic polling.</p>
+        <div className="form-grid" style={{ marginTop: '0.8rem' }}>
+          <article className="ui-card">
+            <h3 style={{ marginTop: 0 }}>Starter</h3>
+            <p className="muted">Best for churches and smaller organizations</p>
+            <p><strong>$500 / year</strong></p>
+            <p className="muted">Up to 500 votes per year</p>
+            <ul className="muted">
+              <li>Unlimited events</li>
+              <li>Secret ballots and runoff voting</li>
+              <li>Vote receipts and integrity-sealed results</li>
+            </ul>
+            <button className="btn btn-primary" type="button" onClick={() => onCheckout('STARTER')} disabled={checkoutLoadingPlan !== null}>
+              {checkoutLoadingPlan === 'STARTER' ? 'Redirecting...' : 'Start Free Trial'}
+            </button>
+          </article>
+          <article className="ui-card" style={{ borderColor: '#1d4ed8' }}>
+            <h3 style={{ marginTop: 0 }}>Growth</h3>
+            <p className="muted">Ideal for larger churches and regional ministries</p>
+            <p><strong>$1,500 / year</strong></p>
+            <p className="muted">Up to 2,000 votes per year</p>
+            <ul className="muted">
+              <li>Everything in Starter</li>
+              <li>Higher capacity for multiple meetings</li>
+              <li>Great for annual meetings and board elections</li>
+            </ul>
+            <button className="btn btn-primary" type="button" onClick={() => onCheckout('GROWTH')} disabled={checkoutLoadingPlan !== null}>
+              {checkoutLoadingPlan === 'GROWTH' ? 'Redirecting...' : 'Start Free Trial'}
+            </button>
+          </article>
+          <article className="ui-card form-row-full">
+            <h3 style={{ marginTop: 0 }}>Network</h3>
+            <p className="muted">Designed for district or network conferences</p>
+            <p><strong>$3,000 / year</strong></p>
+            <p className="muted">Up to 5,000 votes per year</p>
+            <ul className="muted">
+              <li>Everything in Growth</li>
+              <li>Capacity for large conferences</li>
+              <li>Multiple runoff rounds and network-scale governance voting</li>
+            </ul>
+            <button className="btn btn-primary" type="button" onClick={() => onCheckout('NETWORK')} disabled={checkoutLoadingPlan !== null}>
+              {checkoutLoadingPlan === 'NETWORK' ? 'Redirecting...' : 'Start Free Trial'}
+            </button>
+          </article>
         </div>
         {showManageSubscription && (
           <div className="form-actions" style={{ marginTop: '0.8rem' }}>
@@ -373,12 +478,106 @@ export function AdminOrgPage() {
               onChange={(e) => setProfile((p) => ({ ...p, network: e.target.value }))}
             />
           </label>
-          <label className="form-row form-row-full">
-            Address
-            <textarea
-              className="textarea"
-              value={profile.address}
-              onChange={(e) => setProfile((p) => ({ ...p, address: e.target.value }))}
+          <label className="form-row">
+            Church or Organization Name
+            <input
+              className="input"
+              value={profile.organization_name}
+              onChange={(e) => setProfile((p) => ({ ...p, organization_name: e.target.value }))}
+              required
+            />
+          </label>
+          <label className="form-row">
+            Your Role
+            <select
+              className="select"
+              value={profile.signup_role}
+              onChange={(e) => setProfile((p) => ({ ...p, signup_role: e.target.value }))}
+            >
+              <option value="">Select role (optional)</option>
+              <option value="Lead Pastor">Lead Pastor</option>
+              <option value="Executive Pastor">Executive Pastor</option>
+              <option value="Church Staff">Church Staff</option>
+              <option value="Board Member">Board Member</option>
+              <option value="District / Network Staff">District / Network Staff</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+          <label className="form-row">
+            Estimated Voting Size
+            <select
+              className="select"
+              value={profile.estimated_voting_size}
+              onChange={(e) => setProfile((p) => ({ ...p, estimated_voting_size: e.target.value }))}
+            >
+              <option value="">Select voting size (optional)</option>
+              <option value="10–50">10–50</option>
+              <option value="50–100">50–100</option>
+              <option value="100–250">100–250</option>
+              <option value="250–500">250–500</option>
+              <option value="500+">500+</option>
+            </select>
+          </label>
+          <label className="form-row">
+            Organization Type
+            <select
+              className="select"
+              value={profile.organization_type}
+              onChange={(e) => setProfile((p) => ({ ...p, organization_type: e.target.value }))}
+            >
+              <option value="">Select type (optional)</option>
+              <option value="Local Church">Local Church</option>
+              <option value="District / Network">District / Network</option>
+              <option value="Ministry Organization">Ministry Organization</option>
+              <option value="Nonprofit Board">Nonprofit Board</option>
+            </select>
+          </label>
+          <label className="form-row">
+            Country
+            <input
+              className="input"
+              value={profile.country}
+              onChange={(e) => setProfile((p) => ({ ...p, country: e.target.value }))}
+            />
+          </label>
+          <label className="form-row">
+            Address line 1
+            <input
+              className="input"
+              value={profile.address_line1}
+              onChange={(e) => setProfile((p) => ({ ...p, address_line1: e.target.value }))}
+            />
+          </label>
+          <label className="form-row">
+            Address line 2
+            <input
+              className="input"
+              value={profile.address_line2}
+              onChange={(e) => setProfile((p) => ({ ...p, address_line2: e.target.value }))}
+            />
+          </label>
+          <label className="form-row">
+            City
+            <input
+              className="input"
+              value={profile.city}
+              onChange={(e) => setProfile((p) => ({ ...p, city: e.target.value }))}
+            />
+          </label>
+          <label className="form-row">
+            State / Region
+            <input
+              className="input"
+              value={profile.state_region}
+              onChange={(e) => setProfile((p) => ({ ...p, state_region: e.target.value }))}
+            />
+          </label>
+          <label className="form-row">
+            Postal code
+            <input
+              className="input"
+              value={profile.postal_code}
+              onChange={(e) => setProfile((p) => ({ ...p, postal_code: e.target.value }))}
             />
           </label>
           <div className="form-actions form-row-full">

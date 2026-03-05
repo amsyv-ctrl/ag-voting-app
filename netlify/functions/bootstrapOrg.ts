@@ -13,6 +13,15 @@ type OrgRow = {
   subscription_status: string | null
   current_period_end: string | null
   is_active: boolean
+  signup_role: string | null
+  estimated_voting_size: string | null
+  organization_type: string | null
+  country: string | null
+  address_line1: string | null
+  address_line2: string | null
+  city: string | null
+  state_region: string | null
+  postal_code: string | null
 }
 
 type UsageSummary = {
@@ -91,7 +100,7 @@ export const handler: Handler = async (event) => {
   if (membership?.org_id) {
     const { data: orgData, error: orgError } = await supabaseAdmin
       .from('organizations')
-      .select('id,name,mode,stripe_customer_id,stripe_price_id,trial_event_id,trial_votes_used,trial_votes_limit,subscription_status,current_period_end,is_active')
+      .select('id,name,mode,stripe_customer_id,stripe_price_id,trial_event_id,trial_votes_used,trial_votes_limit,subscription_status,current_period_end,is_active,signup_role,estimated_voting_size,organization_type,country,address_line1,address_line2,city,state_region,postal_code')
       .eq('id', membership.org_id)
       .single()
 
@@ -131,7 +140,7 @@ export const handler: Handler = async (event) => {
         state_region: stateRegion,
         postal_code: postalCode
       })
-      .select('id,name,mode,stripe_customer_id,stripe_price_id,trial_event_id,trial_votes_used,trial_votes_limit,subscription_status,current_period_end,is_active')
+      .select('id,name,mode,stripe_customer_id,stripe_price_id,trial_event_id,trial_votes_used,trial_votes_limit,subscription_status,current_period_end,is_active,signup_role,estimated_voting_size,organization_type,country,address_line1,address_line2,city,state_region,postal_code')
       .single()
 
     if (createOrgError || !createdOrg) {

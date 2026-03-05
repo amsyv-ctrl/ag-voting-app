@@ -132,6 +132,15 @@ export type OrgBootstrapResponse = {
     subscription_status: string | null
     current_period_end: string | null
     is_active: boolean
+    signup_role: string | null
+    estimated_voting_size: string | null
+    organization_type: string | null
+    country: string | null
+    address_line1: string | null
+    address_line2: string | null
+    city: string | null
+    state_region: string | null
+    postal_code: string | null
   }
   usage: {
     plan_name: 'STARTER' | 'GROWTH' | 'NETWORK' | 'TRIAL' | 'UNKNOWN'

@@ -32,8 +32,11 @@ export function AdminHeader({ breadcrumbText, actions, onSignOut }: AdminHeaderP
       const first = typeof profile?.first_name === 'string' ? profile.first_name.trim() : ''
       if (first) {
         setWelcome(`Welcome, ${first}`)
-      } else if (user.email) {
-        setWelcome(`Welcome, ${user.email}`)
+      } else {
+        const metadataFirst = typeof user.user_metadata?.first_name === 'string'
+          ? user.user_metadata.first_name.trim()
+          : ''
+        if (metadataFirst) setWelcome(`Welcome, ${metadataFirst}`)
       }
     })()
 
@@ -101,7 +104,6 @@ export function AdminHeader({ breadcrumbText, actions, onSignOut }: AdminHeaderP
                 <Link ref={firstItemRef} to="/admin" onClick={() => setMenuOpen(false)} role="menuitem">Events</Link>
                 <Link to="/admin/org" onClick={() => setMenuOpen(false)} role="menuitem">Account</Link>
                 <Link to="/admin/org#subscription" onClick={() => setMenuOpen(false)} role="menuitem">Billing</Link>
-                <Link to="/demo" onClick={() => setMenuOpen(false)} role="menuitem">Documentation / Help</Link>
                 <button type="button" role="menuitem" onClick={handleSignOut}>Sign out</button>
               </div>
             )}

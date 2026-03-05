@@ -10,7 +10,10 @@ type AdminLayoutProps = {
 
 export function AdminLayout({ children, breadcrumb, headerActions, onSignOut }: AdminLayoutProps) {
 
-  const breadcrumbText = useMemo(() => (breadcrumb && breadcrumb.length ? breadcrumb.join(' > ') : null), [breadcrumb])
+  const breadcrumbText = useMemo(
+    () => (breadcrumb && breadcrumb.length > 1 ? breadcrumb.join(' > ') : null),
+    [breadcrumb]
+  )
 
   return (
     <main className="admin-shell">
