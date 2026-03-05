@@ -1165,6 +1165,41 @@ button:disabled {
   white-space: pre-wrap;
 }
 
+.pin-list {
+  list-style: none;
+  margin: 0.65rem 0 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.pin-row {
+  border: 1px solid #d0deef;
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  display: grid;
+  gap: 0.2rem;
+  background: #fff;
+}
+
+.pin-row-disabled {
+  background: #f4f6f8;
+  border-color: #d2dae4;
+}
+
+.pin-code {
+  font-family: Orbitron, Inter, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+}
+
+.pin-status {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

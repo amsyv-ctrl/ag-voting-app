@@ -70,6 +70,55 @@ export async function adminGeneratePins(
   return handleJson<{ generated: string[]; total: number }>(res)
 }
 
+export async function disablePinByCode(
+  accessToken: string,
+  eventId: string,
+  pin: string
+): Promise<{ ok: boolean; pin: string; alreadyDisabled: boolean }> {
+  const res = await fetch(`${API_BASE}/disablePin`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ eventId, pin })
+  })
+
+  return handleJson<{ ok: boolean; pin: string; alreadyDisabled: boolean }>(res)
+}
+
+export async function exportPinsCsv(
+  accessToken: string,
+  eventId: string
+): Promise<{ blob: Blob; filename: string }> {
+  const res = await fetch(`${API_BASE}/exportPinsCsv`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ eventId })
+  })
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    const code = typeof data?.error === 'string' ? data.error : null
+    const message =
+      typeof data?.message === 'string'
+        ? data.message
+        : typeof data?.error === 'string'
+          ? data.error
+          : 'Request failed'
+    throw new ApiError(message, res.status, code)
+  }
+
+  const disposition = res.headers.get('content-disposition') || ''
+  const match = disposition.match(/filename=\"?([^\";]+)\"?/)
+  const filename = match?.[1] || `event_pins_${eventId}.csv`
+  const blob = await res.blob()
+  return { blob, filename }
+}
+
 export type OrgBootstrapResponse = {
   org: {
     id: string

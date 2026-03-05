@@ -208,6 +208,42 @@ export const handler: Handler = async (event) => {
     trialReserved = true
   }
 
+  if (pin && /^\d{4}$/.test(pin)) {
+    const { data: pinRow, error: pinLookupError } = await supabaseAdmin
+      .from('pins')
+      .select('id,is_active,disabled_at')
+      .eq('event_id', eventRow.id)
+      .eq('code', pin)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+
+    if (pinLookupError) {
+      console.error('submitVote pin lookup failed', {
+        slug,
+        eventId: eventRow.id,
+        error: pinLookupError.message
+      })
+      return { statusCode: 500, body: JSON.stringify({ error: 'Could not validate PIN status' }) }
+    }
+
+    if (pinRow && (pinRow.is_active === false || pinRow.disabled_at)) {
+      if (trialReserved) {
+        await supabaseAdmin.rpc('decrement_trial_vote', {
+          p_org_id: orgRow.id,
+          p_event_id: eventRow.id
+        })
+      }
+      return {
+        statusCode: 403,
+        body: JSON.stringify({
+          error: 'PIN_DISABLED',
+          message: 'This PIN has been disabled. Please request a new PIN.'
+        })
+      }
+    }
+  }
+
   const { data, error } = await supabaseAdmin.rpc('submit_vote_atomic', {
     p_slug: slug,
     p_pin_code: pin ?? null,

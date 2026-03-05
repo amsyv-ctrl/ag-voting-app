@@ -1,7 +1,7 @@
 import { FormEvent, useMemo, useState, useEffect } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { adminGeneratePins, verifyReceipt } from '../lib/api'
+import { adminGeneratePins, disablePinByCode, exportPinsCsv, verifyReceipt } from '../lib/api'
 import { getAccessToken, requireSession } from '../lib/auth'
 import { OperatorRunbook } from '../components/OperatorRunbook'
 import { AdminLayout } from '../components/AdminLayout'
@@ -33,6 +33,8 @@ type PinRow = {
   code: string
   is_active: boolean
   created_at: string
+  disabled_at: string | null
+  disabled_by: string | null
 }
 
 type ExportSummaryRow = {
@@ -121,6 +123,9 @@ export function AdminEventPage() {
   const [requiresPin, setRequiresPin] = useState(true)
   const [pinCount, setPinCount] = useState(100)
   const [pinsOutput, setPinsOutput] = useState<string[]>([])
+  const [pinToDisable, setPinToDisable] = useState('')
+  const [disablingPin, setDisablingPin] = useState(false)
+  const [exportingPins, setExportingPins] = useState(false)
   const [receiptCodeInput, setReceiptCodeInput] = useState('')
   const [verifyingReceipt, setVerifyingReceipt] = useState(false)
   const [receiptLookupResult, setReceiptLookupResult] = useState<ReceiptLookupResult | null>(null)
@@ -128,6 +133,7 @@ export function AdminEventPage() {
   const [exportingOfficial, setExportingOfficial] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [orgAccess, setOrgAccess] = useState<OrgAccessRow | null>(null)
   const [eventArchivedAt, setEventArchivedAt] = useState<string | null>(null)
 
@@ -135,6 +141,10 @@ export function AdminEventPage() {
   const [pinsOpen, setPinsOpen] = useState(false)
 
   const appBase = useMemo(() => window.location.origin, [])
+  const activePinCount = useMemo(
+    () => activePins.filter((pin) => pin.is_active && !pin.disabled_at).length,
+    [activePins]
+  )
 
   async function load() {
     const session = await requireSession()
@@ -202,9 +212,8 @@ export function AdminEventPage() {
 
     const { data: pinData, error: pinError } = await supabase
       .from('pins')
-      .select('id,code,is_active,created_at')
+      .select('id,code,is_active,created_at,disabled_at,disabled_by')
       .eq('event_id', eventId)
-      .eq('is_active', true)
       .order('created_at', { ascending: false })
 
     if (pinError) {
@@ -279,6 +288,7 @@ export function AdminEventPage() {
     try {
       const result = await adminGeneratePins(token, eventId, pinCount)
       setPinsOutput(result.generated)
+      setNotice(`Generated ${result.generated.length} PINs.`)
       await load()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not generate PINs')
@@ -296,6 +306,7 @@ export function AdminEventPage() {
     }
 
     setError(null)
+    setNotice(null)
     const { error: deleteError } = await supabase.from('pins').delete().eq('event_id', eventId)
     if (deleteError) {
       setError(deleteError.message)
@@ -303,7 +314,69 @@ export function AdminEventPage() {
     }
 
     setPinsOutput([])
+    setNotice('All PINs deleted for this event.')
     await load()
+  }
+
+  async function onExportPins() {
+    if (!canOperateEvent) {
+      setError('Subscription inactive. This event is read-only.')
+      return
+    }
+    setError(null)
+    setNotice(null)
+    setExportingPins(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) {
+        navigate('/admin')
+        return
+      }
+      const { blob, filename } = await exportPinsCsv(token, eventId)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not export PIN CSV')
+    } finally {
+      setExportingPins(false)
+    }
+  }
+
+  async function onDisablePin(e: FormEvent) {
+    e.preventDefault()
+    if (!canOperateEvent) {
+      setError('Subscription inactive. This event is read-only.')
+      return
+    }
+
+    const normalized = pinToDisable.replace(/\D/g, '').slice(0, 4)
+    if (!/^\d{4}$/.test(normalized)) {
+      setError('PIN must be a 4-digit code.')
+      return
+    }
+
+    setError(null)
+    setNotice(null)
+    setDisablingPin(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) {
+        navigate('/admin')
+        return
+      }
+      const result = await disablePinByCode(token, eventId, normalized)
+      setPinToDisable('')
+      setNotice(result.alreadyDisabled ? 'PIN was already disabled.' : 'PIN disabled.')
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not disable PIN')
+    } finally {
+      setDisablingPin(false)
+    }
   }
 
   async function onUpdateEvent(e: FormEvent) {
@@ -662,6 +735,7 @@ export function AdminEventPage() {
           </p>
         )}
         {error && <p className="error">{error}</p>}
+        {notice && <p className="winner">{notice}</p>}
 
         <div className={`accordion ${editOpen ? 'active' : ''}`}>
           <button type="button" className="accordion-header" onClick={() => setEditOpen((v) => !v)}>
@@ -705,7 +779,7 @@ export function AdminEventPage() {
             <span className="accordion-icon">&#9654;</span>
           </button>
           <div className="accordion-content">
-            <p>Generate 4-digit PINs. Active PINs for this event: <strong>{activePins.length}</strong></p>
+            <p>Generate 4-digit PINs. Active PINs for this event: <strong>{activePinCount}</strong></p>
             <form className="form-actions" onSubmit={onGeneratePins}>
               <input
                 className="input pin-input"
@@ -719,6 +793,30 @@ export function AdminEventPage() {
               <button className="btn btn-primary" type="submit" disabled={!canOperateEvent}>Generate</button>
             </form>
             <div className="form-actions" style={{ marginTop: '10px' }}>
+              <button className="btn btn-secondary" type="button" onClick={onExportPins} disabled={!canOperateEvent || exportingPins}>
+                {exportingPins ? 'Exporting...' : 'Export PINs (CSV)'}
+              </button>
+            </div>
+            <form className="form-actions" style={{ marginTop: '10px' }} onSubmit={onDisablePin}>
+              <label className="form-row" style={{ flex: '1 1 220px', margin: 0 }}>
+                Disable PIN
+                <input
+                  className="input"
+                  inputMode="numeric"
+                  pattern="[0-9]{4}"
+                  maxLength={4}
+                  value={pinToDisable}
+                  onChange={(evt) => setPinToDisable(evt.target.value.replace(/\D/g, '').slice(0, 4))}
+                  placeholder="0000"
+                  disabled={!canOperateEvent || disablingPin}
+                />
+              </label>
+              <button className="btn btn-danger" type="submit" disabled={!canOperateEvent || disablingPin}>
+                {disablingPin ? 'Disabling...' : 'Disable'}
+              </button>
+            </form>
+            <p className="helper-text">Use if a PIN is lost and needs to be reissued.</p>
+            <div className="form-actions" style={{ marginTop: '10px' }}>
               <button className="btn btn-danger danger-btn" onClick={onDeleteAllPins} disabled={!canOperateEvent}>Delete All PINs</button>
             </div>
             {pinsOutput.length > 0 && (
@@ -728,13 +826,25 @@ export function AdminEventPage() {
               </details>
             )}
             <details>
-              <summary>View active PINs ({activePins.length})</summary>
+              <summary>View event PINs ({activePins.length})</summary>
               {activePins.length === 0 ? (
-                <p>No active PINs yet.</p>
+                <p>No PINs yet.</p>
               ) : (
-                <pre className="code-block">{activePins.map((pin) => pin.code).join(', ')}</pre>
+                <ul className="pin-list">
+                  {activePins.map((pin) => (
+                    <li key={pin.id} className={`pin-row ${pin.disabled_at || !pin.is_active ? 'pin-row-disabled' : ''}`}>
+                      <span className="pin-code">{pin.code}</span>
+                      <span className="pin-status">{pin.disabled_at || !pin.is_active ? 'Disabled' : 'Active'}</span>
+                      <span className="muted">
+                        Created {new Date(pin.created_at).toLocaleString()}
+                        {pin.disabled_at ? ` • Disabled ${new Date(pin.disabled_at).toLocaleString()}` : ''}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               )}
             </details>
+            <p className="helper-text" style={{ marginTop: '0.5rem' }}>Tip: disable a lost PIN, then generate a replacement PIN for that delegate.</p>
           </div>
         </div>
 
