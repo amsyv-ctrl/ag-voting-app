@@ -108,7 +108,8 @@ a {
   border: 1px solid #d0deef;
   border-radius: 8px;
   margin-bottom: 15px;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
 }
 
 .accordion-header {
@@ -123,6 +124,8 @@ a {
   transition: background 0.3s;
   background: #fff;
   color: #1f2937;
+  position: relative;
+  z-index: 1;
 }
 
 .accordion-header:hover {
@@ -801,6 +804,7 @@ label.form-row {
 .info-tip {
   position: relative;
   display: inline-flex;
+  z-index: 5;
 }
 
 .info-tip-btn {
@@ -828,7 +832,7 @@ label.form-row {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  z-index: 35;
+  z-index: 80;
   width: min(280px, 72vw);
   background: #0f172a;
   color: #f8fafc;

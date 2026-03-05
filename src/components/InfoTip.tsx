@@ -1,3 +1,4 @@
+import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
 
 type InfoTipProps = {
@@ -7,6 +8,12 @@ type InfoTipProps = {
 export function InfoTip({ text }: InfoTipProps) {
   const [open, setOpen] = useState(false)
   const wrapRef = useRef<HTMLSpanElement | null>(null)
+
+  function toggle(ev: ReactMouseEvent | ReactKeyboardEvent) {
+    ev.preventDefault()
+    ev.stopPropagation()
+    setOpen((v) => !v)
+  }
 
   useEffect(() => {
     if (!open) return
@@ -29,15 +36,25 @@ export function InfoTip({ text }: InfoTipProps) {
 
   return (
     <span className="info-tip" ref={wrapRef}>
-      <button
-        type="button"
+      <span
+        role="button"
+        tabIndex={0}
         className="info-tip-btn"
         aria-label="Info"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onMouseDown={(ev) => {
+          ev.preventDefault()
+          ev.stopPropagation()
+        }}
+        onClick={toggle}
+        onKeyDown={(ev) => {
+          if (ev.key === 'Enter' || ev.key === ' ') {
+            toggle(ev)
+          }
+        }}
       >
         i
-      </button>
+      </span>
       {open && <span className="info-tip-popover">{text}</span>}
     </span>
   )
