@@ -388,8 +388,11 @@ export function AdminBallotPage() {
   async function closeBallot() {
     if (!ballot) return
     if (!requireOperateAccess()) return
+    const electionWarning = results?.winner_label
+      ? `\n\nElection reached: ${results.winner_label}. Are you sure you want to close this vote?`
+      : ''
     if (!window.confirm(
-      `Are you sure?\n\nClosing this ballot will finalize results for ${roundLabel(ballot.vote_round)} vote after a 10-second delay.`
+      `Are you sure?\n\nClosing this ballot will finalize results for ${roundLabel(ballot.vote_round)} vote after a 10-second delay.${electionWarning}`
     )) {
       return
     }
@@ -681,16 +684,6 @@ export function AdminBallotPage() {
   return (
     <AdminLayout
       breadcrumb={['Events', ballot.event_name, ballot.title]}
-      headerActions={
-        <>
-          <button className="btn btn-primary" type="button" onClick={openNewVoteRound} disabled={!canOpenVote}>
-            {openVoteLabel}
-          </button>
-          <button className="btn btn-danger" type="button" onClick={closeBallot} disabled={!canCloseVote}>
-            Close Current Vote
-          </button>
-        </>
-      }
     >
       <PageHero
         title={ballot.title}
@@ -702,11 +695,27 @@ export function AdminBallotPage() {
         }
       />
       <section className="ballot-admin-card ballot-admin-hero">
+        <div className="ballot-admin-topbar">
+          <div className="ballot-admin-status-wrap">
+            <span className="ballot-admin-status-label">Ballot Status</span>
+            <div className={`status-badge ${stateClass}`}>{stateLabel}</div>
+          </div>
+          {ballot.status === 'MANUAL_FALLBACK' ? (
+            <p className="muted">Manual fallback mode active. Record manual totals in the Manual Fallback section.</p>
+          ) : (
+            <div className="ballot-admin-top-actions">
+              <button className="btn btn-primary" type="button" onClick={openNewVoteRound} disabled={!canOpenVote}>
+                {openVoteLabel}
+              </button>
+              <button className="btn btn-danger" type="button" onClick={closeBallot} disabled={!canCloseVote}>
+                Close Current Vote
+              </button>
+            </div>
+          )}
+        </div>
         <h1>{ballot.event_name}</h1>
         <h2>{ballot.title}</h2>
-        <div className={`status-badge ${stateClass}`}>{stateLabel}</div>
         <p className="ballot-admin-info">Current Vote: #{ballot.vote_round} ({roundLabel(ballot.vote_round)} vote)</p>
-        <p className="ballot-admin-info">Ballot Status: <strong>{ballot.status}</strong></p>
         <p className="ballot-admin-info">PIN Required: {ballot.requires_pin ? 'Yes' : 'No'}</p>
         {orgAccess && (
           <p className={isReadOnly ? 'error' : 'muted'}>
@@ -776,20 +785,6 @@ export function AdminBallotPage() {
         <p className="helper-text">Vote URL is for attendees. Display URL is for projector screens.</p>
         <div className="ballot-admin-qr-actions">
           {voteQrDataUrl && <img className="ballot-admin-qr" src={voteQrDataUrl} alt="Ballot QR code" width={180} height={180} />}
-          <div className="inline ballot-admin-actions">
-            {ballot.status === 'MANUAL_FALLBACK' ? (
-              <p className="muted">Manual fallback mode active. Record manual totals in the Manual Fallback section.</p>
-            ) : (
-              <>
-                <button className="btn btn-primary" onClick={openNewVoteRound} disabled={!canOpenVote}>
-                  {ballot.status === 'DRAFT' ? 'Open Vote #1' : `Open Vote #${(ballot.vote_round ?? 1) + 1}`}
-                </button>
-                <button className="btn btn-danger" onClick={closeBallot} disabled={!canCloseVote}>
-                  Close Current Vote (10s delay)
-                </button>
-              </>
-            )}
-          </div>
         </div>
         <OperatorRunbook context="ballot" ballotId={ballot.id} round={ballot.vote_round} />
         {error && <p className="error">{error}</p>}

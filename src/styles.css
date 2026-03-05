@@ -1006,6 +1006,34 @@ label.form-row {
   margin-bottom: 0.35rem;
 }
 
+.ballot-admin-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.ballot-admin-status-wrap {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.ballot-admin-status-label {
+  color: #5f6772;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.ballot-admin-top-actions {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .ballot-admin-info {
   margin: 0.2rem 0;
   color: #5f6772;
@@ -1028,9 +1056,9 @@ label.form-row {
 }
 
 .status-badge-closed {
-  color: #5a6170;
-  background: #eceff4;
-  border: 1px solid #c8d0dc;
+  color: #991b1b;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
 }
 
 .status-badge-round-complete {
