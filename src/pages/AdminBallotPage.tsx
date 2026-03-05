@@ -674,20 +674,22 @@ export function AdminBallotPage() {
     : (results?.total_votes ?? 0) > 0
       ? 'status-badge-round-complete'
       : 'status-badge-closed'
+  const canOpenVote = canOperateEvent && ballot.status !== 'OPEN' && ballot.status !== 'MANUAL_FALLBACK'
+  const canCloseVote = canOperateEvent && ballot.status === 'OPEN'
+  const openVoteLabel = ballot.status === 'DRAFT' ? 'Open Vote' : 'Open Next Vote'
 
   return (
     <AdminLayout
       breadcrumb={['Events', ballot.event_name, ballot.title]}
       headerActions={
-        ballot.status === 'OPEN' ? (
-          <button className="btn btn-secondary" type="button" onClick={closeBallot} disabled={!canOperateEvent}>
-            Close Vote
+        <>
+          <button className="btn btn-primary" type="button" onClick={openNewVoteRound} disabled={!canOpenVote}>
+            {openVoteLabel}
           </button>
-        ) : (
-          <button className="btn btn-primary" type="button" onClick={openNewVoteRound} disabled={!canOperateEvent}>
-            {ballot.status === 'DRAFT' ? 'Open Vote' : 'Open Next Vote'}
+          <button className="btn btn-danger" type="button" onClick={closeBallot} disabled={!canCloseVote}>
+            Close Current Vote
           </button>
-        )
+        </>
       }
     >
       <PageHero
@@ -775,23 +777,19 @@ export function AdminBallotPage() {
         <div className="ballot-admin-qr-actions">
           {voteQrDataUrl && <img className="ballot-admin-qr" src={voteQrDataUrl} alt="Ballot QR code" width={180} height={180} />}
           <div className="inline ballot-admin-actions">
-            {ballot.status === 'OPEN' ? (
-              <>
-                <button className="btn btn-secondary secondary" onClick={closeBallot} disabled={!canOperateEvent}>Close current vote (10s delay)</button>
-                <button className="btn btn-secondary secondary" onClick={switchToManualFallbackMode} disabled={!canOperateEvent}>Switch to Manual Count Mode</button>
-              </>
-            ) : ballot.status === 'MANUAL_FALLBACK' ? (
+            {ballot.status === 'MANUAL_FALLBACK' ? (
               <p className="muted">Manual fallback mode active. Record manual totals in the Manual Fallback section.</p>
             ) : (
-              <button className="btn btn-primary" onClick={openNewVoteRound} disabled={!canOperateEvent}>
-                {ballot.status === 'DRAFT' ? 'Open Vote #1' : `Open Vote #${(ballot.vote_round ?? 1) + 1}`}
-              </button>
+              <>
+                <button className="btn btn-primary" onClick={openNewVoteRound} disabled={!canOpenVote}>
+                  {ballot.status === 'DRAFT' ? 'Open Vote #1' : `Open Vote #${(ballot.vote_round ?? 1) + 1}`}
+                </button>
+                <button className="btn btn-danger" onClick={closeBallot} disabled={!canCloseVote}>
+                  Close Current Vote (10s delay)
+                </button>
+              </>
             )}
           </div>
-        </div>
-        <div className="section-title-row" style={{ marginBottom: '0.5rem' }}>
-          <span className="muted">Operator Runbook</span>
-          <InfoTip text="Follow this checklist while opening, monitoring, and closing each vote round." />
         </div>
         <OperatorRunbook context="ballot" ballotId={ballot.id} round={ballot.vote_round} />
         {error && <p className="error">{error}</p>}
@@ -1075,6 +1073,19 @@ export function AdminBallotPage() {
           <span className="accordion-icon">&#9654;</span>
         </button>
         <div className="accordion-content">
+          <p className="muted">
+            Switch to Manual Count Mode only if there is an internet issue and voters are unable to vote from their phones.
+            This is an emergency fallback, not part of the normal workflow.
+          </p>
+          <div className="form-actions" style={{ marginBottom: '0.8rem' }}>
+            <button
+              className="btn btn-secondary secondary"
+              onClick={switchToManualFallbackMode}
+              disabled={!canOperateEvent || ballot.status === 'MANUAL_FALLBACK'}
+            >
+              {ballot.status === 'MANUAL_FALLBACK' ? 'Manual Count Mode Active' : 'Switch to Manual Count Mode'}
+            </button>
+          </div>
           <p className="error">Delete this ballot and all of its votes.</p>
           <button className="btn btn-danger" onClick={deleteBallot} disabled={!isPaidActive}>Delete ballot</button>
         </div>
