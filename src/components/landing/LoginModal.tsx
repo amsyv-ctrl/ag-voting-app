@@ -74,7 +74,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
             <XMarkIcon className="h-8 w-8" />
           </button>
 
-          <h2 className="mb-8 text-center text-3xl font-bold text-blue-400">Login to AG Voting</h2>
+          <h2 className="mb-8 text-center text-3xl font-bold text-blue-400">Login to MinistryVote</h2>
 
           <form onSubmit={onSubmit}>
             <div className="mb-6">

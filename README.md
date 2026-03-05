@@ -1,4 +1,4 @@
-# AG Voting App (Netlify + Supabase)
+# MinistryVote (Netlify + Supabase)
 
 Standalone voting application for Assemblies of God network events. This project is intentionally separate from any credentialing portal codebase.
 
@@ -44,6 +44,7 @@ Functions:
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPABASE_PROJECT_ID` (optional, reserved)
+- `SITE_URL` (recommended, e.g. `https://agvoting.com`; used for Stripe return URLs when request origin is unavailable)
 - `VOTE_RECEIPT_SECRET` (required for tamper-evident vote receipts; `RECEIPT_SECRET` supported as fallback alias)
 - `SEAL_SECRET` (required for ballot integrity seals on closed rounds)
 

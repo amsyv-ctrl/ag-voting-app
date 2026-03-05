@@ -5,6 +5,7 @@ import { ProblemSection } from '../components/landing/ProblemSection'
 import { HowItWorks } from '../components/landing/HowItWorks'
 import { GovernanceFeatures } from '../components/landing/GovernanceFeatures'
 import { VerifiableResults } from '../components/landing/VerifiableResults'
+import { OfficialRecordsSection } from '../components/landing/OfficialRecordsSection'
 import { MeetingMoving } from '../components/landing/MeetingMoving'
 import { WhoItsFor } from '../components/landing/WhoItsFor'
 import { TimeSavings } from '../components/landing/TimeSavings'
@@ -16,7 +17,7 @@ export function HomePage() {
   const [loginOpen, setLoginOpen] = useState(false)
 
   useEffect(() => {
-    document.title = 'AG Voting - Secure Church & Ministry Elections'
+    document.title = 'MinistryVote – Verifiable Voting for Ministry Governance'
 
     let meta = document.querySelector('meta[name="description"]')
     if (!meta) {
@@ -35,6 +36,7 @@ export function HomePage() {
       <HowItWorks />
       <GovernanceFeatures />
       <VerifiableResults />
+      <OfficialRecordsSection />
       <MeetingMoving />
       <WhoItsFor />
       <TimeSavings />

@@ -7,7 +7,7 @@ export function DemoLandingPage() {
     <main className="page">
       <DemoBanner />
       <section className="card">
-        <h1>AG Voting Demo</h1>
+        <h1>MinistryVote Demo</h1>
         <p className="muted">
           This demo simulates live voting with no database writes. Use it for training, walkthroughs, and projector previews.
         </p>
@@ -26,4 +26,3 @@ export function DemoLandingPage() {
     </main>
   )
 }
-

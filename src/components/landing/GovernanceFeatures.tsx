@@ -36,7 +36,7 @@ export function GovernanceFeatures() {
         <SectionMotion>
           <h2 className="mb-12 text-5xl font-bold md:text-6xl">Designed for Real Governance Decisions</h2>
           <p className="mx-auto mb-16 max-w-4xl text-xl text-gray-300">
-            AG Voting is built specifically for the kinds of elections churches and ministry networks conduct every year.
+            MinistryVote is built specifically for the kinds of elections churches and ministry networks conduct every year.
           </p>
         </SectionMotion>
         <div className="grid gap-8 md:grid-cols-4">

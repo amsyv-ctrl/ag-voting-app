@@ -675,7 +675,20 @@ export function AdminBallotPage() {
       : 'status-badge-closed'
 
   return (
-    <AdminLayout breadcrumb={['Events', ballot.event_name, ballot.title]}>
+    <AdminLayout
+      breadcrumb={['Events', ballot.event_name, ballot.title]}
+      headerActions={
+        ballot.status === 'OPEN' ? (
+          <button className="btn btn-secondary" type="button" onClick={closeBallot} disabled={!canOperateEvent}>
+            Close Vote
+          </button>
+        ) : (
+          <button className="btn btn-primary" type="button" onClick={openNewVoteRound} disabled={!canOperateEvent}>
+            {ballot.status === 'DRAFT' ? 'Open Vote' : 'Open Next Vote'}
+          </button>
+        )
+      }
+    >
       <PageHero
         title={ballot.title}
         subtitle="Open/close rounds, view results, and seal records."

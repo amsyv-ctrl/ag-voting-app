@@ -7,7 +7,7 @@ export function FinalCTA() {
       <SectionMotion className="mx-auto w-full max-w-5xl px-6">
         <h2 className="mb-10 text-5xl font-extrabold md:text-7xl">Run Your Next Election With Confidence</h2>
         <p className="mb-16 text-2xl leading-relaxed text-gray-300">
-          Whether you’re voting in a board meeting or a district conference, AG Voting makes the process simple, transparent, and verifiable.
+          Whether you’re voting in a board meeting or a district conference, MinistryVote makes the process simple, transparent, and verifiable.
           <br />
           Start your free trial today and see how smooth governance voting can be.
         </p>

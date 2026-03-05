@@ -3,12 +3,23 @@ import Stripe from 'stripe'
 import { supabaseAdmin } from './_supabase'
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY
+const siteUrlEnv = process.env.SITE_URL
 
 if (!stripeSecretKey) {
   throw new Error('Missing STRIPE_SECRET_KEY')
 }
 
 const stripe = new Stripe(stripeSecretKey)
+
+function resolveBaseUrl(event: Parameters<Handler>[0]) {
+  const envBase = siteUrlEnv?.trim()
+  if (envBase) return envBase.replace(/\/+$/, '')
+
+  const origin = event.headers.origin?.trim()
+  if (origin) return origin.replace(/\/+$/, '')
+
+  return 'https://agvoting.com'
+}
 
 async function validateAdmin(authHeader: string | undefined) {
   const token = authHeader?.replace('Bearer ', '').trim()
@@ -55,9 +66,8 @@ export const handler: Handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'No Stripe customer found for this organization' }) }
   }
 
-  const origin = event.headers.origin || event.headers.referer || 'https://example.com'
-  const fallbackBase = origin.replace(/\/+$/, '')
-  const returnUrl = `${fallbackBase}/admin/org`
+  const baseUrl = resolveBaseUrl(event)
+  const returnUrl = `${baseUrl}/admin/org`
 
   const session = await stripe.billingPortal.sessions.create({
     customer: org.stripe_customer_id,

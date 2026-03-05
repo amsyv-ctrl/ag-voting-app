@@ -224,6 +224,12 @@ export function AdminEventPage() {
     setActivePins(pinData ?? [])
   }
 
+  function jumpToCreateBallot() {
+    const section = document.getElementById('create-ballot')
+    if (!section) return
+    section.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+
   useEffect(() => {
     load()
   }, [eventId])
@@ -712,7 +718,17 @@ export function AdminEventPage() {
   const isReadOnly = !canOperateEvent
 
   return (
-    <AdminLayout breadcrumb={['Events', eventName || 'Event']}>
+    <AdminLayout
+      breadcrumb={['Events', eventName || 'Event']}
+      headerActions={
+        <>
+          <button className="btn btn-primary" type="button" onClick={jumpToCreateBallot}>+ New Ballot</button>
+          <button className="btn btn-secondary" type="button" onClick={onExportOfficialRecord} disabled={exportingOfficial}>
+            {exportingOfficial ? 'Exporting...' : 'Export'}
+          </button>
+        </>
+      }
+    >
       <PageHero
         title={eventName || 'Event'}
         subtitle={`Manage ballots, PINs, and exports.${votingStaffNames ? ` Voting Team: ${votingStaffNames}` : ''}`}

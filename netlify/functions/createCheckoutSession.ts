@@ -12,6 +12,7 @@ const priceGrowth = process.env.STRIPE_PRICE_GROWTH
 const priceNetwork = process.env.STRIPE_PRICE_NETWORK
 const successUrlEnv = process.env.STRIPE_SUCCESS_URL
 const cancelUrlEnv = process.env.STRIPE_CANCEL_URL
+const siteUrlEnv = process.env.SITE_URL
 
 if (!stripeSecretKey) {
   throw new Error('Missing STRIPE_SECRET_KEY')
@@ -23,6 +24,16 @@ function getPriceId(plan: Body['plan']) {
   if (plan === 'GROWTH') return priceGrowth
   if (plan === 'NETWORK') return priceNetwork
   return priceStarter
+}
+
+function resolveBaseUrl(event: Parameters<Handler>[0]) {
+  const envBase = siteUrlEnv?.trim()
+  if (envBase) return envBase.replace(/\/+$/, '')
+
+  const origin = event.headers.origin?.trim()
+  if (origin) return origin.replace(/\/+$/, '')
+
+  return 'https://agvoting.com'
 }
 
 async function validateAdmin(authHeader: string | undefined) {
@@ -98,10 +109,9 @@ export const handler: Handler = async (event) => {
     }
   }
 
-  const origin = event.headers.origin || event.headers.referer || 'https://example.com'
-  const fallbackBase = origin.replace(/\/+$/, '')
-  const successUrl = successUrlEnv || `${fallbackBase}/admin/org?billing=success`
-  const cancelUrl = cancelUrlEnv || `${fallbackBase}/admin/org?billing=cancel`
+  const baseUrl = resolveBaseUrl(event)
+  const successUrl = successUrlEnv || `${baseUrl}/admin/org?billing=success`
+  const cancelUrl = cancelUrlEnv || `${baseUrl}/admin/org?billing=cancel`
 
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',

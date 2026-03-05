@@ -309,7 +309,34 @@ a {
   padding: 0.85rem 1rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-topbar-center {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-topbar-title {
+  display: inline-block;
+  font-size: 0.95rem;
+  color: #4b5563;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.admin-topbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
 }
 
 .admin-brand {
@@ -320,12 +347,24 @@ a {
   text-decoration: none;
 }
 
+.admin-brand-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  text-decoration: none;
+}
+
+.admin-brand-tagline {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin-top: 0.05rem;
+}
+
 .admin-menu-wrap {
   position: relative;
 }
 
 .admin-menu-toggle {
-  min-width: 92px;
+  min-width: 160px;
 }
 
 .admin-menu {
@@ -366,11 +405,6 @@ a {
   padding: 1rem;
   display: grid;
   gap: 1rem;
-}
-
-.admin-welcome,
-.admin-breadcrumb {
-  margin: 0;
 }
 
 .ui-card {
@@ -601,6 +635,33 @@ label.form-row {
 
   .ui-grid-2 {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 899px) {
+  .admin-topbar-inner {
+    flex-wrap: wrap;
+  }
+
+  .admin-topbar-center {
+    order: 3;
+    width: 100%;
+  }
+
+  .admin-topbar-right {
+    margin-left: auto;
+  }
+
+  .admin-topbar-actions {
+    display: none;
+  }
+
+  .admin-menu-toggle {
+    min-width: 120px;
+  }
+
+  .admin-brand-tagline {
+    display: none;
   }
 }
 

@@ -40,7 +40,7 @@ export function DemoDisplayPage() {
     <main className="display-page">
       <DemoBanner />
       <section className="display-main">
-        <h1 className="display-event">AG Voting Demo</h1>
+        <h1 className="display-event">MinistryVote Demo</h1>
         <h2 className="display-ballot-title">{demoBallot.title}</h2>
         <p className="display-status">Incumbent: {demoBallot.incumbentName}</p>
         <p className="display-status">{demoMajorityLabel(demoBallot.majorityRule)}</p>

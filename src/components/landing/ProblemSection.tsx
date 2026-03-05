@@ -29,7 +29,7 @@ export function ProblemSection() {
         </div>
         <div className="mt-12 text-center">
           <p className="glow-hover mx-auto inline-block max-w-3xl rounded-xl border border-blue-500/30 bg-gray-800/40 px-10 py-6 text-2xl italic text-blue-400">
-            AG Voting replaces manual processes with a simple, secure voting experience anyone can use from their phone.
+            MinistryVote replaces manual processes with a simple, secure voting experience anyone can use from their phone.
           </p>
         </div>
       </SectionMotion>

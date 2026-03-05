@@ -336,7 +336,7 @@ export function AdminLoginPage() {
       <main className="auth-page">
         <section className="auth-container">
           <div>
-            <h1 className="auth-title">AG Voting Admin</h1>
+            <h1 className="auth-title">MinistryVote Admin</h1>
             <p className="muted">Log in or register to manage voting sessions and events.</p>
 
             <div className="inline">
@@ -426,7 +426,15 @@ export function AdminLoginPage() {
   }
 
   return (
-    <AdminLayout breadcrumb={['Events']} onSignOut={onLogout}>
+    <AdminLayout
+      breadcrumb={['Events']}
+      onSignOut={onLogout}
+      headerActions={
+        <button className="btn btn-primary" type="button" onClick={jumpToCreateEvent}>
+          + New Event
+        </button>
+      }
+    >
       <PageHero
         title="Events"
         subtitle="Create and manage events"
