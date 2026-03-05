@@ -183,7 +183,7 @@ export function VotePage() {
           </form>
         )}
 
-        {isClosed && <p className="error">This ballot is currently closed.</p>}
+        {isClosed && <p className="error">This ballot is currently closed for voting.</p>}
         {trialLimitReached && (
           <p className="error">Trial limit reached. Please ask your administrator to subscribe to continue.</p>
         )}
