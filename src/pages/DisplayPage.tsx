@@ -104,7 +104,9 @@ export function DisplayPage() {
           <p className="display-ballot-title">{ballot.title}</p>
           {ballot.incumbent_name && <p className="display-status">Incumbent: {ballot.incumbent_name}</p>}
           <p className="display-status">Current Vote: #{results.vote_round} ({roundLabel(results.vote_round)} vote)</p>
+          <p className="display-status">PIN Required: {ballot.requires_pin ? 'Yes' : 'No'}</p>
           <p className="display-status">Total Votes: {results.total_votes}</p>
+          {isClosed && <p className="display-status">Voting on this round is closed.</p>}
           {secondsToClose !== null && <p className="display-status display-close">Closing in: {secondsToClose}s</p>}
 
           {shouldHideResults ? (
@@ -119,6 +121,12 @@ export function DisplayPage() {
             <div className="display-winner-wrap">
               <p className="display-winner-kicker">Election Reached</p>
               <p className="display-winner-name">{results.winner_label}</p>
+            </div>
+          )}
+          {isClosed && !shouldHideResults && !results.winner_label && (
+            <div className="display-winner-wrap">
+              <p className="display-winner-kicker">No Election Reached</p>
+              <p className="display-winner-name">No candidate met the required threshold.</p>
             </div>
           )}
 
@@ -151,6 +159,7 @@ export function DisplayPage() {
 
         <section className="display-qr-section">
           <h2>Scan to Vote</h2>
+          {isClosed && <p className="display-hidden-note">This ballot is currently closed for voting.</p>}
           {voteQrDataUrl ? (
             <img className="display-qr" src={voteQrDataUrl} alt="QR code for ballot voting link" />
           ) : (
