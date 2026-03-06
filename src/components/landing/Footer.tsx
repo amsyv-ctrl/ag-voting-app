@@ -11,7 +11,8 @@ export function Footer() {
         <Link to="/privacy" className="text-gray-400 no-underline transition hover:text-blue-300">Privacy Policy</Link>
         <Link to="/terms" className="text-gray-400 no-underline transition hover:text-blue-300">Terms of Use</Link>
       </div>
-      <p>&copy; 2026 Architect Ministry Solutions. All rights reserved.</p>
+      <p>&copy; 2026 Architect Ministry Solutions LLC. All rights reserved.</p>
+      <p className="mt-6 text-sm font-medium text-emerald-400">Empowering ministries through elegant solutions</p>
     </footer>
   )
 }

@@ -551,7 +551,14 @@ label.form-row {
   border-radius: 10px;
   border: 1px solid #b5c7df;
   background: #fff;
+  color: #16263d;
   font: inherit;
+}
+
+.input::placeholder,
+.select::placeholder,
+.textarea::placeholder {
+  color: #7b8ba4;
 }
 
 .textarea {
