@@ -135,7 +135,7 @@ export function OperatorRunbook(props: OperatorRunbookProps) {
               </ul>
             </div>
           ))}
-          <button type="button" className="secondary" onClick={resetChecklist}>
+          <button type="button" className="btn btn-secondary" onClick={resetChecklist}>
             Reset checklist
           </button>
         </div>
