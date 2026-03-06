@@ -88,6 +88,7 @@ export function AdminOrgPage() {
     postal_code: ''
   })
   const [savingProfile, setSavingProfile] = useState(false)
+  const [userEmail, setUserEmail] = useState('')
   const [creatingTrialEvent, setCreatingTrialEvent] = useState(false)
   const [checkoutLoadingPlan, setCheckoutLoadingPlan] = useState<'STARTER' | 'GROWTH' | 'NETWORK' | null>(null)
   const [portalLoading, setPortalLoading] = useState(false)
@@ -103,6 +104,7 @@ export function AdminOrgPage() {
       return
     }
     setUserId(session.user.id)
+    setUserEmail((session.user.email ?? '').toLowerCase())
 
     const token = await getAccessToken()
     if (!token) {
@@ -325,9 +327,16 @@ export function AdminOrgPage() {
         title="Account"
         subtitle="Manage subscription, trial usage, and profile settings."
         rightActions={
-          <Link to="/admin">
-            <button className="btn btn-secondary secondary" type="button">Events</button>
-          </Link>
+          <div className="page-hero-actions">
+            {userEmail === 'yvincent90@gmail.com' ? (
+              <Link to="/admin/super">
+                <button className="btn btn-secondary secondary" type="button">Super Admin Dashboard</button>
+              </Link>
+            ) : null}
+            <Link to="/admin">
+              <button className="btn btn-secondary secondary" type="button">Events</button>
+            </Link>
+          </div>
         }
       />
       <section className="form-section">

@@ -289,3 +289,58 @@ export async function logElectionAudit(
 
   return handleJson<{ ok: boolean }>(res)
 }
+
+export type SuperAdminDashboardResponse = {
+  summary: {
+    total_organizations: number
+    paid_active_organizations: number
+    trial_organizations: number
+    inactive_canceled_organizations: number
+    total_events: number
+    total_ballots: number
+    total_votes_cast: number
+  }
+  charts: {
+    subscription_status: Record<string, number>
+    organization_type: Record<string, number>
+    estimated_voting_size: Record<string, number>
+  }
+  recent_signups: Array<{
+    org_name: string
+    created_at: string
+    mode: string
+    organization_type: string | null
+  }>
+  recent_subscriptions: Array<{
+    org_name: string
+    subscription_status: string | null
+    current_period_end: string | null
+  }>
+  upcoming_events: Array<{
+    org_name: string
+    event_name: string
+    date: string | null
+    location: string | null
+  }>
+  top_organizations_by_vote_count: Array<{
+    org_name: string
+    total_votes_cast: number
+  }>
+  trial_funnel: {
+    trial_orgs_total: number
+    trial_orgs_with_event: number
+    trial_orgs_with_ballot: number
+    trial_orgs_converted_to_paid: number
+  }
+}
+
+export async function getSuperAdminDashboard(accessToken: string): Promise<SuperAdminDashboardResponse> {
+  const res = await fetch(`${API_BASE}/getSuperAdminDashboard`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  })
+
+  return handleJson<SuperAdminDashboardResponse>(res)
+}

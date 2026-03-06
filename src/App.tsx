@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { HomePage } from './pages/HomePage'
 import { AdminLoginPage } from './pages/AdminLoginPage'
 import { AdminOrgPage } from './pages/AdminOrgPage'
+import { AdminSuperPage } from './pages/AdminSuperPage'
 import { AdminEventPage } from './pages/AdminEventPage'
 import { AdminBallotPage } from './pages/AdminBallotPage'
 import { VotePage } from './pages/VotePage'
@@ -16,6 +17,7 @@ export function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/admin" element={<AdminLoginPage />} />
       <Route path="/admin/org" element={<AdminOrgPage />} />
+      <Route path="/admin/super" element={<AdminSuperPage />} />
       <Route path="/admin/events/:id" element={<AdminEventPage />} />
       <Route path="/admin/ballots/:id" element={<AdminBallotPage />} />
       <Route path="/vote/:slug" element={<VotePage />} />
