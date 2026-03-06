@@ -66,6 +66,14 @@ export function AdminLoginPage() {
   const [newDate, setNewDate] = useState('')
   const [newLocation, setNewLocation] = useState('')
 
+  useEffect(() => {
+    if (!hasSession) {
+      document.title = authMode === 'register'
+        ? 'Create Admin Account – MinistryVote'
+        : 'Admin Login – MinistryVote'
+    }
+  }, [authMode, hasSession])
+
   async function loadEvents() {
     const { data: sessionData } = await supabase.auth.getSession()
     if (!sessionData.session) {
@@ -333,101 +341,210 @@ export function AdminLoginPage() {
 
   if (!hasSession) {
     return (
-      <main className="auth-page">
-        <section className="auth-container">
-          <div>
-            <h1 className="auth-title">MinistryVote Admin</h1>
-            <p className="muted">Log in or register to manage voting sessions and events.</p>
+      <main className="auth-page auth-page-branded">
+        <section className="auth-hero-shell">
+          <div className="auth-brand-panel glow-hover">
+            <p className="auth-kicker">MinistryVote Admin</p>
+            <h1 className="auth-display-title">Run your next election with confidence.</h1>
+            <p className="auth-display-copy">
+              Manage events, launch ballots, and keep governance voting moving with receipts, sealed records,
+              and projector-ready displays.
+            </p>
+            <div className="auth-brand-points">
+              <span>Secret ballots</span>
+              <span>Runoff rounds</span>
+              <span>Official record exports</span>
+            </div>
+          </div>
 
-            <div className="inline">
-              <button className={authMode === 'login' ? '' : 'secondary'} onClick={() => setAuthMode('login')}>
-                Log In as Admin
+          <section className="auth-card">
+            <div className="auth-card-header">
+              <div>
+                <p className="auth-wordmark">MinistryVote</p>
+                <h2>{authMode === 'login' ? 'Admin login' : 'Create admin account'}</h2>
+                <p>
+                  {authMode === 'login'
+                    ? 'Sign in to manage events, ballots, and voting sessions.'
+                    : 'Set up your organization, create your first event, and be ready to vote in minutes.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="auth-toggle-row" role="tablist" aria-label="Authentication mode">
+              <button
+                className={authMode === 'login' ? 'auth-toggle auth-toggle-active' : 'auth-toggle'}
+                onClick={() => setAuthMode('login')}
+                type="button"
+              >
+                Log In
               </button>
-              <button className={authMode === 'register' ? '' : 'secondary'} onClick={() => setAuthMode('register')}>
-                Register Admin Account
+              <button
+                className={authMode === 'register' ? 'auth-toggle auth-toggle-active' : 'auth-toggle'}
+                onClick={() => setAuthMode('register')}
+                type="button"
+              >
+                Register
               </button>
             </div>
 
-            {error && <p className="error">{error}</p>}
-            {notice && <p className="winner">{notice}</p>}
+            {error ? <p className="auth-notice auth-notice-error">{error}</p> : null}
+            {notice ? <p className="auth-notice auth-notice-success">{notice}</p> : null}
 
             {authMode === 'login' ? (
-              <form onSubmit={onLogin} className="stack">
-                <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <button type="submit">Sign In</button>
+              <form onSubmit={onLogin} className="auth-form-grid">
+                <label className="auth-field">
+                  <span>Email</span>
+                  <input
+                    className="auth-input"
+                    type="email"
+                    placeholder="you@church.org"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </label>
+                <label className="auth-field">
+                  <span>Password</span>
+                  <input
+                    className="auth-input"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </label>
+
+                <div className="auth-inline-links">
+                  <Link to="/forgot-password">Forgot password?</Link>
+                </div>
+
+                <button className="auth-submit-button" type="submit">Sign In</button>
               </form>
             ) : (
-              <form onSubmit={onRegister} className="stack">
-                <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" required />
-                <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" required />
-                <input value={network} onChange={(e) => setNetwork(e.target.value)} placeholder="Network" required />
-                <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  minLength={8}
-                  required
-                />
-                <input
-                  value={organizationName}
-                  onChange={(e) => setOrganizationName(e.target.value)}
-                  placeholder="Church or Organization Name"
-                  required
-                />
-                <select value={signupRole} onChange={(e) => setSignupRole(e.target.value)}>
-                  <option value="">Your Role (optional)</option>
-                  <option value="Lead Pastor">Lead Pastor</option>
-                  <option value="Executive Pastor">Executive Pastor</option>
-                  <option value="Church Staff">Church Staff</option>
-                  <option value="Board Member">Board Member</option>
-                  <option value="District / Network Staff">District / Network Staff</option>
-                  <option value="Other">Other</option>
-                </select>
-                <select value={estimatedVotingSize} onChange={(e) => setEstimatedVotingSize(e.target.value)}>
-                  <option value="">Estimated Voting Size (optional)</option>
-                  <option value="10–50">10–50</option>
-                  <option value="50–100">50–100</option>
-                  <option value="100–250">100–250</option>
-                  <option value="250–500">250–500</option>
-                  <option value="500+">500+</option>
-                </select>
-                <select value={organizationType} onChange={(e) => setOrganizationType(e.target.value)}>
-                  <option value="">Organization Type (optional)</option>
-                  <option value="Local Church">Local Church</option>
-                  <option value="District / Network">District / Network</option>
-                  <option value="Ministry Organization">Ministry Organization</option>
-                  <option value="Nonprofit Board">Nonprofit Board</option>
-                </select>
-                <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country (optional)" />
-                <input value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} placeholder="Address line 1" />
-                <input value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} placeholder="Address line 2 (optional)" />
-                <div className="inline">
-                  <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" />
-                  <input value={stateRegion} onChange={(e) => setStateRegion(e.target.value)} placeholder="State / Region" />
+              <form onSubmit={onRegister} className="auth-form-grid auth-form-grid-register">
+                <div className="auth-form-columns">
+                  <label className="auth-field">
+                    <span>First name</span>
+                    <input className="auth-input" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+                  </label>
+                  <label className="auth-field">
+                    <span>Last name</span>
+                    <input className="auth-input" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+                  </label>
                 </div>
-                <input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="Postal code" />
-                <p className="muted" style={{ marginTop: '-0.25rem' }}>No credit card required to start your trial.</p>
-                <button type="submit">Create Admin Account</button>
+
+                <label className="auth-field">
+                  <span>Network</span>
+                  <input className="auth-input" value={network} onChange={(e) => setNetwork(e.target.value)} required />
+                </label>
+
+                <label className="auth-field">
+                  <span>Email</span>
+                  <input className="auth-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </label>
+
+                <label className="auth-field">
+                  <span>Password</span>
+                  <input
+                    className="auth-input"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    minLength={8}
+                    required
+                  />
+                </label>
+
+                <label className="auth-field">
+                  <span>Church or Organization Name</span>
+                  <input
+                    className="auth-input"
+                    value={organizationName}
+                    onChange={(e) => setOrganizationName(e.target.value)}
+                    required
+                  />
+                </label>
+
+                <label className="auth-field">
+                  <span>Your Role</span>
+                  <select className="auth-input auth-select" value={signupRole} onChange={(e) => setSignupRole(e.target.value)}>
+                    <option value="">Select a role</option>
+                    <option value="Lead Pastor">Lead Pastor</option>
+                    <option value="Executive Pastor">Executive Pastor</option>
+                    <option value="Church Staff">Church Staff</option>
+                    <option value="Board Member">Board Member</option>
+                    <option value="District / Network Staff">District / Network Staff</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </label>
+
+                <div className="auth-form-columns">
+                  <label className="auth-field">
+                    <span>Estimated Voting Size</span>
+                    <select className="auth-input auth-select" value={estimatedVotingSize} onChange={(e) => setEstimatedVotingSize(e.target.value)}>
+                      <option value="">Select size</option>
+                      <option value="10–50">10–50</option>
+                      <option value="50–100">50–100</option>
+                      <option value="100–250">100–250</option>
+                      <option value="250–500">250–500</option>
+                      <option value="500+">500+</option>
+                    </select>
+                  </label>
+                  <label className="auth-field">
+                    <span>Organization Type</span>
+                    <select className="auth-input auth-select" value={organizationType} onChange={(e) => setOrganizationType(e.target.value)}>
+                      <option value="">Select type</option>
+                      <option value="Local Church">Local Church</option>
+                      <option value="District / Network">District / Network</option>
+                      <option value="Ministry Organization">Ministry Organization</option>
+                      <option value="Nonprofit Board">Nonprofit Board</option>
+                    </select>
+                  </label>
+                </div>
+
+                <label className="auth-field">
+                  <span>Country</span>
+                  <input className="auth-input" value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Optional" />
+                </label>
+
+                <label className="auth-field">
+                  <span>Address line 1</span>
+                  <input className="auth-input" value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} />
+                </label>
+                <label className="auth-field">
+                  <span>Address line 2</span>
+                  <input className="auth-input" value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} placeholder="Optional" />
+                </label>
+
+                <div className="auth-form-columns auth-form-columns-third">
+                  <label className="auth-field">
+                    <span>City</span>
+                    <input className="auth-input" value={city} onChange={(e) => setCity(e.target.value)} />
+                  </label>
+                  <label className="auth-field">
+                    <span>State / Region</span>
+                    <input className="auth-input" value={stateRegion} onChange={(e) => setStateRegion(e.target.value)} />
+                  </label>
+                  <label className="auth-field">
+                    <span>Postal code</span>
+                    <input className="auth-input" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+                  </label>
+                </div>
+
+                <p className="auth-helper-copy">No credit card required to start your trial.</p>
+                <button className="auth-submit-button" type="submit">Create Admin Account</button>
               </form>
             )}
 
-            <div className="muted" style={{ marginTop: '1.25rem', textAlign: 'center' }}>
+            <div className="auth-utility-links">
               <Link to="/privacy">Privacy Policy</Link>
-              <span style={{ margin: '0 0.5rem' }}>•</span>
+              <span>•</span>
               <Link to="/terms">Terms of Use</Link>
-              <span style={{ margin: '0 0.5rem' }}>•</span>
+              <span>•</span>
               <Link to="/contact">Contact</Link>
             </div>
-          </div>
+          </section>
         </section>
       </main>
     )

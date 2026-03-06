@@ -117,7 +117,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
           </form>
           {error && <p className="mt-4 text-center text-sm text-red-300">{error}</p>}
           <div className="mt-6 text-center text-sm">
-            <a href="#" className="text-blue-400 transition hover:text-blue-300">Forgot password?</a>
+            <Link to="/forgot-password" className="text-blue-400 transition hover:text-blue-300">Forgot password?</Link>
             <span className="mx-3 text-gray-500">•</span>
             <Link to="/admin?mode=register" className="text-blue-400 transition hover:text-blue-300">Start Free Trial</Link>
           </div>

@@ -3,6 +3,8 @@ import { HomePage } from './pages/HomePage'
 import { ContactPage } from './pages/ContactPage'
 import { PrivacyPage } from './pages/PrivacyPage'
 import { TermsPage } from './pages/TermsPage'
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
+import { UpdatePasswordPage } from './pages/UpdatePasswordPage'
 import { AdminLoginPage } from './pages/AdminLoginPage'
 import { AdminOrgPage } from './pages/AdminOrgPage'
 import { AdminSuperPage } from './pages/AdminSuperPage'
@@ -22,6 +24,8 @@ export function App() {
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/update-password" element={<UpdatePasswordPage />} />
       <Route path="/admin" element={<AdminLoginPage />} />
       <Route path="/admin/org" element={<AdminOrgPage />} />
       <Route path="/admin/super" element={<AdminSuperPage />} />
