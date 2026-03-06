@@ -43,7 +43,18 @@ export const handler: Handler = async (event) => {
     .eq('id', eventId)
     .maybeSingle()
 
-  if (eventError || !eventRow || eventRow.org_id !== entitlement.orgId) {
+  if (eventError || !eventRow) {
+    return { statusCode: 404, body: JSON.stringify({ error: eventError?.message ?? 'Event not found' }) }
+  }
+
+  const operate = await entitlement.canOperateEvent(eventId)
+  if (!operate.allowed) {
+    console.warn('exportPinsCsv denied', {
+      userId: entitlement.userId,
+      orgId: entitlement.orgId,
+      eventId,
+      reason: operate.reason
+    })
     return { statusCode: 403, body: JSON.stringify({ error: 'Event not found or forbidden' }) }
   }
 

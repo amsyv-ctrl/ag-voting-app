@@ -38,8 +38,8 @@ export const handler: Handler = async (event) => {
     .eq('id', eventId)
     .maybeSingle()
 
-  if (eventError || !eventRow || eventRow.org_id !== entitlement.orgId) {
-    return { statusCode: 403, body: JSON.stringify({ error: 'Event not found or forbidden' }) }
+  if (eventError || !eventRow) {
+    return { statusCode: 404, body: JSON.stringify({ error: eventError?.message ?? 'Event not found' }) }
   }
 
   const operate = await entitlement.canOperateEvent(eventId)
