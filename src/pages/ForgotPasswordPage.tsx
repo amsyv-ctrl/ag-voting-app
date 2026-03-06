@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PublicSiteLayout } from '../components/landing/PublicSiteLayout'
-import { getAuthRedirectUrl } from '../lib/auth'
+import { getPasswordRecoveryRedirectUrl } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 
 export function ForgotPasswordPage() {
@@ -22,7 +22,7 @@ export function ForgotPasswordPage() {
 
     try {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: getAuthRedirectUrl('/update-password')
+        redirectTo: getPasswordRecoveryRedirectUrl('/update-password')
       })
       if (resetError) {
         throw resetError

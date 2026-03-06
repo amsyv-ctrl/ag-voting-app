@@ -16,3 +16,15 @@ export function getAuthRedirectUrl(path: string) {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
   return `${origin}${normalizedPath}`
 }
+
+export function getPasswordRecoveryRedirectUrl(path: string) {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+
+  if (import.meta.env.DEV) {
+    return `${window.location.origin}${normalizedPath}`
+  }
+
+  const configuredOrigin = import.meta.env.VITE_PUBLIC_SITE_URL
+  const productionOrigin = configuredOrigin || 'https://www.ministryvote.com'
+  return `${productionOrigin}${normalizedPath}`
+}
