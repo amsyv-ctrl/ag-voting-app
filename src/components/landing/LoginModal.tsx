@@ -121,6 +121,13 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
             <span className="mx-3 text-gray-500">•</span>
             <Link to="/admin?mode=register" className="text-blue-400 transition hover:text-blue-300">Start Free Trial</Link>
           </div>
+          <div className="mt-4 text-center text-xs text-gray-400">
+            <Link to="/privacy" className="transition hover:text-blue-300">Privacy Policy</Link>
+            <span className="mx-2 text-gray-600">•</span>
+            <Link to="/terms" className="transition hover:text-blue-300">Terms of Use</Link>
+            <span className="mx-2 text-gray-600">•</span>
+            <Link to="/contact" className="transition hover:text-blue-300">Contact</Link>
+          </div>
         </div>
       </SectionMotion>
     </div>

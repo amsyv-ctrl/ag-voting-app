@@ -419,6 +419,14 @@ export function AdminLoginPage() {
                 <button type="submit">Create Admin Account</button>
               </form>
             )}
+
+            <div className="muted" style={{ marginTop: '1.25rem', textAlign: 'center' }}>
+              <Link to="/privacy">Privacy Policy</Link>
+              <span style={{ margin: '0 0.5rem' }}>•</span>
+              <Link to="/terms">Terms of Use</Link>
+              <span style={{ margin: '0 0.5rem' }}>•</span>
+              <Link to="/contact">Contact</Link>
+            </div>
           </div>
         </section>
       </main>

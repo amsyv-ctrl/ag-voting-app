@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { HomePage } from './pages/HomePage'
 import { ContactPage } from './pages/ContactPage'
+import { PrivacyPage } from './pages/PrivacyPage'
+import { TermsPage } from './pages/TermsPage'
 import { AdminLoginPage } from './pages/AdminLoginPage'
 import { AdminOrgPage } from './pages/AdminOrgPage'
 import { AdminSuperPage } from './pages/AdminSuperPage'
@@ -18,6 +20,8 @@ export function App() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/contact" element={<ContactPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/terms" element={<TermsPage />} />
       <Route path="/admin" element={<AdminLoginPage />} />
       <Route path="/admin/org" element={<AdminOrgPage />} />
       <Route path="/admin/super" element={<AdminSuperPage />} />

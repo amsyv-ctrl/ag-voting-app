@@ -1,5 +1,7 @@
 import { FormEvent, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { PublicPageHero } from '../components/landing/PublicPageHero'
+import { PublicSiteLayout } from '../components/landing/PublicSiteLayout'
 import { submitContactForm } from '../lib/api'
 
 export function ContactPage() {
@@ -32,27 +34,13 @@ export function ContactPage() {
   }
 
   return (
-    <main className="landing-root min-h-screen bg-gray-950 px-6 pb-16 pt-28 text-gray-100">
-      <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 border-b border-gray-800 pb-4">
-        <Link to="/" className="no-underline">
-          <div className="flex flex-col">
-            <span className="text-2xl font-bold text-blue-400 transition hover:text-blue-300">MinistryVote</span>
-            <span className="text-xs text-gray-400">Verifiable voting for ministry governance</span>
-          </div>
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link to="/" className="text-blue-300 no-underline transition hover:text-blue-200">Home</Link>
-          <Link to="/admin" className="rounded-lg bg-blue-600 px-5 py-2 font-medium text-white no-underline transition hover:bg-blue-700">Login</Link>
-        </div>
-      </div>
+    <PublicSiteLayout>
+      <PublicPageHero
+        title="Contact Us"
+        subtitle="Have a question about MinistryVote or want help thinking through your voting setup? Send us a message and we’ll get back to you. Responses typically within 2–3 business days."
+      />
 
-      <section className="mx-auto mt-10 w-full max-w-3xl rounded-2xl border border-gray-800 bg-gray-900/70 p-8 shadow-2xl">
-        <h1 className="mb-4 text-4xl font-bold text-white">Contact Us</h1>
-        <p className="mb-8 max-w-2xl text-lg leading-relaxed text-gray-300">
-          Have a question about MinistryVote or want help thinking through your voting setup?
-          Send us a message and we’ll get back to you.
-          Responses typically within 2–3 business days.
-        </p>
+      <section className="mx-auto mt-8 w-full max-w-3xl rounded-2xl border border-gray-800 bg-gray-900/70 p-8 shadow-2xl">
 
         <form onSubmit={onSubmit} className="grid gap-5">
           <label className="grid gap-2">
@@ -83,6 +71,6 @@ export function ContactPage() {
           </div>
         </form>
       </section>
-    </main>
+    </PublicSiteLayout>
   )
 }
