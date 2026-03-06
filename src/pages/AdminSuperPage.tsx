@@ -208,6 +208,7 @@ export function AdminSuperPage() {
               <div className="super-stat-card"><span>Trial orgs total</span><strong>{data.trial_funnel.trial_orgs_total}</strong></div>
               <div className="super-stat-card"><span>Trial orgs with at least 1 event</span><strong>{data.trial_funnel.trial_orgs_with_event}</strong></div>
               <div className="super-stat-card"><span>Trial orgs with at least 1 ballot</span><strong>{data.trial_funnel.trial_orgs_with_ballot}</strong></div>
+              <div className="super-stat-card"><span>Trial orgs with at least 1 vote</span><strong>{data.trial_funnel.trial_orgs_with_vote}</strong></div>
               <div className="super-stat-card"><span>Trial orgs converted to paid</span><strong>{data.trial_funnel.trial_orgs_converted_to_paid}</strong></div>
             </div>
           </section>
@@ -223,7 +224,7 @@ export function AdminSuperPage() {
                   <tbody>
                     {data.recent_signups.map((row) => (
                       <tr key={`${row.org_name}-${row.created_at}`}>
-                        <td>{row.org_name}</td>
+                        <td><Link to={`/admin/super/org/${row.org_id}`}>{row.org_name}</Link></td>
                         <td>{formatDate(row.created_at)}</td>
                         <td>{row.mode}</td>
                         <td>{row.organization_type || 'N/A'}</td>
@@ -244,7 +245,7 @@ export function AdminSuperPage() {
                   <tbody>
                     {data.recent_subscriptions.map((row) => (
                       <tr key={`${row.org_name}-${row.current_period_end}`}>
-                        <td>{row.org_name}</td>
+                        <td><Link to={`/admin/super/org/${row.org_id}`}>{row.org_name}</Link></td>
                         <td>{row.subscription_status || 'N/A'}</td>
                         <td>{formatDate(row.current_period_end)}</td>
                       </tr>
@@ -285,8 +286,52 @@ export function AdminSuperPage() {
                   <tbody>
                     {data.top_organizations_by_vote_count.map((row) => (
                       <tr key={row.org_name}>
-                        <td>{row.org_name}</td>
+                        <td><Link to={`/admin/super/org/${row.org_id}`}>{row.org_name}</Link></td>
                         <td>{row.total_votes_cast}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </section>
+
+          <section className="ui-grid-2">
+            <section className="ui-card">
+              <h3>Billing issues queue</h3>
+              <div className="super-table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Org</th><th>Issue</th><th>Status</th><th>Period end</th></tr>
+                  </thead>
+                  <tbody>
+                    {data.billing_issues.map((row) => (
+                      <tr key={`${row.org_id}-${row.issue}`}>
+                        <td><Link to={`/admin/super/org/${row.org_id}`}>{row.org_name}</Link></td>
+                        <td>{row.issue}</td>
+                        <td>{row.subscription_status || 'N/A'}</td>
+                        <td>{formatDate(row.current_period_end)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className="ui-card">
+              <h3>Usage warnings</h3>
+              <div className="super-table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Org</th><th>Plan</th><th>Usage</th><th>Overage</th></tr>
+                  </thead>
+                  <tbody>
+                    {data.usage_warnings.map((row) => (
+                      <tr key={row.org_id}>
+                        <td><Link to={`/admin/super/org/${row.org_id}`}>{row.org_name}</Link></td>
+                        <td>{row.plan_name}</td>
+                        <td>{row.votes_used} / {row.allowance}</td>
+                        <td>{row.overage_votes > 0 ? `${row.overage_votes} ($${(row.estimated_overage_cents / 100).toFixed(2)})` : row.warning_80 ? 'Above 80%' : '—'}</td>
                       </tr>
                     ))}
                   </tbody>

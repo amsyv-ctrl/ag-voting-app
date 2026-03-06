@@ -306,12 +306,14 @@ export type SuperAdminDashboardResponse = {
     estimated_voting_size: Record<string, number>
   }
   recent_signups: Array<{
+    org_id: string
     org_name: string
     created_at: string
     mode: string
     organization_type: string | null
   }>
   recent_subscriptions: Array<{
+    org_id: string
     org_name: string
     subscription_status: string | null
     current_period_end: string | null
@@ -323,13 +325,33 @@ export type SuperAdminDashboardResponse = {
     location: string | null
   }>
   top_organizations_by_vote_count: Array<{
+    org_id: string
     org_name: string
     total_votes_cast: number
+  }>
+  billing_issues: Array<{
+    org_id: string
+    org_name: string
+    issue: string
+    subscription_status: string | null
+    current_period_end: string | null
+  }>
+  usage_warnings: Array<{
+    org_id: string
+    org_name: string
+    plan_name: string
+    votes_used: number
+    allowance: number
+    overage_votes: number
+    estimated_overage_cents: number
+    warning_80: boolean
+    in_overage: boolean
   }>
   trial_funnel: {
     trial_orgs_total: number
     trial_orgs_with_event: number
     trial_orgs_with_ballot: number
+    trial_orgs_with_vote: number
     trial_orgs_converted_to_paid: number
   }
 }
@@ -343,4 +365,81 @@ export async function getSuperAdminDashboard(accessToken: string): Promise<Super
   })
 
   return handleJson<SuperAdminDashboardResponse>(res)
+}
+
+export type SuperAdminOrgDetailResponse = {
+  org: {
+    id: string
+    name: string
+    mode: 'DEMO' | 'TRIAL' | 'PAID'
+    is_active: boolean
+    subscription_status: string | null
+    current_period_end: string | null
+    stripe_customer_id: string | null
+    stripe_subscription_id: string | null
+    stripe_price_id: string | null
+    organization_type: string | null
+    estimated_voting_size: string | null
+    trial_votes_limit: number | null
+    internal_notes: string | null
+  }
+  stats: {
+    total_events: number
+    total_ballots: number
+    total_votes_cast: number
+    plan_name: string
+    allowance: number
+    votes_used: number
+    overage_votes: number
+    estimated_overage_cents: number
+  }
+  recent_activity: Array<{
+    action: string
+    created_at: string
+    event_id: string | null
+    ballot_id: string | null
+    metadata: Record<string, unknown> | null
+    actor_user_id: string | null
+  }>
+  upcoming_events: Array<{
+    id: string
+    name: string
+    date: string | null
+    location: string | null
+    org_id: string
+  }>
+}
+
+export async function getSuperAdminOrgDetail(accessToken: string, orgId: string): Promise<SuperAdminOrgDetailResponse> {
+  const res = await fetch(`${API_BASE}/getSuperAdminOrgDetail?orgId=${encodeURIComponent(orgId)}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  })
+
+  return handleJson<SuperAdminOrgDetailResponse>(res)
+}
+
+export async function superAdminUpdateOrg(
+  accessToken: string,
+  payload: {
+    orgId: string
+    mode: 'TRIAL' | 'PAID' | 'INACTIVE'
+    is_active: boolean
+    current_period_end: string | null
+    trial_votes_limit: number | null
+    internal_notes: string | null
+  }
+): Promise<{ ok: boolean; org: { mode: string; is_active: boolean; current_period_end: string | null; trial_votes_limit: number | null; internal_notes: string | null } }> {
+  const res = await fetch(`${API_BASE}/superAdminUpdateOrg`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  })
+
+  return handleJson<{ ok: boolean; org: { mode: string; is_active: boolean; current_period_end: string | null; trial_votes_limit: number | null; internal_notes: string | null } }>(res)
 }
