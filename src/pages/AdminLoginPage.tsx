@@ -569,139 +569,225 @@ export function AdminLoginPage() {
           </Link>
         }
       />
-      <section className="ui-card compact-helper-card">
-        <h3>Getting started</h3>
-        <p className="muted">Create an event for a meeting or session (board meeting, annual business meeting, conference).</p>
-        <p className="muted">Inside each event you can create as many ballots as needed.</p>
-        <p className="muted">Schedule multiple events and manage them below.</p>
+      <section className="admin-events-grid">
+        <section className="ui-card admin-surface compact-helper-card admin-guidance-card">
+          <div className="admin-surface-header">
+            <div>
+              <p className="admin-surface-kicker">Getting Started</p>
+              <h3>Launch events with a clear workflow</h3>
+            </div>
+          </div>
+          <div className="admin-guidance-steps">
+            <article className="admin-guidance-step">
+              <span className="admin-guidance-number">1</span>
+              <div>
+                <h4>Create an event for each meeting or session</h4>
+                <p className="muted">Board meetings, annual business meetings, and conferences should each have their own event record.</p>
+              </div>
+            </article>
+            <article className="admin-guidance-step">
+              <span className="admin-guidance-number">2</span>
+              <div>
+                <h4>Add as many ballots as needed inside that event</h4>
+                <p className="muted">Ballots stay organized under the event so links, displays, exports, and records remain easy to manage.</p>
+              </div>
+            </article>
+            <article className="admin-guidance-step">
+              <span className="admin-guidance-number">3</span>
+              <div>
+                <h4>Keep past and future meetings in one dashboard</h4>
+                <p className="muted">Active events stay ready to run, while archived events remain available for review and exports.</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        {profile ? (
+          <section className="ui-card admin-surface admin-profile-card">
+            <div className="admin-surface-header">
+              <div>
+                <p className="admin-surface-kicker">Admin Profile</p>
+                <h3>{profile.first_name} {profile.last_name}</h3>
+              </div>
+            </div>
+            <div className="admin-profile-grid">
+              <div className="admin-profile-item">
+                <span className="admin-profile-label">Network</span>
+                <span className="admin-profile-value">{profile.network || 'Not provided'}</span>
+              </div>
+              <div className="admin-profile-item admin-profile-item-wide">
+                <span className="admin-profile-label">Address</span>
+                <span className="admin-profile-value">{profile.address || 'Not provided'}</span>
+              </div>
+            </div>
+          </section>
+        ) : null}
       </section>
-      <section className="form-section">
-            {profile && (
-              <div className="ui-card">
-                <h3>Admin Profile</h3>
-                <p><strong>Name:</strong> {profile.first_name} {profile.last_name}</p>
-                <p><strong>Network:</strong> {profile.network}</p>
-                <p><strong>Address:</strong> {profile.address}</p>
+
+      {error ? <p className="error">{error}</p> : null}
+      {notice ? <p className="winner">{notice}</p> : null}
+
+      <section className="ui-card admin-surface admin-create-card">
+        <div className="admin-surface-header">
+          <div>
+            <p className="admin-surface-kicker">Create Event</p>
+            <h3>Start a new meeting record</h3>
+            <p className="muted">Use a clear event name, date, and location so your ballots and exports are easy to reference later.</p>
+          </div>
+        </div>
+
+        <form ref={createEventFormRef} onSubmit={onCreateEvent} className="form-grid admin-create-form">
+          <label className="form-row">
+            Event name
+            <input className="input" ref={createEventNameRef} value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Network Conference 2026" required />
+          </label>
+          <label className="form-row">
+            Date
+            <input className="input" type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} required />
+          </label>
+          <label className="form-row">
+            Location
+            <input className="input" value={newLocation} onChange={(e) => setNewLocation(e.target.value)} placeholder="Phoenix Convention Center" required />
+          </label>
+          <div className="form-actions form-row-full">
+            <button className="btn btn-primary" type="submit">Create Event</button>
+          </div>
+        </form>
+      </section>
+
+      {!hasAnyBallot ? (
+        <section className="ui-card admin-surface admin-empty-state">
+          <div className="admin-surface-header">
+            <div>
+              <p className="admin-surface-kicker">First Vote Setup</p>
+              <h3>Welcome — let’s run your first vote</h3>
+              <p className="muted">Create an event, add your first ballot, and you’ll be ready to vote in minutes.</p>
+            </div>
+          </div>
+          <div className="admin-guidance-steps">
+            <article className="admin-guidance-step">
+              <span className="admin-guidance-number">1</span>
+              <div>
+                <h4>Create your first event</h4>
+                <p className="muted">An event is a meeting or session such as a board meeting, business meeting, or conference.</p>
+                <button className="btn btn-primary" type="button" onClick={jumpToCreateEvent}>Create Event</button>
               </div>
-            )}
-
-            {error && <p className="error">{error}</p>}
-            {notice && <p className="winner">{notice}</p>}
-
-            <form ref={createEventFormRef} onSubmit={onCreateEvent} className="form-grid">
-              <label className="form-row">
-                Event name
-                <input className="input" ref={createEventNameRef} value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Event name" required />
-              </label>
-              <label className="form-row">
-                Date
-                <input className="input" type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} required />
-              </label>
-              <label className="form-row">
-                Location
-                <input className="input" value={newLocation} onChange={(e) => setNewLocation(e.target.value)} placeholder="Location" required />
-              </label>
-              <div className="form-actions form-row-full">
-                <button className="btn btn-primary" type="submit">Create Event</button>
+            </article>
+            <article className="admin-guidance-step">
+              <span className="admin-guidance-number">2</span>
+              <div>
+                <h4>Add your first ballot</h4>
+                <p className="muted">A ballot is a single decision or election. Add candidates or choices and open voting when ready.</p>
+                {events.length === 0 ? (
+                  <>
+                    <button type="button" className="btn btn-secondary secondary" disabled>Create Ballot</button>
+                    <p className="muted">Create an event first</p>
+                  </>
+                ) : (
+                  <Link to={`/admin/events/${events[0].id}#create-ballot`}>
+                    <button type="button" className="btn btn-secondary secondary">Create Ballot</button>
+                  </Link>
+                )}
               </div>
-            </form>
+            </article>
+          </div>
+        </section>
+      ) : null}
 
-            {!hasAnyBallot ? (
-              <div className="card" style={{ marginTop: '1rem' }}>
-                <h3>Welcome — let’s run your first vote</h3>
-                <p className="muted">Create an event, add your first ballot, and you’ll be ready to vote in minutes.</p>
-                <div style={{ marginTop: '1rem', display: 'grid', gap: '1rem' }}>
-                  <div>
-                    <p><strong>1. Create your first event</strong></p>
-                    <p className="muted">An event is a meeting or session (board meeting, business meeting, conference).</p>
-                    <button className="btn btn-primary" type="button" onClick={jumpToCreateEvent}>Create Event</button>
-                  </div>
-                  <div>
-                    <p><strong>2. Add your first ballot</strong></p>
-                    <p className="muted">A ballot is a single decision or election. Add candidates/choices and open voting when ready.</p>
-                    {events.length === 0 ? (
-                      <>
-                        <button type="button" className="btn btn-secondary secondary" disabled>Create Ballot</button>
-                        <p className="muted" style={{ marginTop: '0.5rem' }}>Create an event first</p>
-                      </>
-                    ) : (
-                      <Link to={`/admin/events/${events[0].id}#create-ballot`}>
-                        <button type="button" className="btn btn-secondary secondary">Create Ballot</button>
-                      </Link>
-                    )}
-                  </div>
+      <section className="ui-card admin-surface admin-events-list-card">
+        <div className="admin-surface-header">
+          <div>
+            <p className="admin-surface-kicker">Active Events</p>
+            <h3>Current meeting dashboard</h3>
+            <p className="muted">Open an event to manage ballots, QR codes, pins, exports, and live voting views.</p>
+          </div>
+        </div>
+
+        <div className="event-list admin-event-list">
+          {events.map((event) => (
+            <div className="event-item admin-event-row" key={event.id}>
+              <div className="event-item-main">
+                <div className="admin-event-title-row">
+                  <strong>{event.name}</strong>
+                  {event.is_trial_event ? <span className="admin-event-badge">Trial</span> : null}
+                </div>
+                <div className="admin-event-meta">
+                  <span>{event.location || 'No location set'}</span>
+                  <span>•</span>
+                  <span>{event.date || 'No date set'}</span>
                 </div>
               </div>
-            ) : null}
+              <div className="event-row-actions">
+                <Link to={`/admin/events/${event.id}`}>
+                  <button className="btn btn-secondary secondary">Open</button>
+                </Link>
+                <div className="event-actions-menu-wrap">
+                  <button
+                    type="button"
+                    className="icon-kebab-btn"
+                    aria-label={`Event actions for ${event.name}`}
+                    aria-haspopup="menu"
+                    aria-expanded={menuEventId === event.id}
+                    onClick={() => setMenuEventId((curr) => (curr === event.id ? null : event.id))}
+                  >
+                    &hellip;
+                  </button>
+                  {menuEventId === event.id && (
+                    <div className="event-actions-menu" role="menu" ref={menuRef}>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="event-actions-menu-item event-actions-menu-item-danger"
+                        ref={menuFirstItemRef}
+                        onClick={() => {
+                          setMenuEventId(null)
+                          setArchiveTarget(event)
+                        }}
+                      >
+                        Archive event
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
-            <div className="event-list">
-              {events.map((event) => (
-                <div className="event-item" key={event.id}>
+      <section className="ui-card admin-surface admin-archived-card">
+        <details className="event-archive-section">
+          <summary>Archived events ({archivedEvents.length})</summary>
+          {archivedEvents.length === 0 ? (
+            <p className="muted" style={{ marginTop: '0.6rem' }}>No archived events.</p>
+          ) : (
+            <div className="event-list admin-event-list" style={{ marginTop: '0.9rem' }}>
+              {archivedEvents.map((event) => (
+                <div className="event-item admin-event-row" key={event.id}>
                   <div className="event-item-main">
-                    <strong>{event.name}</strong>
-                    <div>{event.location || 'No location'} - {event.date || 'No date'}</div>
+                    <div className="admin-event-title-row">
+                      <strong>{event.name}</strong>
+                      <span className="admin-event-badge admin-event-badge-muted">Archived</span>
+                    </div>
+                    <div className="admin-event-meta">
+                      <span>{event.location || 'No location set'}</span>
+                      <span>•</span>
+                      <span>{event.date || 'No date set'}</span>
+                    </div>
+                    <div className="muted" style={{ marginTop: '0.45rem' }}>
+                      Archived: {event.archived_at ? new Date(event.archived_at).toLocaleString() : 'N/A'}
+                    </div>
                   </div>
                   <div className="event-row-actions">
                     <Link to={`/admin/events/${event.id}`}>
                       <button className="btn btn-secondary secondary">Open</button>
                     </Link>
-                    <div className="event-actions-menu-wrap">
-                      <button
-                        type="button"
-                        className="icon-kebab-btn"
-                        aria-label={`Event actions for ${event.name}`}
-                        aria-haspopup="menu"
-                        aria-expanded={menuEventId === event.id}
-                        onClick={() => setMenuEventId((curr) => (curr === event.id ? null : event.id))}
-                      >
-                        &hellip;
-                      </button>
-                      {menuEventId === event.id && (
-                        <div className="event-actions-menu" role="menu" ref={menuRef}>
-                          <button
-                            type="button"
-                            role="menuitem"
-                            className="event-actions-menu-item event-actions-menu-item-danger"
-                            ref={menuFirstItemRef}
-                            onClick={() => {
-                              setMenuEventId(null)
-                              setArchiveTarget(event)
-                            }}
-                          >
-                            Archive event
-                          </button>
-                        </div>
-                      )}
-                    </div>
                   </div>
                 </div>
               ))}
             </div>
-            <details className="event-archive-section">
-              <summary>Archived events ({archivedEvents.length})</summary>
-              {archivedEvents.length === 0 ? (
-                <p className="muted" style={{ marginTop: '0.6rem' }}>No archived events.</p>
-              ) : (
-                <div className="event-list" style={{ marginTop: '0.6rem' }}>
-                  {archivedEvents.map((event) => (
-                    <div className="event-item" key={event.id}>
-                      <div className="event-item-main">
-                        <strong>{event.name}</strong>
-                        <div>{event.location || 'No location'} - {event.date || 'No date'}</div>
-                        <div className="muted">
-                          Archived: {event.archived_at ? new Date(event.archived_at).toLocaleString() : 'N/A'}
-                        </div>
-                      </div>
-                      <div className="event-row-actions">
-                        <Link to={`/admin/events/${event.id}`}>
-                          <button className="btn btn-secondary secondary">Open</button>
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </details>
+          )}
+        </details>
       </section>
       {archiveTarget && (
         <div className="modal-backdrop" role="presentation">
