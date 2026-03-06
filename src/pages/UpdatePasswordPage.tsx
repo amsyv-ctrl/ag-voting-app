@@ -111,6 +111,11 @@ export function UpdatePasswordPage() {
           <p className="auth-display-copy">
             Set a secure password for your MinistryVote admin account and return to your event dashboard.
           </p>
+          <div className="auth-brand-points">
+            <span>Trusted recovery flow</span>
+            <span>Secure account access</span>
+            <span>Back to voting operations quickly</span>
+          </div>
         </div>
 
         <section className="auth-card auth-card-compact">
@@ -152,6 +157,7 @@ export function UpdatePasswordPage() {
                   required
                 />
               </label>
+              <p className="auth-helper-copy">Choose a password with at least 8 characters that your team can manage securely.</p>
 
               {passwordError ? <p className="auth-notice auth-notice-error">{passwordError}</p> : null}
               {error ? <p className="auth-notice auth-notice-error">{error}</p> : null}

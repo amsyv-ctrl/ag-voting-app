@@ -44,6 +44,11 @@ export function ForgotPasswordPage() {
           <p className="auth-display-copy">
             Enter your email address and we&apos;ll send you a secure link to set a new password.
           </p>
+          <div className="auth-brand-points">
+            <span>Secure recovery link</span>
+            <span>No account disclosure</span>
+            <span>Same trusted admin workflow</span>
+          </div>
         </div>
 
         <section className="auth-card auth-card-compact">
@@ -64,6 +69,7 @@ export function ForgotPasswordPage() {
                 required
               />
             </label>
+            <p className="auth-helper-copy">Use the email address associated with your MinistryVote admin account.</p>
 
             {notice ? <p className="auth-notice auth-notice-success">{notice}</p> : null}
             {error ? <p className="auth-notice auth-notice-error">{error}</p> : null}
