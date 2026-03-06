@@ -1,4 +1,5 @@
 import type { Handler } from '@netlify/functions'
+import { sendResendEmail, canSendResendEmail } from './_resend'
 import { supabaseAdmin } from './_supabase'
 
 type OrgRow = {
@@ -65,6 +66,51 @@ function pickString(input: unknown) {
   if (typeof input !== 'string') return null
   const trimmed = input.trim()
   return trimmed.length > 0 ? trimmed : null
+}
+
+async function sendWelcomeEmailIfNeeded(args: {
+  orgId: string
+  email: string | null | undefined
+  firstName: string | null
+}) {
+  if (!args.email || !canSendResendEmail()) return
+
+  const greeting = args.firstName?.trim() || args.email
+  try {
+    await sendResendEmail({
+      to: args.email,
+      subject: 'Welcome to MinistryVote',
+      html: `
+        <p>Hi ${greeting},</p>
+        <p>Your MinistryVote account is ready.</p>
+        <p>Create your first event, add your first ballot, and you’ll be ready to vote in minutes.</p>
+        <p><a href="${process.env.SITE_URL || 'https://ministryvote.com'}/admin">Go to MinistryVote</a></p>
+        <p>MinistryVote</p>
+      `,
+      text: [
+        `Hi ${greeting},`,
+        '',
+        'Your MinistryVote account is ready.',
+        'Create your first event, add your first ballot, and you’ll be ready to vote in minutes.',
+        '',
+        `${process.env.SITE_URL || 'https://ministryvote.com'}/admin`,
+        '',
+        'MinistryVote'
+      ].join('\n')
+    })
+
+    const { error: updateError } = await supabaseAdmin
+      .from('organizations')
+      .update({ welcome_email_sent_at: new Date().toISOString() })
+      .eq('id', args.orgId)
+
+    if (updateError && !/welcome_email_sent_at/i.test(updateError.message)) {
+      console.error('welcome email tracking update failed', updateError)
+    }
+    console.log('welcome email sent', { orgId: args.orgId, email: args.email })
+  } catch (err) {
+    console.error('welcome email failed', err)
+  }
 }
 
 async function validateAdmin(authHeader: string | undefined) {
@@ -161,6 +207,12 @@ export const handler: Handler = async (event) => {
 
     org = createdOrg as OrgRow
     role = 'OWNER'
+
+    await sendWelcomeEmailIfNeeded({
+      orgId: createdOrg.id,
+      email: user.email,
+      firstName: pickString(metadata.first_name)
+    })
   }
 
   const planName = planFromOrg(org)

@@ -34,6 +34,7 @@ export function Hero({ onOpenLogin }: HeroProps) {
           <div className="flex items-center gap-4 sm:gap-8">
             <a href="#how" className="hidden transition hover:text-blue-400 sm:inline">How It Works</a>
             <a href="#pricing" className="hidden transition hover:text-blue-400 sm:inline">Pricing</a>
+            <Link to="/contact" className="hidden text-gray-200 no-underline transition hover:text-blue-400 sm:inline">Contact</Link>
             <button
               onClick={onOpenLogin}
               className="glow-hover rounded-lg bg-blue-600 px-6 py-2 font-medium transition hover:bg-blue-700"

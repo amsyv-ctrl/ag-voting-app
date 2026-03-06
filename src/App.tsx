@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { HomePage } from './pages/HomePage'
+import { ContactPage } from './pages/ContactPage'
 import { AdminLoginPage } from './pages/AdminLoginPage'
 import { AdminOrgPage } from './pages/AdminOrgPage'
 import { AdminSuperPage } from './pages/AdminSuperPage'
@@ -16,6 +17,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/contact" element={<ContactPage />} />
       <Route path="/admin" element={<AdminLoginPage />} />
       <Route path="/admin/org" element={<AdminOrgPage />} />
       <Route path="/admin/super" element={<AdminSuperPage />} />

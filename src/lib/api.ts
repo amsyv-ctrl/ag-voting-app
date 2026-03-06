@@ -443,3 +443,20 @@ export async function superAdminUpdateOrg(
 
   return handleJson<{ ok: boolean; org: { mode: string; is_active: boolean; current_period_end: string | null; trial_votes_limit: number | null; internal_notes: string | null } }>(res)
 }
+
+export async function submitContactForm(payload: {
+  name: string
+  email: string
+  organization?: string
+  message: string
+}): Promise<{ ok: boolean }> {
+  const res = await fetch(`${API_BASE}/contactUs`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  })
+
+  return handleJson<{ ok: boolean }>(res)
+}
