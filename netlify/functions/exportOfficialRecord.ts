@@ -31,7 +31,7 @@ type AuditRow = {
   actor_user_id: string | null
   event_id: string | null
   ballot_id: string | null
-  metadata: Record<string, unknown>
+  metadata: Record<string, unknown> | null
 }
 
 function slugify(input: string) {
@@ -192,6 +192,24 @@ export const handler: Handler = async (event) => {
 
   const exportAt = new Date().toISOString()
   const eventSlug = `${slugify(eventRow.name || 'event')}-${eventRow.id.slice(0, 8)}`
+  const auditRows = ((auditData ?? []) as AuditRow[]).map((row) => ({
+    ...row,
+    metadata: row.metadata ?? {}
+  }))
+  const openedAtByRound = new Map<string, string>()
+  const closedAtByRound = new Map<string, string>()
+  for (const row of auditRows) {
+    const round = Number((row.metadata ?? {}).round)
+    if (!row.ballot_id || !Number.isInteger(round) || round < 1) continue
+    const key = `${row.ballot_id}:${round}`
+    if (row.action === 'BALLOT_OPENED' && !openedAtByRound.has(key)) {
+      openedAtByRound.set(key, row.created_at)
+    }
+    if (row.action === 'BALLOT_CLOSED' && !closedAtByRound.has(key)) {
+      closedAtByRound.set(key, row.created_at)
+    }
+  }
+
   const ballotsOut = ballots.map((ballot) => {
     const rounds = (sealsByBallot.get(ballot.id) ?? [])
       .sort((a, b) => a.vote_round - b.vote_round)
@@ -205,15 +223,18 @@ export const handler: Handler = async (event) => {
         const winnerCalc = computeWinnerFromCounts(countsSorted, Number(seal.total_votes) || 0, seal.majority_rule)
         const winnerChoiceId = winnerCalc.choice_id
         const winnerLabel = winnerChoiceId ? (choiceLabelById.get(winnerChoiceId) ?? null) : null
+        const roundKey = `${ballot.id}:${seal.vote_round}`
 
         return {
           round: seal.vote_round,
           status: 'CLOSED',
+          opened_at: openedAtByRound.get(roundKey) ?? null,
           closed_at: seal.closed_at,
           total_votes: seal.total_votes,
           counts: countsSorted,
           seal_short: seal.seal_short,
           seal_hash: seal.seal_hash,
+          election_reached: !!winnerChoiceId,
           winner: {
             choice_id: winnerChoiceId,
             label: winnerLabel
@@ -242,7 +263,17 @@ export const handler: Handler = async (event) => {
       slug: eventSlug
     },
     ballots: ballotsOut,
-    audit_log: (auditData ?? []) as AuditRow[]
+    audit_log: auditRows.map((row) => {
+      const round = Number((row.metadata ?? {}).round)
+      const key = row.ballot_id && Number.isInteger(round) && round > 0 ? `${row.ballot_id}:${round}` : null
+      return {
+        ...row,
+        metadata: {
+          ...(row.metadata ?? {}),
+          closed_at: row.action === 'BALLOT_CLOSED' && key ? (closedAtByRound.get(key) ?? row.created_at) : (row.metadata ?? {}).closed_at
+        }
+      }
+    })
   }
 
   const canonical = canonicalJsonString(basePayload)

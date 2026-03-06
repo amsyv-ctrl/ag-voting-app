@@ -84,6 +84,7 @@ export function AdminBallotPage() {
   const [activeSection, setActiveSection] = useState<'edit' | 'choices' | 'results' | 'manual' | 'history' | 'danger' | null>('edit')
   const [runoffDismissed, setRunoffDismissed] = useState(false)
   const [integritySeal, setIntegritySeal] = useState<IntegritySealRow | null>(null)
+  const editSectionRef = useRef<HTMLElement | null>(null)
 
   const appBase = useMemo(() => window.location.origin, [])
 
@@ -108,6 +109,14 @@ export function AdminBallotPage() {
 
   function thresholdLabel(rule: 'SIMPLE' | 'TWO_THIRDS') {
     return rule === 'TWO_THIRDS' ? '2/3 majority required' : 'Simple majority (>50%) required'
+  }
+
+  function revealEditDetails(message?: string) {
+    setActiveSection('edit')
+    window.requestAnimationFrame(() => {
+      editSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+    if (message) window.alert(message)
   }
 
   async function load() {
@@ -300,7 +309,7 @@ export function AdminBallotPage() {
 
   useEffect(() => {
     if (!ballot) return
-    const channel = supabase
+    const voteChannel = supabase
       .channel(`ballot-${ballot.id}-votes`)
       .on(
         'postgres_changes',
@@ -312,8 +321,26 @@ export function AdminBallotPage() {
       )
       .subscribe()
 
+    const ballotChannel = supabase
+      .channel(`ballot-${ballot.id}-updates`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'ballots', filter: `id=eq.${ballot.id}` },
+        async () => {
+          await load()
+        }
+      )
+      .subscribe()
+
+    const poller = window.setInterval(async () => {
+      await loadResults(ballot.slug)
+      await loadRoundHistory(ballot.id, ballot.majority_rule, ballot.vote_round, ballot.status)
+    }, 3000)
+
     return () => {
-      supabase.removeChannel(channel)
+      window.clearInterval(poller)
+      supabase.removeChannel(voteChannel)
+      supabase.removeChannel(ballotChannel)
     }
   }, [ballot?.id, ballot?.majority_rule, ballot?.vote_round, ballot?.status])
 
@@ -411,11 +438,16 @@ export function AdminBallotPage() {
     if (!ballot) return
     if (!requireOperateAccess()) return
     if (!ballot.results_visibility) {
-      setError('Choose results visibility (Show live voting or Hide until ballot is closed) before opening a vote.')
+      const message = 'Choose results visibility (Show live voting or Hide until ballot is closed) before opening a vote.'
+      setError(message)
+      revealEditDetails(message)
       return
     }
     const nextRound = ballot.status === 'DRAFT' ? 1 : (ballot.vote_round ?? 1) + 1
-    if (!window.confirm(`Open ${roundLabel(nextRound)} vote for this ballot?`)) {
+    const electionWarning = results?.winner_label
+      ? `\n\nElection already reached in the previous round: ${results.winner_label}. Continue only if you need to reopen this ballot.`
+      : ''
+    if (!window.confirm(`Open ${roundLabel(nextRound)} vote for this ballot?${electionWarning}`)) {
       return
     }
     const nowIso = new Date().toISOString()
@@ -790,7 +822,7 @@ export function AdminBallotPage() {
         {error && <p className="error">{error}</p>}
       </section>
 
-      <section className={`accordion ${activeSection === 'edit' ? 'active' : ''}`}>
+      <section id="ballot-edit-details" ref={editSectionRef} className={`accordion ${activeSection === 'edit' ? 'active' : ''}`}>
         <button type="button" className="accordion-header" onClick={() => toggleSection('edit')}>
           <span className="section-title-row">
             Edit Ballot Details

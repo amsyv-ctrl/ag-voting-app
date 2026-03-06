@@ -11,6 +11,11 @@ function csvCell(value: unknown) {
   return `"${str.replace(/"/g, '""')}"`
 }
 
+function csvPinCell(pin: unknown) {
+  const normalized = String(pin ?? '').replace(/\D/g, '').slice(0, 4).padStart(4, '0')
+  return csvCell(`="${normalized}"`)
+}
+
 function safeSlug(input: string | null | undefined) {
   return (input ?? 'event')
     .toLowerCase()
@@ -74,11 +79,11 @@ export const handler: Handler = async (event) => {
   for (const row of pinRows ?? []) {
     const status = row.disabled_at || row.is_active === false ? 'DISABLED' : 'ACTIVE'
     lines.push([
-      row.code,
+      csvPinCell(row.code),
       status,
       row.created_at ?? '',
       row.disabled_at ?? ''
-    ].map(csvCell).join(','))
+    ].map((value, index) => index === 0 ? String(value) : csvCell(value)).join(','))
   }
 
   const datePart = new Date().toISOString().slice(0, 10)

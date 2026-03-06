@@ -7,6 +7,7 @@ import { OperatorRunbook } from '../components/OperatorRunbook'
 import { AdminLayout } from '../components/AdminLayout'
 import { PageHero } from '../components/PageHero'
 import { InfoTip } from '../components/InfoTip'
+import { computeWinner } from '../lib/winner'
 
 type BallotRow = {
   id: string
@@ -18,6 +19,12 @@ type BallotRow = {
   created_at: string
   deleted_at?: string | null
   deleted_by?: string | null
+}
+
+type BallotIndicator = {
+  winnerLabel: string | null
+  voteRound: number
+  totalVotes: number
 }
 
 type OrgAccessRow = {
@@ -137,6 +144,7 @@ export function AdminEventPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const [orgAccess, setOrgAccess] = useState<OrgAccessRow | null>(null)
   const [eventArchivedAt, setEventArchivedAt] = useState<string | null>(null)
+  const [ballotIndicators, setBallotIndicators] = useState<Record<string, BallotIndicator>>({})
 
   const [editOpen, setEditOpen] = useState(false)
   const [pinsOpen, setPinsOpen] = useState(false)
@@ -196,6 +204,7 @@ export function AdminEventPage() {
     }
 
     setBallots(ballotData ?? [])
+    const ballotIds = (ballotData ?? []).map((ballot) => ballot.id)
 
     const { data: archivedData, error: archivedError } = await supabase
       .from('ballots')
@@ -210,6 +219,70 @@ export function AdminEventPage() {
     }
 
     setArchivedBallots(archivedData ?? [])
+
+    const allBallotIds = [...ballotIds, ...(archivedData ?? []).map((ballot) => ballot.id)]
+    if (allBallotIds.length > 0) {
+      const [{ data: sealRows, error: sealError }, { data: choiceRows, error: choiceError }] = await Promise.all([
+        supabase
+          .from('election_result_seals')
+          .select('ballot_id,vote_round,majority_rule,total_votes,counts')
+          .eq('event_id', eventId)
+          .in('ballot_id', allBallotIds)
+          .order('vote_round', { ascending: false }),
+        supabase
+          .from('choices')
+          .select('id,ballot_id,label')
+          .in('ballot_id', allBallotIds)
+      ])
+
+      if (sealError) {
+        setError(sealError.message)
+        return
+      }
+      if (choiceError) {
+        setError(choiceError.message)
+        return
+      }
+
+      const labelsByBallot = new Map<string, Array<{ id: string; label: string }>>()
+      for (const choice of choiceRows ?? []) {
+        const existing = labelsByBallot.get(choice.ballot_id) ?? []
+        existing.push({ id: choice.id, label: choice.label })
+        labelsByBallot.set(choice.ballot_id, existing)
+      }
+
+      const latestByBallot: Record<string, BallotIndicator> = {}
+      for (const seal of sealRows ?? []) {
+        if (latestByBallot[seal.ballot_id]) continue
+        const choiceLabels = labelsByBallot.get(seal.ballot_id) ?? []
+        const counts = (seal.counts ?? {}) as Record<string, number>
+        const result = computeWinner({
+          ballot_id: seal.ballot_id,
+          vote_round: seal.vote_round,
+          total_votes: Number(seal.total_votes ?? 0),
+          rows: choiceLabels.map((choice) => ({
+            choice_id: choice.id,
+            label: choice.label,
+            votes: Number(counts[choice.id] ?? 0),
+            pct: Number(seal.total_votes ?? 0) > 0 ? Number(counts[choice.id] ?? 0) / Number(seal.total_votes ?? 0) : 0
+          })),
+          winner_choice_id: null,
+          winner_label: null,
+          top_pct: null,
+          has_tie: false,
+          majority_rule: seal.majority_rule
+        })
+
+        latestByBallot[seal.ballot_id] = {
+          winnerLabel: result.winner_label,
+          voteRound: seal.vote_round,
+          totalVotes: Number(seal.total_votes ?? 0)
+        }
+      }
+      setBallotIndicators(latestByBallot)
+    } else {
+      setBallotIndicators({})
+    }
 
     const { data: pinData, error: pinError } = await supabase
       .from('pins')
@@ -861,7 +934,7 @@ export function AdminEventPage() {
                 <ul className="pin-list">
                   {activePins.map((pin) => (
                     <li key={pin.id} className={`pin-row ${pin.disabled_at || !pin.is_active ? 'pin-row-disabled' : ''}`}>
-                      <span className="pin-code">{pin.code}</span>
+                      <span className="pin-code">{String(pin.code).replace(/\D/g, '').slice(0, 4).padStart(4, '0')}</span>
                       <span className="pin-status">{pin.disabled_at || !pin.is_active ? 'Disabled' : 'Active'}</span>
                       <span className="muted">
                         Created {new Date(pin.created_at).toLocaleString()}
@@ -915,8 +988,10 @@ export function AdminEventPage() {
               <p className="muted">No active ballots yet.</p>
             </div>
           ) : (
-            ballots.map((ballot) => (
-              <div className="ballot-item" key={ballot.id}>
+            ballots.map((ballot) => {
+              const indicator = ballotIndicators[ballot.id]
+              return (
+                <div className="ballot-item" key={ballot.id}>
                 <div className="ballot-header">
                   <span>{ballot.title}</span>
                     <div className="form-actions">
@@ -934,13 +1009,19 @@ export function AdminEventPage() {
                 </div>
                 <div className="ballot-details">
                   Status: {ballot.status}<br />
+                  {indicator ? (
+                    <>
+                      Election reached: {indicator.winnerLabel ? `Yes - ${indicator.winnerLabel}` : `No (Round ${indicator.voteRound})`}<br />
+                    </>
+                  ) : null}
                   Incumbent: {ballot.incumbent_name || 'N/A'}<br />
                   PIN required: {ballot.requires_pin ? 'Yes' : 'No'}<br />
                   Vote URL: <span className="url">{appBase}/vote/{ballot.slug}</span><br />
                   Display URL: <span className="url">{appBase}/display/{ballot.slug}</span>
                 </div>
-              </div>
-            ))
+                </div>
+              )
+            })
           )
         ) : (
           archivedBallots.length === 0 ? (
@@ -961,6 +1042,11 @@ export function AdminEventPage() {
                   </button>
                 </div>
                 <div className="ballot-details">
+                  {ballotIndicators[ballot.id] ? (
+                    <>
+                      Election reached: {ballotIndicators[ballot.id].winnerLabel ? `Yes - ${ballotIndicators[ballot.id].winnerLabel}` : `No (Round ${ballotIndicators[ballot.id].voteRound})`}<br />
+                    </>
+                  ) : null}
                   Archived: {ballot.deleted_at ? new Date(ballot.deleted_at).toLocaleString() : 'N/A'}<br />
                   Archived by: {archivedByLabel(ballot)}<br />
                   Last status: {ballot.status}<br />
