@@ -29,6 +29,7 @@ function allowanceFromPlan(plan: string, org: { trial_votes_limit: number | null
 }
 
 export const handler: Handler = async (event) => {
+  try {
   if (event.httpMethod !== 'GET') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
   }
@@ -49,12 +50,24 @@ export const handler: Handler = async (event) => {
     return { statusCode: 403, body: JSON.stringify({ error: 'Forbidden' }) }
   }
 
-  const [{ data: orgRow, error: orgError }, { data: eventRows, error: eventError }, { data: usageRows, error: usageError }, { data: overageRows, error: overageError }, { data: auditRows, error: auditError }] = await Promise.all([
-    supabaseAdmin
+  let orgQuery = await supabaseAdmin
+    .from('organizations')
+    .select('id,name,mode,is_active,subscription_status,current_period_end,stripe_customer_id,stripe_subscription_id,stripe_price_id,organization_type,estimated_voting_size,trial_votes_limit,internal_notes')
+    .eq('id', orgId)
+    .maybeSingle()
+
+  if (orgQuery.error && /internal_notes/i.test(orgQuery.error.message)) {
+    orgQuery = await supabaseAdmin
       .from('organizations')
-      .select('id,name,mode,is_active,subscription_status,current_period_end,stripe_customer_id,stripe_subscription_id,stripe_price_id,organization_type,estimated_voting_size,trial_votes_limit,internal_notes')
+      .select('id,name,mode,is_active,subscription_status,current_period_end,stripe_customer_id,stripe_subscription_id,stripe_price_id,organization_type,estimated_voting_size,trial_votes_limit')
       .eq('id', orgId)
-      .maybeSingle(),
+      .maybeSingle()
+    if (orgQuery.data) {
+      orgQuery.data = { ...orgQuery.data, internal_notes: null }
+    }
+  }
+
+  const [{ data: eventRows, error: eventError }, { data: usageRows, error: usageError }, { data: overageRows, error: overageError }, { data: auditRows, error: auditError }] = await Promise.all([
     supabaseAdmin
       .from('events')
       .select('id,name,date,location,org_id')
@@ -75,6 +88,8 @@ export const handler: Handler = async (event) => {
       .order('created_at', { ascending: false })
       .limit(15)
   ])
+
+  const { data: orgRow, error: orgError } = orgQuery
 
   if (orgError || !orgRow) return { statusCode: 404, body: JSON.stringify({ error: orgError?.message ?? 'Organization not found' }) }
   if (eventError) return { statusCode: 500, body: JSON.stringify({ error: eventError.message }) }
@@ -133,5 +148,13 @@ export const handler: Handler = async (event) => {
       recent_activity: auditRows ?? [],
       upcoming_events: upcomingEvents
     })
+  }
+  } catch (err) {
+    console.error('getSuperAdminOrgDetail failed', err)
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: err instanceof Error ? err.message : 'Unexpected server error' })
+    }
   }
 }

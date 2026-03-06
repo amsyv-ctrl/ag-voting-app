@@ -13,6 +13,7 @@ type Body = {
 }
 
 export const handler: Handler = async (event) => {
+  try {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
   }
@@ -40,11 +41,24 @@ export const handler: Handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'orgId is required' }) }
   }
 
-  const { data: currentOrg, error: orgError } = await supabaseAdmin
+  let currentOrgQuery = await supabaseAdmin
     .from('organizations')
     .select('id,mode,is_active,current_period_end,trial_votes_limit,internal_notes')
     .eq('id', orgId)
     .maybeSingle()
+
+  if (currentOrgQuery.error && /internal_notes/i.test(currentOrgQuery.error.message)) {
+    currentOrgQuery = await supabaseAdmin
+      .from('organizations')
+      .select('id,mode,is_active,current_period_end,trial_votes_limit')
+      .eq('id', orgId)
+      .maybeSingle()
+    if (currentOrgQuery.data) {
+      currentOrgQuery.data = { ...currentOrgQuery.data, internal_notes: null }
+    }
+  }
+
+  const { data: currentOrg, error: orgError } = currentOrgQuery
 
   if (orgError || !currentOrg) {
     return { statusCode: 404, body: JSON.stringify({ error: orgError?.message ?? 'Organization not found' }) }
@@ -76,12 +90,28 @@ export const handler: Handler = async (event) => {
     update.is_active = !!payload.is_active
   }
 
-  const { data: updatedOrg, error: updateError } = await supabaseAdmin
+  let updatePayload = { ...update }
+  let updatedOrgQuery = await supabaseAdmin
     .from('organizations')
-    .update(update)
+    .update(updatePayload)
     .eq('id', orgId)
     .select('id,mode,is_active,current_period_end,trial_votes_limit,internal_notes')
     .single()
+
+  if (updatedOrgQuery.error && /internal_notes/i.test(updatedOrgQuery.error.message)) {
+    delete updatePayload.internal_notes
+    updatedOrgQuery = await supabaseAdmin
+      .from('organizations')
+      .update(updatePayload)
+      .eq('id', orgId)
+      .select('id,mode,is_active,current_period_end,trial_votes_limit')
+      .single()
+    if (updatedOrgQuery.data) {
+      updatedOrgQuery.data = { ...updatedOrgQuery.data, internal_notes: currentOrg.internal_notes }
+    }
+  }
+
+  const { data: updatedOrg, error: updateError } = updatedOrgQuery
 
   if (updateError || !updatedOrg) {
     return { statusCode: 500, body: JSON.stringify({ error: updateError?.message ?? 'Update failed' }) }
@@ -115,5 +145,13 @@ export const handler: Handler = async (event) => {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ok: true, org: updatedOrg })
+  }
+  } catch (err) {
+    console.error('superAdminUpdateOrg failed', err)
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: err instanceof Error ? err.message : 'Unexpected server error' })
+    }
   }
 }
