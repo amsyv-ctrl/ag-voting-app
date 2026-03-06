@@ -39,7 +39,7 @@ export const handler: Handler = async (event) => {
 
   const { data: eventRow, error: eventError } = await supabaseAdmin
     .from('events')
-    .select('id,org_id,slug')
+    .select('id,org_id,name')
     .eq('id', eventId)
     .maybeSingle()
 
@@ -82,7 +82,7 @@ export const handler: Handler = async (event) => {
   }
 
   const datePart = new Date().toISOString().slice(0, 10)
-  const filename = `event_pins_${safeSlug(eventRow.slug)}_${datePart}.csv`
+  const filename = `event_pins_${safeSlug(eventRow.name)}_${datePart}.csv`
 
   return {
     statusCode: 200,
