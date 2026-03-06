@@ -1125,6 +1125,211 @@ label.form-row {
   color: #64748b;
 }
 
+.admin-status-banner {
+  border-radius: 16px;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(96, 165, 250, 0.16);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.admin-status-banner-error {
+  border-color: rgba(248, 113, 113, 0.22);
+  background: rgba(254, 242, 242, 0.92);
+}
+
+.admin-page-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-page-grid-two {
+  grid-template-columns: 1.25fr 0.95fr;
+}
+
+.admin-page-grid-three {
+  grid-template-columns: 1.15fr 1.15fr 0.9fr;
+}
+
+.admin-surface-header-copy {
+  max-width: 52rem;
+}
+
+.admin-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.9rem;
+}
+
+.admin-stat-card {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(96, 165, 250, 0.14);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.admin-stat-label {
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #64748b;
+}
+
+.admin-stat-value {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.admin-stat-caption {
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.admin-dark-card {
+  background: linear-gradient(180deg, rgba(8, 15, 31, 0.96) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border-color: rgba(96, 165, 250, 0.16);
+  color: #e2e8f0;
+}
+
+.admin-dark-card .admin-surface-kicker,
+.admin-dark-card h3,
+.admin-dark-card h4,
+.admin-dark-card strong,
+.admin-dark-card .admin-stat-value {
+  color: #f8fafc;
+}
+
+.admin-dark-card .muted,
+.admin-dark-card .admin-stat-caption,
+.admin-dark-card .admin-profile-label {
+  color: #94a3b8;
+}
+
+.admin-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.admin-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(96, 165, 250, 0.16);
+  background: rgba(255, 255, 255, 0.82);
+  color: #1e3a5f;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.admin-qr-card {
+  display: grid;
+  justify-items: center;
+  gap: 0.9rem;
+  text-align: center;
+}
+
+.admin-qr-panel {
+  width: 100%;
+  padding: 1.1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(96, 165, 250, 0.14);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.admin-list-stack {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.admin-row-card {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem 1.05rem;
+  border-radius: 16px;
+  border: 1px solid rgba(96, 165, 250, 0.14);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.admin-row-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.admin-row-title {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.admin-row-title strong {
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.admin-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  color: #64748b;
+}
+
+.admin-kv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.85rem;
+}
+
+.admin-kv {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.admin-kv-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #64748b;
+}
+
+.admin-kv-value {
+  color: #0f172a;
+  line-height: 1.5;
+}
+
+.admin-form-note {
+  margin: 0;
+  color: #5b6f88;
+  line-height: 1.55;
+}
+
+.admin-subsection-title {
+  margin: 0 0 0.55rem 0;
+  font-family: Inter, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 1.02rem;
+  letter-spacing: normal;
+  color: #0f172a;
+}
+
+.admin-link-note {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.admin-section-stack {
+  display: grid;
+  gap: 1rem;
+}
+
 @media (min-width: 900px) {
   .form-grid {
     grid-template-columns: 1fr 1fr;

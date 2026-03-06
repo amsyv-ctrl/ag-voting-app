@@ -726,103 +726,159 @@ export function AdminBallotPage() {
           </Link>
         }
       />
-      <section className="ballot-admin-card ballot-admin-hero">
-        <div className="ballot-admin-topbar">
-          <div className="ballot-admin-status-wrap">
-            <span className="ballot-admin-status-label">Ballot Status</span>
-            <div className={`status-badge ${stateClass}`}>{stateLabel}</div>
-          </div>
-          {ballot.status === 'MANUAL_FALLBACK' ? (
-            <p className="muted">Manual fallback mode active. Record manual totals in the Manual Fallback section.</p>
-          ) : (
-            <div className="ballot-admin-top-actions">
-              <button className="btn btn-primary" type="button" onClick={openNewVoteRound} disabled={!canOpenVote}>
-                {openVoteLabel}
-              </button>
-              <button className="btn btn-danger" type="button" onClick={closeBallot} disabled={!canCloseVote}>
-                Close Current Vote
-              </button>
-            </div>
-          )}
-        </div>
-        <h1>{ballot.event_name}</h1>
-        <h2>{ballot.title}</h2>
-        <p className="ballot-admin-info">Current Vote: #{ballot.vote_round} ({roundLabel(ballot.vote_round)} vote)</p>
-        <p className="ballot-admin-info">PIN Required: {ballot.requires_pin ? 'Yes' : 'No'}</p>
-        {orgAccess && (
-          <p className={isReadOnly ? 'error' : 'muted'}>
-            {isReadOnly
-              ? 'Subscription inactive — this event is read-only. You can view/export, but cannot run new votes.'
-              : orgAccess.mode === 'TRIAL'
-                ? `Trial mode: ${orgAccess.trial_votes_used}/${orgAccess.trial_votes_limit} votes used on your trial event.`
-                : 'Paid active: full ballot controls enabled.'}
-          </p>
-        )}
-        {ballot.incumbent_name && <p className="ballot-admin-info">Incumbent: {ballot.incumbent_name}</p>}
-        <p className="ballot-admin-description">{ballot.description || 'No description'}</p>
-        <div className="participation-panel ballot-admin-live-panel">
-          <p><strong>Votes Cast:</strong> {results?.total_votes ?? 0}</p>
-          <p><strong>Eligible PINs:</strong> {eligiblePins}</p>
-          <p>
-            <strong>Participation:</strong>{' '}
-            {eligiblePins > 0
-              ? `${((((results?.total_votes ?? 0) / eligiblePins) * 100)).toFixed(1)}%`
-              : '0.0%'}
-          </p>
-          <p><strong>Showing Vote:</strong> #{results?.vote_round ?? ballot.vote_round}</p>
-          {results?.winner_label && (
-            <p className="winner"><strong>Leader:</strong> {results.winner_label} ({(results.top_pct! * 100).toFixed(1)}%)</p>
-          )}
-        </div>
-        {ballot.status === 'CLOSED' && results?.winner_label && (
-          <div className="winner-banner">
-            <p className="winner-kicker">Election Reached</p>
-            <h3>{results.winner_label}</h3>
-            <p>{(results.top_pct! * 100).toFixed(1)}% · {thresholdLabel(ballot.majority_rule)}</p>
-          </div>
-        )}
-        {ballot.status === 'CLOSED' && !results?.winner_label && !runoffDismissed && (
-          <div className="ballot-admin-runoff-panel">
-            <h3>No candidate reached the required majority.</h3>
-            <p>A runoff round is required to complete this election.</p>
-            <p><strong>Threshold:</strong> {thresholdLabel(ballot.majority_rule)}</p>
-            <p className="muted">Common practice: confirm bylaws if only top few candidates proceed to runoff.</p>
-            <div className="inline">
-              <button className="btn btn-primary" onClick={openNewVoteRound} disabled={!canOperateEvent}>Start runoff round</button>
-              <button className="btn btn-secondary secondary" onClick={() => setRunoffDismissed(true)}>Keep closed</button>
+      <section className="admin-page-grid admin-page-grid-two">
+        <section className="ui-card admin-surface admin-dark-card ballot-admin-card ballot-admin-hero">
+          <div className="admin-surface-header">
+            <div>
+              <p className="admin-surface-kicker">Ballot Overview</p>
+              <h3>{ballot.title}</h3>
+              <p className="muted">Event: {ballot.event_name}</p>
             </div>
           </div>
-        )}
-        {secondsToClose !== null && (
-          <p className="ballot-admin-close-countdown">Closing in: {secondsToClose}s</p>
-        )}
-        {ballot.status === 'CLOSED' && integritySeal && (
-          <div className="ballot-admin-runoff-panel">
-            <p><strong>Integrity Seal:</strong> {integritySeal.seal_short}</p>
-            <p className="muted">This seal verifies the recorded results for this round.</p>
+          <div className="ballot-admin-topbar">
+            <div className="ballot-admin-status-wrap">
+              <span className="ballot-admin-status-label">Ballot Status</span>
+              <div className={`status-badge ${stateClass}`}>{stateLabel}</div>
+            </div>
+            {ballot.status === 'MANUAL_FALLBACK' ? (
+              <p className="muted">Manual fallback mode active. Record manual totals in the Manual Fallback section.</p>
+            ) : (
+              <div className="ballot-admin-top-actions">
+                <button className="btn btn-primary" type="button" onClick={openNewVoteRound} disabled={!canOpenVote}>
+                  {openVoteLabel}
+                </button>
+                <button className="btn btn-danger" type="button" onClick={closeBallot} disabled={!canCloseVote}>
+                  Close Current Vote
+                </button>
+              </div>
+            )}
           </div>
-        )}
-        <p className="ballot-admin-url">
-          Vote URL:{' '}
-          <a href={`${appBase}/vote/${ballot.slug}`} target="_blank" rel="noreferrer">
-            {appBase}/vote/{ballot.slug}
-          </a>
-        </p>
-        <p className="ballot-admin-url">
-          Display URL:{' '}
-          <a href={`${appBase}/display/${ballot.slug}`} target="_blank" rel="noreferrer">
-            {appBase}/display/{ballot.slug}
-          </a>
-        </p>
-        <p className="helper-text">Vote URL is for attendees. Display URL is for projector screens.</p>
-        <div className="ballot-admin-qr-actions">
-          {voteQrDataUrl && <img className="ballot-admin-qr" src={voteQrDataUrl} alt="Ballot QR code" width={180} height={180} />}
-        </div>
-        <OperatorRunbook context="ballot" ballotId={ballot.id} round={ballot.vote_round} />
-        {error && <p className="error">{error}</p>}
+          <div className="admin-pill-row" style={{ marginTop: '0.75rem' }}>
+            <span className="admin-pill">Vote #{ballot.vote_round} ({roundLabel(ballot.vote_round)})</span>
+            <span className="admin-pill">PIN Required: {ballot.requires_pin ? 'Yes' : 'No'}</span>
+            {ballot.incumbent_name ? <span className="admin-pill">Incumbent: {ballot.incumbent_name}</span> : null}
+          </div>
+          {orgAccess && (
+            <div className={`admin-status-banner ${isReadOnly ? 'admin-status-banner-error' : ''}`} style={{ marginTop: '1rem' }}>
+              <p className={isReadOnly ? 'error' : 'muted'} style={{ margin: 0 }}>
+                {isReadOnly
+                  ? 'Subscription inactive — this event is read-only. You can view/export, but cannot run new votes.'
+                  : orgAccess.mode === 'TRIAL'
+                    ? `Trial mode: ${orgAccess.trial_votes_used}/${orgAccess.trial_votes_limit} votes used on your trial event.`
+                    : 'Paid active: full ballot controls enabled.'}
+              </p>
+            </div>
+          )}
+          <p className="ballot-admin-description">{ballot.description || 'No description'}</p>
+          <div className="admin-stat-grid ballot-admin-live-panel">
+            <article className="admin-stat-card">
+              <span className="admin-stat-label">Votes cast</span>
+              <span className="admin-stat-value">{results?.total_votes ?? 0}</span>
+            </article>
+            <article className="admin-stat-card">
+              <span className="admin-stat-label">Eligible PINs</span>
+              <span className="admin-stat-value">{eligiblePins}</span>
+            </article>
+            <article className="admin-stat-card">
+              <span className="admin-stat-label">Participation</span>
+              <span className="admin-stat-value">
+                {eligiblePins > 0
+                  ? `${((((results?.total_votes ?? 0) / eligiblePins) * 100)).toFixed(1)}%`
+                  : '0.0%'}
+              </span>
+            </article>
+            <article className="admin-stat-card">
+              <span className="admin-stat-label">Showing vote</span>
+              <span className="admin-stat-value">#{results?.vote_round ?? ballot.vote_round}</span>
+              {results?.winner_label ? (
+                <span className="admin-stat-caption">Leader: {results.winner_label}</span>
+              ) : null}
+            </article>
+          </div>
+          {ballot.status === 'CLOSED' && results?.winner_label && (
+            <div className="winner-banner">
+              <p className="winner-kicker">Election Reached</p>
+              <h3>{results.winner_label}</h3>
+              <p>{(results.top_pct! * 100).toFixed(1)}% · {thresholdLabel(ballot.majority_rule)}</p>
+            </div>
+          )}
+          {ballot.status === 'CLOSED' && !results?.winner_label && !runoffDismissed && (
+            <div className="ballot-admin-runoff-panel">
+              <h3>No candidate reached the required majority.</h3>
+              <p>A runoff round is required to complete this election.</p>
+              <p><strong>Threshold:</strong> {thresholdLabel(ballot.majority_rule)}</p>
+              <p className="muted">Common practice: confirm bylaws if only top few candidates proceed to runoff.</p>
+              <div className="inline">
+                <button className="btn btn-primary" onClick={openNewVoteRound} disabled={!canOperateEvent}>Start runoff round</button>
+                <button className="btn btn-secondary secondary" onClick={() => setRunoffDismissed(true)}>Keep closed</button>
+              </div>
+            </div>
+          )}
+          {secondsToClose !== null && (
+            <p className="ballot-admin-close-countdown">Closing in: {secondsToClose}s</p>
+          )}
+          {ballot.status === 'CLOSED' && integritySeal && (
+            <div className="ballot-admin-runoff-panel">
+              <p><strong>Integrity Seal:</strong> {integritySeal.seal_short}</p>
+              <p className="muted">This seal verifies the recorded results for this round.</p>
+            </div>
+          )}
+          {error && <p className="error">{error}</p>}
+        </section>
+
+        <section className="admin-section-stack">
+          <section className="ui-card admin-surface admin-qr-card">
+            <div className="admin-surface-header">
+              <div>
+                <p className="admin-surface-kicker">Access Links</p>
+                <h3>Share attendee and projector access</h3>
+                <p className="muted">Keep the vote link with delegates and the display link on the projector screen.</p>
+              </div>
+            </div>
+            <div className="admin-qr-panel">
+              {voteQrDataUrl && <img className="ballot-admin-qr" src={voteQrDataUrl} alt="Ballot QR code" width={180} height={180} />}
+              <div className="admin-list-stack">
+                <div className="admin-row-card">
+                  <div className="admin-row-header">
+                    <span className="admin-row-title">Vote URL</span>
+                  </div>
+                  <p className="ballot-admin-url">
+                    <a href={`${appBase}/vote/${ballot.slug}`} target="_blank" rel="noreferrer">
+                      {appBase}/vote/{ballot.slug}
+                    </a>
+                  </p>
+                </div>
+                <div className="admin-row-card">
+                  <div className="admin-row-header">
+                    <span className="admin-row-title">Display URL</span>
+                  </div>
+                  <p className="ballot-admin-url">
+                    <a href={`${appBase}/display/${ballot.slug}`} target="_blank" rel="noreferrer">
+                      {appBase}/display/{ballot.slug}
+                    </a>
+                  </p>
+                </div>
+              </div>
+              <p className="admin-link-note">Vote URL is for attendees. Display URL is for projector screens.</p>
+            </div>
+          </section>
+
+          <section className="ui-card admin-surface">
+            <div className="admin-surface-header">
+              <div className="section-title-row">
+                <div>
+                  <p className="admin-surface-kicker">Operator Runbook</p>
+                  <h3 className="admin-subsection-title">Keep the round disciplined</h3>
+                </div>
+                <InfoTip text="Use the runbook to keep opening, monitoring, closing, and export steps consistent under pressure." />
+              </div>
+            </div>
+            <OperatorRunbook context="ballot" ballotId={ballot.id} round={ballot.vote_round} />
+          </section>
+        </section>
       </section>
 
-      <section id="ballot-edit-details" ref={editSectionRef} className={`accordion ${activeSection === 'edit' ? 'active' : ''}`}>
+      <section id="ballot-edit-details" ref={editSectionRef} className={`ui-card admin-surface accordion ${activeSection === 'edit' ? 'active' : ''}`}>
         <button type="button" className="accordion-header" onClick={() => toggleSection('edit')}>
           <span className="section-title-row">
             Edit Ballot Details
@@ -889,7 +945,7 @@ export function AdminBallotPage() {
         </div>
       </section>
 
-      <section className={`accordion ${activeSection === 'choices' ? 'active' : ''}`}>
+      <section className={`ui-card admin-surface accordion ${activeSection === 'choices' ? 'active' : ''}`}>
         <button type="button" className="accordion-header" onClick={() => toggleSection('choices')}>
           <span className="section-title-row">
             Choices
@@ -947,7 +1003,7 @@ export function AdminBallotPage() {
         </div>
       </section>
 
-      <section className={`accordion ${activeSection === 'results' ? 'active' : ''}`}>
+      <section className={`ui-card admin-surface accordion ${activeSection === 'results' ? 'active' : ''}`}>
         <button type="button" className="accordion-header" onClick={() => toggleSection('results')}>
           <span className="section-title-row">
             Live Results
@@ -1003,7 +1059,7 @@ export function AdminBallotPage() {
         </div>
       </section>
 
-      <section className={`accordion ${activeSection === 'manual' ? 'active' : ''}`}>
+      <section className={`ui-card admin-surface accordion ${activeSection === 'manual' ? 'active' : ''}`}>
         <button type="button" className="accordion-header" onClick={() => toggleSection('manual')}>
           <span className="section-title-row">
             Manual Fallback
@@ -1054,7 +1110,7 @@ export function AdminBallotPage() {
       </section>
 
       {roundHistory.length > 0 && (
-        <section className={`accordion ${activeSection === 'history' ? 'active' : ''}`}>
+        <section className={`ui-card admin-surface accordion ${activeSection === 'history' ? 'active' : ''}`}>
           <button type="button" className="accordion-header" onClick={() => toggleSection('history')}>
             <span className="section-title-row">
               Previous Vote Rounds
@@ -1091,7 +1147,7 @@ export function AdminBallotPage() {
         </section>
       )}
 
-      <section className={`accordion ${activeSection === 'danger' ? 'active' : ''}`}>
+      <section className={`ui-card admin-surface accordion ${activeSection === 'danger' ? 'active' : ''}`}>
         <button type="button" className="accordion-header" onClick={() => toggleSection('danger')}>
           <span className="section-title-row">
             Danger Zone

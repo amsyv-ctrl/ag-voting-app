@@ -339,54 +339,110 @@ export function AdminOrgPage() {
           </div>
         }
       />
-      <section className="form-section">
-        {org && (
-          <p className={isReadOnly ? 'error' : 'muted'}>
-            {isReadOnly
-              ? 'Subscription inactive — account is read-only. You can view/export history, but cannot run new votes.'
-              : org.mode === 'TRIAL'
-                ? `Trial mode: ${org.trial_votes_used}/${org.trial_votes_limit} votes used on your trial event.`
-                : 'Paid active: full access enabled.'}
-          </p>
-        )}
-        {error && <p className="error">{error}</p>}
-        {notice && <p className="winner">{notice}</p>}
-        {org && (
-          <>
-            <p><strong>Name:</strong> {org.name}</p>
-            <p><strong>Role:</strong> {role}</p>
-            <p><strong>Mode:</strong> {org.mode}</p>
-            <p><strong>Trial usage:</strong> {org.trial_votes_used}/{org.trial_votes_limit} votes</p>
-            <p><strong>Subscription status:</strong> {org.subscription_status ?? 'N/A'}</p>
-            <p><strong>Current period end:</strong> {formatDate(org.current_period_end)}</p>
-            <p><strong>Active:</strong> {org.is_active ? 'Yes' : 'No'}</p>
-          </>
-        )}
-        {usage && (
-          <>
-            <hr />
-            <p><strong>Plan:</strong> {usage.plan_name}</p>
-            <p><strong>Votes used this year:</strong> {usage.votes_used} / {usage.allowance}</p>
-            {usage.overage_votes > 0 ? (
-              <p className="error">
-                <strong>Overage:</strong> {usage.overage_votes} votes (${(usage.estimated_overage_cents / 100).toFixed(2)})
-              </p>
-            ) : (
-              <p className="muted">{usage.remaining} votes remaining before overage.</p>
-            )}
-            <p className="muted">Overage billed at $0.50 per vote.</p>
-            {usage.warning_80 && usage.overage_votes === 0 && (
-              <p className="error">Warning: usage is above 80% of plan allowance.</p>
-            )}
-          </>
-        )}
+      <section className="admin-page-grid admin-page-grid-two">
+        <section className="ui-card admin-surface admin-dark-card">
+          <div className="admin-surface-header">
+            <div>
+              <p className="admin-surface-kicker">Organization Overview</p>
+              <h3>{org?.name ?? 'Organization'}</h3>
+              <p className="muted">Subscription health, usage, and billing status for your MinistryVote workspace.</p>
+            </div>
+          </div>
+          {org ? (
+            <>
+              <div className={`admin-status-banner ${isReadOnly ? 'admin-status-banner-error' : ''}`}>
+                <p className={isReadOnly ? 'error' : 'muted'} style={{ margin: 0 }}>
+                  {isReadOnly
+                    ? 'Subscription inactive — account is read-only. You can view/export history, but cannot run new votes.'
+                    : org.mode === 'TRIAL'
+                      ? `Trial mode: ${org.trial_votes_used}/${org.trial_votes_limit} votes used on your trial event.`
+                      : 'Paid active: full access enabled.'}
+                </p>
+              </div>
+              <div className="admin-kv-grid" style={{ marginTop: '1rem' }}>
+                <div className="admin-kv">
+                  <span className="admin-kv-label">Role</span>
+                  <span className="admin-kv-value">{role}</span>
+                </div>
+                <div className="admin-kv">
+                  <span className="admin-kv-label">Mode</span>
+                  <span className="admin-kv-value">{org.mode}</span>
+                </div>
+                <div className="admin-kv">
+                  <span className="admin-kv-label">Subscription status</span>
+                  <span className="admin-kv-value">{org.subscription_status ?? 'N/A'}</span>
+                </div>
+                <div className="admin-kv">
+                  <span className="admin-kv-label">Current period end</span>
+                  <span className="admin-kv-value">{formatDate(org.current_period_end)}</span>
+                </div>
+                <div className="admin-kv">
+                  <span className="admin-kv-label">Active</span>
+                  <span className="admin-kv-value">{org.is_active ? 'Yes' : 'No'}</span>
+                </div>
+                <div className="admin-kv">
+                  <span className="admin-kv-label">Trial usage</span>
+                  <span className="admin-kv-value">{org.trial_votes_used}/{org.trial_votes_limit} votes</span>
+                </div>
+              </div>
+            </>
+          ) : null}
+        </section>
+
+        {usage ? (
+          <section className="ui-card admin-surface">
+            <div className="admin-surface-header">
+              <div>
+                <p className="admin-surface-kicker">Usage Snapshot</p>
+                <h3>Current billing period</h3>
+                <p className="muted">Track usage before overages and keep subscription planning predictable.</p>
+              </div>
+            </div>
+            <div className="admin-stat-grid">
+              <article className="admin-stat-card">
+                <span className="admin-stat-label">Plan</span>
+                <span className="admin-stat-value">{usage.plan_name}</span>
+              </article>
+              <article className="admin-stat-card">
+                <span className="admin-stat-label">Votes used</span>
+                <span className="admin-stat-value">{usage.votes_used}</span>
+                <span className="admin-stat-caption">of {usage.allowance}</span>
+              </article>
+              <article className="admin-stat-card">
+                <span className="admin-stat-label">Remaining</span>
+                <span className="admin-stat-value">{usage.remaining}</span>
+                <span className="admin-stat-caption">before overage</span>
+              </article>
+            </div>
+            <div style={{ marginTop: '1rem' }}>
+              {usage.overage_votes > 0 ? (
+                <p className="error">
+                  <strong>Overage:</strong> {usage.overage_votes} votes (${(usage.estimated_overage_cents / 100).toFixed(2)})
+                </p>
+              ) : (
+                <p className="muted">{usage.remaining} votes remaining before overage.</p>
+              )}
+              <p className="muted">Overage billed at $0.50 per vote.</p>
+              {usage.warning_80 && usage.overage_votes === 0 && (
+                <p className="error">Warning: usage is above 80% of plan allowance.</p>
+              )}
+            </div>
+          </section>
+        ) : null}
       </section>
 
-      <section className="form-section">
-        <h2>Subscription</h2>
-        <p className="helper-text">Choose a plan based on the number of votes your organization runs each year.</p>
-        <p className="helper-text" style={{ marginTop: '0.35rem' }}>Built for church governance — not generic polling.</p>
-        <div className="subscription-grid" style={{ marginTop: '0.8rem' }}>
+      {error ? <p className="error">{error}</p> : null}
+      {notice ? <p className="winner">{notice}</p> : null}
+
+      <section className="ui-card admin-surface">
+        <div className="admin-surface-header">
+          <div className="admin-surface-header-copy">
+            <p className="admin-surface-kicker">Subscription</p>
+            <h3>Choose the right plan for your organization</h3>
+            <p className="muted">Built for church governance — not generic polling.</p>
+          </div>
+        </div>
+        <div className="subscription-grid" style={{ marginTop: '0.2rem' }}>
           <article className="ui-card subscription-card">
             <h3 style={{ marginTop: 0 }}>Starter</h3>
             <p className="muted">Best for churches and smaller organizations</p>
@@ -442,8 +498,14 @@ export function AdminOrgPage() {
         </p>
       </section>
 
-      <section className="form-section">
-        <h2>Trial Onboarding</h2>
+      <section className="ui-card admin-surface">
+        <div className="admin-surface-header">
+          <div>
+            <p className="admin-surface-kicker">Trial Onboarding</p>
+            <h3>Use your free trial event intentionally</h3>
+            <p className="muted">Create one guided trial event, test the workflow, then upgrade when you are ready for ongoing use.</p>
+          </div>
+        </div>
         {!org?.trial_event_id ? (
           <p className="muted">Trial not started.</p>
         ) : org.trial_votes_used >= org.trial_votes_limit ? (
@@ -467,8 +529,14 @@ export function AdminOrgPage() {
         </div>
       </section>
 
-      <section className="form-section">
-        <h2>Edit Profile</h2>
+      <section className="ui-card admin-surface">
+        <div className="admin-surface-header">
+          <div className="admin-surface-header-copy">
+            <p className="admin-surface-kicker">Profile & Organization</p>
+            <h3>Keep account details accurate</h3>
+            <p className="muted">These details are used across account setup, support, billing context, and administrative recordkeeping.</p>
+          </div>
+        </div>
         <div className="form-grid">
           <label className="form-row">
             First name

@@ -812,20 +812,93 @@ export function AdminEventPage() {
           </Link>
         }
       />
-      <section className="form-section">
-        {orgAccess && (
-          <p className={canOperateEvent ? 'muted' : 'error'}>
-            {isReadOnly
-              ? eventArchivedAt
-                ? `This event is archived (${new Date(eventArchivedAt).toLocaleString()}) and is now read-only. You can still view/export results.`
-                : 'Subscription inactive — this event is read-only. You can view/export, but cannot run new votes.'
-              : orgAccess.mode === 'TRIAL'
-                ? `Trial mode: ${orgAccess.trial_votes_used}/${orgAccess.trial_votes_limit} votes used on your trial event.`
-                : 'Paid active: full event controls enabled.'}
-          </p>
-        )}
-        {error && <p className="error">{error}</p>}
-        {notice && <p className="winner">{notice}</p>}
+      <section className="admin-page-grid admin-page-grid-two">
+        <section className="ui-card admin-surface admin-dark-card">
+          <div className="admin-surface-header">
+            <div>
+              <p className="admin-surface-kicker">Event Overview</p>
+              <h3>{eventName || 'Event'}</h3>
+              <p className="muted">Operational status, team context, and event-level controls for this meeting.</p>
+            </div>
+          </div>
+          {orgAccess && (
+            <div className={`admin-status-banner ${canOperateEvent ? '' : 'admin-status-banner-error'}`}>
+              <p className={canOperateEvent ? 'muted' : 'error'} style={{ margin: 0 }}>
+                {isReadOnly
+                  ? eventArchivedAt
+                    ? `This event is archived (${new Date(eventArchivedAt).toLocaleString()}) and is now read-only. You can still view/export results.`
+                    : 'Subscription inactive — this event is read-only. You can view/export, but cannot run new votes.'
+                  : orgAccess.mode === 'TRIAL'
+                    ? `Trial mode: ${orgAccess.trial_votes_used}/${orgAccess.trial_votes_limit} votes used on your trial event.`
+                    : 'Paid active: full event controls enabled.'}
+              </p>
+            </div>
+          )}
+          <div className="admin-kv-grid" style={{ marginTop: '1rem' }}>
+            <div className="admin-kv">
+              <span className="admin-kv-label">Date</span>
+              <span className="admin-kv-value">{eventDate || 'Not set'}</span>
+            </div>
+            <div className="admin-kv">
+              <span className="admin-kv-label">Location</span>
+              <span className="admin-kv-value">{eventLocation || 'Not set'}</span>
+            </div>
+            <div className="admin-kv">
+              <span className="admin-kv-label">Voting Team</span>
+              <span className="admin-kv-value">{votingStaffNames || 'Not set'}</span>
+            </div>
+            <div className="admin-kv">
+              <span className="admin-kv-label">Active PINs</span>
+              <span className="admin-kv-value">{activePinCount}</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="ui-card admin-surface">
+          <div className="admin-surface-header">
+            <div>
+              <p className="admin-surface-kicker">Quick Guidance</p>
+              <h3>Run this event with a consistent workflow</h3>
+            </div>
+          </div>
+          <div className="admin-guidance-steps">
+            <article className="admin-guidance-step">
+              <span className="admin-guidance-number">1</span>
+              <div>
+                <h4>Update the event details first</h4>
+                <p className="muted">Keep the event name, location, and voting team accurate so exports and records stay clear.</p>
+              </div>
+            </article>
+            <article className="admin-guidance-step">
+              <span className="admin-guidance-number">2</span>
+              <div>
+                <h4>Generate and distribute PINs only if needed</h4>
+                <p className="muted">Use PINs for secure delegate check-in, then verify or disable them here if something changes.</p>
+              </div>
+            </article>
+            <article className="admin-guidance-step">
+              <span className="admin-guidance-number">3</span>
+              <div>
+                <h4>Create ballots and manage rounds from each ballot page</h4>
+                <p className="muted">Each ballot carries its own vote links, display links, live results, exports, and runoff workflow.</p>
+              </div>
+            </article>
+          </div>
+        </section>
+      </section>
+
+      {error && <p className="error">{error}</p>}
+      {notice && <p className="winner">{notice}</p>}
+
+      <section className="admin-page-grid admin-page-grid-two">
+        <section className="ui-card admin-surface">
+          <div className="admin-surface-header">
+            <div className="admin-surface-header-copy">
+              <p className="admin-surface-kicker">Event Settings</p>
+              <h3>Update meeting details</h3>
+              <p className="muted">Keep event metadata current so the voting team and records reflect the actual meeting.</p>
+            </div>
+          </div>
 
         <div className={`accordion ${editOpen ? 'active' : ''}`}>
           <button type="button" className="accordion-header" onClick={() => setEditOpen((v) => !v)}>
@@ -865,7 +938,16 @@ export function AdminEventPage() {
             </form>
           </div>
         </div>
+        </section>
 
+        <section className="ui-card admin-surface">
+          <div className="admin-surface-header">
+            <div className="admin-surface-header-copy">
+              <p className="admin-surface-kicker">Delegate Access</p>
+              <h3>Manage PINs for secure voting</h3>
+              <p className="muted">Generate, export, review, and disable event PINs without leaving the event dashboard.</p>
+            </div>
+          </div>
         <div className={`accordion ${pinsOpen ? 'active' : ''}`}>
           <button type="button" className="accordion-header" onClick={() => setPinsOpen((v) => !v)}>
             <span className="section-title-row">
@@ -948,19 +1030,33 @@ export function AdminEventPage() {
             <p className="helper-text" style={{ marginTop: '0.5rem' }}>Tip: disable a lost PIN, then generate a replacement PIN for that delegate.</p>
           </div>
         </div>
+        </section>
+      </section>
 
-        <div className="section-title-row" style={{ marginBottom: '0.5rem' }}>
-          <span className="muted">Operator Runbook</span>
-          <InfoTip text="Use this checklist to reduce errors during live sessions." />
+      <section className="ui-card admin-surface">
+        <div className="admin-surface-header">
+          <div className="section-title-row">
+            <div>
+              <p className="admin-surface-kicker">Operator Runbook</p>
+              <h3 className="admin-subsection-title">Keep the live session disciplined</h3>
+            </div>
+            <InfoTip text="Use this checklist to reduce errors during live sessions." />
+          </div>
         </div>
         <OperatorRunbook context="event" eventId={eventId} />
+      </section>
 
-        <div className="section-title-row">
-          <h2 style={{ margin: 0 }}>Ballots</h2>
-          <InfoTip text="Use Manage to access attendee vote links and display links for projector screens." />
+      <section className="ui-card admin-surface">
+        <div className="admin-surface-header">
+          <div className="section-title-row">
+            <div className="admin-surface-header-copy">
+              <p className="admin-surface-kicker">Ballots</p>
+              <h3>Manage elections and decisions in this event</h3>
+              <p className="muted">Use “Manage” to access attendee vote links and display links. Run the same ballot across multiple rounds for runoff voting.</p>
+            </div>
+            <InfoTip text="Use Manage to access attendee vote links and display links for projector screens." />
+          </div>
         </div>
-        <p className="subtitle">Includes round summaries, counts per choice, and the timestamp each election threshold was first reached.</p>
-        <p className="helper-text">Use “Manage” to access vote and display links. You can run the same ballot multiple rounds for runoff voting.</p>
 
         <div className="ballot-item" style={{ marginBottom: '1rem' }}>
           <div className="ballot-header">Ballot View</div>
@@ -1108,13 +1204,21 @@ export function AdminEventPage() {
             </div>
           </form>
         </div>
+      </section>
 
-        <div className="ballot-item">
-          <div className="ballot-header">
-            <span className="section-title-row">
-              Verify Receipt
+      <section className="admin-page-grid admin-page-grid-two">
+        <div className="ui-card admin-surface">
+          <div className="admin-surface-header">
+            <div className="section-title-row">
+              <div>
+                <p className="admin-surface-kicker">Receipt Lookup</p>
+                <h3 className="admin-subsection-title">Verify vote receipts safely</h3>
+              </div>
               <InfoTip text="Check that a receipt code exists without revealing voter choice." />
-            </span>
+            </div>
+          </div>
+          <div className="ballot-header">
+            <span>Verify Receipt</span>
           </div>
           <form onSubmit={onVerifyReceipt} className="form-actions" style={{ marginTop: '0.75rem' }}>
             <label className="form-row" style={{ flex: '1 1 320px', margin: 0 }}>
@@ -1141,12 +1245,18 @@ export function AdminEventPage() {
             )
           )}
         </div>
-
-        <div className="export-section">
-          <div className="section-title-row" style={{ justifyContent: 'center', marginBottom: '0.5rem' }}>
-            <strong>Exports</strong>
-            <InfoTip text="Export sealed official records for governance files and CSV convenience summaries." />
+        <div className="ui-card admin-surface">
+          <div className="admin-surface-header">
+            <div className="section-title-row">
+              <div>
+                <p className="admin-surface-kicker">Exports</p>
+                <h3 className="admin-subsection-title">Download official records</h3>
+              </div>
+              <InfoTip text="Export sealed official records for governance files and CSV convenience summaries." />
+            </div>
           </div>
+
+        <div className="export-section" style={{ marginTop: 0, paddingTop: 0, borderTop: 0 }}>
           <button className="btn btn-primary" onClick={onExportOfficialRecord} disabled={exportingOfficial}>
             {exportingOfficial ? 'Exporting Official Record...' : 'Export Official Record (JSON)'}
           </button>
@@ -1157,6 +1267,7 @@ export function AdminEventPage() {
           <p className="subtitle" style={{ marginTop: '10px' }}>
             JSON is the primary verifiable official record. CSV remains available as a convenience export.
           </p>
+        </div>
         </div>
       </section>
     </AdminLayout>
