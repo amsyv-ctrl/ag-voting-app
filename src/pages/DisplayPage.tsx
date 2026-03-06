@@ -100,6 +100,7 @@ export function DisplayPage() {
     <main className="display-page">
       <div className="display-grid">
         <section className="display-main">
+          <p className="vote-kicker">MinistryVote Display</p>
           <h1 className="display-event">{ballot.event_name}</h1>
           <p className="display-ballot-title">{ballot.title}</p>
           <div className="display-meta-grid">

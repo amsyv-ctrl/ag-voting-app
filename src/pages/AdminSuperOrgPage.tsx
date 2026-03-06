@@ -100,7 +100,7 @@ export function AdminSuperOrgPage() {
   if (loading) {
     return (
       <AdminLayout onSignOut={onSignOut}>
-        <section className="ui-card"><p>Loading organization...</p></section>
+        <section className="ui-card admin-surface"><p>Loading organization...</p></section>
       </AdminLayout>
     )
   }
@@ -117,35 +117,80 @@ export function AdminSuperOrgPage() {
         }
       />
 
-      {error && <section className="ui-card"><p className="error">{error}</p></section>}
-      {notice && <section className="ui-card"><p className="winner">{notice}</p></section>}
+      {error && <section className="ui-card admin-surface"><p className="error">{error}</p></section>}
+      {notice && <section className="ui-card admin-surface"><p className="winner">{notice}</p></section>}
 
       {data && (
         <>
-          <section className="super-summary-grid">
-            <div className="ui-card super-stat-card"><span>Mode</span><strong>{data.org.mode}</strong></div>
-            <div className="ui-card super-stat-card"><span>Active</span><strong>{data.org.is_active ? 'Yes' : 'No'}</strong></div>
-            <div className="ui-card super-stat-card"><span>Subscription status</span><strong>{data.org.subscription_status ?? 'N/A'}</strong></div>
-            <div className="ui-card super-stat-card"><span>Total events</span><strong>{data.stats.total_events}</strong></div>
-            <div className="ui-card super-stat-card"><span>Total ballots</span><strong>{data.stats.total_ballots}</strong></div>
-            <div className="ui-card super-stat-card"><span>Total votes cast</span><strong>{data.stats.total_votes_cast}</strong></div>
+          <section className="ui-card admin-surface admin-dark-card">
+            <div className="admin-surface-header">
+              <div>
+                <p className="admin-surface-kicker">Organization Snapshot</p>
+                <h3>{data.org.name}</h3>
+                <p className="muted">Subscription state, billing identifiers, and support context for this customer workspace.</p>
+              </div>
+            </div>
+            <div className="admin-stat-grid">
+              <div className="admin-stat-card super-stat-card"><span>Mode</span><strong>{data.org.mode}</strong></div>
+              <div className="admin-stat-card super-stat-card"><span>Active</span><strong>{data.org.is_active ? 'Yes' : 'No'}</strong></div>
+              <div className="admin-stat-card super-stat-card"><span>Subscription status</span><strong>{data.org.subscription_status ?? 'N/A'}</strong></div>
+              <div className="admin-stat-card super-stat-card"><span>Total events</span><strong>{data.stats.total_events}</strong></div>
+              <div className="admin-stat-card super-stat-card"><span>Total ballots</span><strong>{data.stats.total_ballots}</strong></div>
+              <div className="admin-stat-card super-stat-card"><span>Total votes cast</span><strong>{data.stats.total_votes_cast}</strong></div>
+            </div>
           </section>
 
-          <section className="ui-grid-2">
-            <section className="ui-card">
-              <h3>Organization details</h3>
-              <p><strong>Current period end:</strong> {formatDate(data.org.current_period_end)}</p>
-              <p><strong>Stripe customer ID:</strong> {data.org.stripe_customer_id || 'N/A'}</p>
-              <p><strong>Stripe subscription ID:</strong> {data.org.stripe_subscription_id || 'N/A'}</p>
-              <p><strong>Organization type:</strong> {data.org.organization_type || 'N/A'}</p>
-              <p><strong>Estimated voting size:</strong> {data.org.estimated_voting_size || 'N/A'}</p>
-              <p><strong>Plan:</strong> {data.stats.plan_name}</p>
-              <p><strong>Votes used:</strong> {data.stats.votes_used} / {data.stats.allowance}</p>
-              <p><strong>Overage:</strong> {data.stats.overage_votes} (${(data.stats.estimated_overage_cents / 100).toFixed(2)})</p>
+          <section className="admin-page-grid admin-page-grid-two">
+            <section className="ui-card admin-surface">
+              <div className="admin-surface-header">
+                <div>
+                  <p className="admin-surface-kicker">Organization Details</p>
+                  <h3>Customer billing and profile context</h3>
+                </div>
+              </div>
+              <div className="admin-kv-grid">
+                <div className="admin-kv">
+                  <span className="admin-kv-label">Current period end</span>
+                  <span className="admin-kv-value">{formatDate(data.org.current_period_end)}</span>
+                </div>
+                <div className="admin-kv">
+                  <span className="admin-kv-label">Stripe customer ID</span>
+                  <span className="admin-kv-value">{data.org.stripe_customer_id || 'N/A'}</span>
+                </div>
+                <div className="admin-kv">
+                  <span className="admin-kv-label">Stripe subscription ID</span>
+                  <span className="admin-kv-value">{data.org.stripe_subscription_id || 'N/A'}</span>
+                </div>
+                <div className="admin-kv">
+                  <span className="admin-kv-label">Organization type</span>
+                  <span className="admin-kv-value">{data.org.organization_type || 'N/A'}</span>
+                </div>
+                <div className="admin-kv">
+                  <span className="admin-kv-label">Estimated voting size</span>
+                  <span className="admin-kv-value">{data.org.estimated_voting_size || 'N/A'}</span>
+                </div>
+                <div className="admin-kv">
+                  <span className="admin-kv-label">Plan</span>
+                  <span className="admin-kv-value">{data.stats.plan_name}</span>
+                </div>
+                <div className="admin-kv">
+                  <span className="admin-kv-label">Votes used</span>
+                  <span className="admin-kv-value">{data.stats.votes_used} / {data.stats.allowance}</span>
+                </div>
+                <div className="admin-kv">
+                  <span className="admin-kv-label">Overage</span>
+                  <span className="admin-kv-value">{data.stats.overage_votes} (${(data.stats.estimated_overage_cents / 100).toFixed(2)})</span>
+                </div>
+              </div>
             </section>
 
-            <section className="ui-card">
-              <h3>Super Admin Override</h3>
+            <section className="ui-card admin-surface">
+              <div className="admin-surface-header">
+                <div>
+                  <p className="admin-surface-kicker">Super Admin Override</p>
+                  <h3>Adjust access, billing period, and internal notes</h3>
+                </div>
+              </div>
               <div className="form-grid">
                 <label className="form-row">
                   Mode
@@ -183,9 +228,14 @@ export function AdminSuperOrgPage() {
             </section>
           </section>
 
-          <section className="ui-grid-2">
-            <section className="ui-card">
-              <h3>Recent activity</h3>
+          <section className="admin-page-grid admin-page-grid-two">
+            <section className="ui-card admin-surface">
+              <div className="admin-surface-header">
+                <div>
+                  <p className="admin-surface-kicker">Recent Activity</p>
+                  <h3>Latest actions touching this organization</h3>
+                </div>
+              </div>
               <div className="super-table-wrap">
                 <table>
                   <thead>
@@ -205,8 +255,13 @@ export function AdminSuperOrgPage() {
               </div>
             </section>
 
-            <section className="ui-card">
-              <h3>Upcoming events</h3>
+            <section className="ui-card admin-surface">
+              <div className="admin-surface-header">
+                <div>
+                  <p className="admin-surface-kicker">Upcoming Events</p>
+                  <h3>Scheduled meetings for this organization</h3>
+                </div>
+              </div>
               <div className="super-table-wrap">
                 <table>
                   <thead>

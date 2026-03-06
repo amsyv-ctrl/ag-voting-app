@@ -48,8 +48,13 @@ function DonutChart({
   }, [entries, total])
 
   return (
-    <section className="ui-card">
-      <h3>{title}</h3>
+    <section className="ui-card admin-surface">
+      <div className="admin-surface-header">
+        <div>
+          <p className="admin-surface-kicker">Distribution</p>
+          <h3>{title}</h3>
+        </div>
+      </div>
       <div className="super-chart-row">
         <div className="super-donut-wrap">
           <div className="super-donut-chart" style={{ background: gradient }}>
@@ -88,8 +93,13 @@ function BarChart({
   const max = Math.max(1, ...entries.map(([, value]) => value))
 
   return (
-    <section className="ui-card">
-      <h3>{title}</h3>
+    <section className="ui-card admin-surface">
+      <div className="admin-surface-header">
+        <div>
+          <p className="admin-surface-kicker">Distribution</p>
+          <h3>{title}</h3>
+        </div>
+      </div>
       <div className="super-bar-chart">
         {entries.length === 0 ? (
           <p className="muted">No data yet.</p>
@@ -160,7 +170,7 @@ export function AdminSuperPage() {
   if (loading) {
     return (
       <AdminLayout onSignOut={onSignOut}>
-        <section className="ui-card"><p>Loading dashboard...</p></section>
+        <section className="ui-card admin-surface"><p>Loading dashboard...</p></section>
       </AdminLayout>
     )
   }
@@ -178,44 +188,63 @@ export function AdminSuperPage() {
       />
 
       {error && (
-        <section className="ui-card">
+        <section className="ui-card admin-surface">
           <p className="error">{error}</p>
         </section>
       )}
 
       {data && (
         <>
-          <section className="super-summary-grid">
-            <div className="ui-card super-stat-card"><span>Total organizations</span><strong>{data.summary.total_organizations}</strong></div>
-            <div className="ui-card super-stat-card"><span>Paid active organizations</span><strong>{data.summary.paid_active_organizations}</strong></div>
-            <div className="ui-card super-stat-card"><span>Trial organizations</span><strong>{data.summary.trial_organizations}</strong></div>
-            <div className="ui-card super-stat-card"><span>Inactive / canceled organizations</span><strong>{data.summary.inactive_canceled_organizations}</strong></div>
-            <div className="ui-card super-stat-card"><span>Total events</span><strong>{data.summary.total_events}</strong></div>
-            <div className="ui-card super-stat-card"><span>Total ballots</span><strong>{data.summary.total_ballots}</strong></div>
-            <div className="ui-card super-stat-card"><span>Total votes cast</span><strong>{data.summary.total_votes_cast}</strong></div>
+          <section className="ui-card admin-surface admin-dark-card">
+            <div className="admin-surface-header">
+              <div>
+                <p className="admin-surface-kicker">Platform Snapshot</p>
+                <h3>Adoption and activity at a glance</h3>
+                <p className="muted">Use this to monitor subscription mix, demand, and operational health across all organizations.</p>
+              </div>
+            </div>
+            <div className="admin-stat-grid">
+              <div className="admin-stat-card super-stat-card"><span>Total organizations</span><strong>{data.summary.total_organizations}</strong></div>
+              <div className="admin-stat-card super-stat-card"><span>Paid active organizations</span><strong>{data.summary.paid_active_organizations}</strong></div>
+              <div className="admin-stat-card super-stat-card"><span>Trial organizations</span><strong>{data.summary.trial_organizations}</strong></div>
+              <div className="admin-stat-card super-stat-card"><span>Inactive / canceled organizations</span><strong>{data.summary.inactive_canceled_organizations}</strong></div>
+              <div className="admin-stat-card super-stat-card"><span>Total events</span><strong>{data.summary.total_events}</strong></div>
+              <div className="admin-stat-card super-stat-card"><span>Total ballots</span><strong>{data.summary.total_ballots}</strong></div>
+              <div className="admin-stat-card super-stat-card"><span>Total votes cast</span><strong>{data.summary.total_votes_cast}</strong></div>
+            </div>
           </section>
 
-          <section className="ui-grid-2">
+          <section className="admin-page-grid admin-page-grid-two">
             <DonutChart title="Organizations by subscription status" data={data.charts.subscription_status} />
             <DonutChart title="Organizations by organization type" data={data.charts.organization_type} />
           </section>
 
           <BarChart title="Organizations by estimated voting size" data={data.charts.estimated_voting_size} />
 
-          <section className="ui-card">
-            <h3>Trial funnel</h3>
-            <div className="super-summary-grid">
-              <div className="super-stat-card"><span>Trial orgs total</span><strong>{data.trial_funnel.trial_orgs_total}</strong></div>
-              <div className="super-stat-card"><span>Trial orgs with at least 1 event</span><strong>{data.trial_funnel.trial_orgs_with_event}</strong></div>
-              <div className="super-stat-card"><span>Trial orgs with at least 1 ballot</span><strong>{data.trial_funnel.trial_orgs_with_ballot}</strong></div>
-              <div className="super-stat-card"><span>Trial orgs with at least 1 vote</span><strong>{data.trial_funnel.trial_orgs_with_vote}</strong></div>
-              <div className="super-stat-card"><span>Trial orgs converted to paid</span><strong>{data.trial_funnel.trial_orgs_converted_to_paid}</strong></div>
+          <section className="ui-card admin-surface">
+            <div className="admin-surface-header">
+              <div>
+                <p className="admin-surface-kicker">Trial Funnel</p>
+                <h3>See where trial organizations are advancing or stalling</h3>
+              </div>
+            </div>
+            <div className="admin-stat-grid">
+              <div className="admin-stat-card super-stat-card"><span>Trial orgs total</span><strong>{data.trial_funnel.trial_orgs_total}</strong></div>
+              <div className="admin-stat-card super-stat-card"><span>Trial orgs with at least 1 event</span><strong>{data.trial_funnel.trial_orgs_with_event}</strong></div>
+              <div className="admin-stat-card super-stat-card"><span>Trial orgs with at least 1 ballot</span><strong>{data.trial_funnel.trial_orgs_with_ballot}</strong></div>
+              <div className="admin-stat-card super-stat-card"><span>Trial orgs with at least 1 vote</span><strong>{data.trial_funnel.trial_orgs_with_vote}</strong></div>
+              <div className="admin-stat-card super-stat-card"><span>Trial orgs converted to paid</span><strong>{data.trial_funnel.trial_orgs_converted_to_paid}</strong></div>
             </div>
           </section>
 
-          <section className="ui-grid-2">
-            <section className="ui-card">
-              <h3>Recent signups</h3>
+          <section className="admin-page-grid admin-page-grid-two">
+            <section className="ui-card admin-surface">
+              <div className="admin-surface-header">
+                <div>
+                  <p className="admin-surface-kicker">Recent Signups</p>
+                  <h3>Newest organizations entering the platform</h3>
+                </div>
+              </div>
               <div className="super-table-wrap">
                 <table>
                   <thead>
@@ -235,8 +264,13 @@ export function AdminSuperPage() {
               </div>
             </section>
 
-            <section className="ui-card">
-              <h3>Recent subscriptions / upgrades</h3>
+            <section className="ui-card admin-surface">
+              <div className="admin-surface-header">
+                <div>
+                  <p className="admin-surface-kicker">Billing Activity</p>
+                  <h3>Recent subscriptions and upgrades</h3>
+                </div>
+              </div>
               <div className="super-table-wrap">
                 <table>
                   <thead>
@@ -255,8 +289,13 @@ export function AdminSuperPage() {
               </div>
             </section>
 
-            <section className="ui-card">
-              <h3>Upcoming events (next 14 days)</h3>
+            <section className="ui-card admin-surface">
+              <div className="admin-surface-header">
+                <div>
+                  <p className="admin-surface-kicker">Upcoming Events</p>
+                  <h3>Meetings happening in the next 14 days</h3>
+                </div>
+              </div>
               <div className="super-table-wrap">
                 <table>
                   <thead>
@@ -276,8 +315,13 @@ export function AdminSuperPage() {
               </div>
             </section>
 
-            <section className="ui-card">
-              <h3>Top organizations by vote count</h3>
+            <section className="ui-card admin-surface">
+              <div className="admin-surface-header">
+                <div>
+                  <p className="admin-surface-kicker">Usage Leaders</p>
+                  <h3>Top organizations by vote count</h3>
+                </div>
+              </div>
               <div className="super-table-wrap">
                 <table>
                   <thead>
@@ -296,9 +340,14 @@ export function AdminSuperPage() {
             </section>
           </section>
 
-          <section className="ui-grid-2">
-            <section className="ui-card">
-              <h3>Billing issues queue</h3>
+          <section className="admin-page-grid admin-page-grid-two">
+            <section className="ui-card admin-surface">
+              <div className="admin-surface-header">
+                <div>
+                  <p className="admin-surface-kicker">Billing Issues Queue</p>
+                  <h3>Organizations needing subscription attention</h3>
+                </div>
+              </div>
               <div className="super-table-wrap">
                 <table>
                   <thead>
@@ -318,8 +367,13 @@ export function AdminSuperPage() {
               </div>
             </section>
 
-            <section className="ui-card">
-              <h3>Usage warnings</h3>
+            <section className="ui-card admin-surface">
+              <div className="admin-surface-header">
+                <div>
+                  <p className="admin-surface-kicker">Usage Warnings</p>
+                  <h3>Organizations approaching or exceeding allowance</h3>
+                </div>
+              </div>
               <div className="super-table-wrap">
                 <table>
                   <thead>

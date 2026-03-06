@@ -110,13 +110,36 @@ export function VotePage() {
   return (
     <main className="vote-page">
       <section className="vote-card">
-        <h1 className="vote-title">Cast Your Vote</h1>
-        <p className="vote-info">Current Vote: #{Math.max(1, ballot.vote_round || 1)}</p>
-        <p className="vote-info">Event: {ballot.event_name}</p>
-        <p className="vote-info">Ballot: {ballot.title}</p>
-        {ballot.incumbent_name && <p className="vote-info">Incumbent: {ballot.incumbent_name}</p>}
-        <p className="vote-info">Round Label: {roundLabel(ballot.vote_round)} vote</p>
-        <p className="vote-info">PIN Required: {ballot.requires_pin ? 'Yes' : 'No'}</p>
+        <div className="vote-card-header">
+          <p className="vote-kicker">MinistryVote</p>
+          <h1 className="vote-title">Cast Your Vote</h1>
+          <p className="muted">Secure digital voting for ministry governance.</p>
+        </div>
+
+        <div className="admin-pill-row" style={{ marginBottom: '1rem', justifyContent: 'center' }}>
+          <span className="admin-pill">Vote #{Math.max(1, ballot.vote_round || 1)}</span>
+          <span className="admin-pill">{roundLabel(ballot.vote_round)} vote</span>
+          <span className="admin-pill">PIN Required: {ballot.requires_pin ? 'Yes' : 'No'}</span>
+        </div>
+
+        <div className="admin-row-card" style={{ marginBottom: '1rem' }}>
+          <div className="admin-kv-grid">
+            <div className="admin-kv">
+              <span className="admin-kv-label">Event</span>
+              <span className="admin-kv-value">{ballot.event_name}</span>
+            </div>
+            <div className="admin-kv">
+              <span className="admin-kv-label">Ballot</span>
+              <span className="admin-kv-value">{ballot.title}</span>
+            </div>
+            {ballot.incumbent_name ? (
+              <div className="admin-kv">
+                <span className="admin-kv-label">Incumbent</span>
+                <span className="admin-kv-value">{ballot.incumbent_name}</span>
+              </div>
+            ) : null}
+          </div>
+        </div>
         {ballot.description && <p className="vote-description">{ballot.description}</p>}
 
         {confirmation ? (
@@ -129,12 +152,12 @@ export function VotePage() {
             <p className="muted">Please note your receipt before continuing.</p>
             <div className="inline">
               {canUseClipboard && (
-                <button type="button" className="secondary" onClick={onCopyReceipt}>
+                <button type="button" className="btn btn-secondary secondary" onClick={onCopyReceipt}>
                   Copy
                 </button>
               )}
               {copied && <span className="muted">Copied!</span>}
-              <button type="button" onClick={resetForNextVoter}>Done / Next voter</button>
+              <button type="button" className="btn btn-primary" onClick={resetForNextVoter}>Done / Next voter</button>
             </div>
             <p className="muted">Auto-resetting in {secondsRemaining}s...</p>
           </div>
@@ -175,6 +198,7 @@ export function VotePage() {
             </fieldset>
 
             <button
+              className="btn btn-primary"
               type="submit"
               disabled={submitting || isClosed || trialLimitReached || (ballot.requires_pin && pin.length !== 4) || !choiceId}
             >
