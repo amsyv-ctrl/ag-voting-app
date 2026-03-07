@@ -911,7 +911,7 @@ export function AdminEventPage() {
               </p>
             </div>
           )}
-          <div className="admin-kv-grid" style={{ marginTop: '1rem' }}>
+          <div className="admin-kv-grid space-top-lg">
             <div className="admin-kv">
               <span className="admin-kv-label">Date</span>
               <span className="admin-kv-value">{eventDate || 'Not set'}</span>
@@ -1052,12 +1052,12 @@ export function AdminEventPage() {
               />
               <button className="btn btn-primary" type="submit" disabled={!canOperateEvent}>Generate</button>
             </form>
-            <div className="form-actions" style={{ marginTop: '10px' }}>
+            <div className="form-actions space-top-sm">
               <button className="btn btn-secondary" type="button" onClick={onExportPins} disabled={!canOperateEvent || exportingPins}>
                 {exportingPins ? 'Exporting...' : 'Export PINs (CSV)'}
               </button>
             </div>
-            <form className="pin-disable-row" style={{ marginTop: '10px' }} onSubmit={onDisablePin}>
+            <form className="pin-disable-row space-top-sm" onSubmit={onDisablePin}>
               <label className="form-row" style={{ margin: 0 }}>
                 Disable PIN
                 <input
@@ -1076,7 +1076,7 @@ export function AdminEventPage() {
               </button>
             </form>
             <p className="helper-text">Use if a PIN is lost and needs to be reissued. You can generate additional PINs here at any time.</p>
-            <div className="form-actions" style={{ marginTop: '10px' }}>
+            <div className="form-actions space-top-sm">
               <button className="btn btn-danger danger-btn" onClick={onDeleteAllPins} disabled={!canOperateEvent}>Delete All PINs</button>
             </div>
             {pinsOutput.length > 0 && (
@@ -1088,7 +1088,7 @@ export function AdminEventPage() {
             <details>
               <summary>View event PINs ({activePins.length})</summary>
               {activePins.length === 0 ? (
-                <div className="admin-empty-note" style={{ marginTop: '0.75rem' }}>
+                <div className="admin-empty-note section-note">
                   <strong>No PINs yet</strong>
                   <p>Generate PINs here if any ballot in this event requires secure delegate access.</p>
                 </div>
@@ -1107,7 +1107,7 @@ export function AdminEventPage() {
                 </ul>
               )}
             </details>
-            <p className="helper-text" style={{ marginTop: '0.5rem' }}>Tip: disable a lost PIN, then generate a replacement PIN for that delegate.</p>
+            <p className="helper-text helper-text-spaced">Tip: disable a lost PIN, then generate a replacement PIN for that delegate.</p>
           </div>
         </div>
         </section>
@@ -1138,7 +1138,7 @@ export function AdminEventPage() {
           </div>
         </div>
 
-        <div className="ballot-item" style={{ marginBottom: '1rem' }}>
+        <div className="ballot-item">
           <div className="ballot-header">Ballot View</div>
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
             <button
@@ -1314,7 +1314,7 @@ export function AdminEventPage() {
             </span>
           </div>
           <p className="helper-text">Choose how a winner is determined and how results should appear while the ballot is open. Candidate/option ballots can be created fully here so they are ready to open right away.</p>
-          <form onSubmit={onCreateBallot} className="form-grid" style={{ marginTop: '15px' }}>
+          <form onSubmit={onCreateBallot} className="form-grid space-top-md">
             <label className="form-row">
               Ballot title
               <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ballot title" required disabled={!canOperateEvent} />
@@ -1458,7 +1458,7 @@ export function AdminEventPage() {
           <div className="ballot-header">
             <span>Verify Receipt</span>
           </div>
-          <form onSubmit={onVerifyReceipt} className="form-actions" style={{ marginTop: '0.75rem' }}>
+          <form onSubmit={onVerifyReceipt} className="form-actions section-note">
             <label className="form-row" style={{ flex: '1 1 320px', margin: 0 }}>
               Verify receipt
               <input
@@ -1475,11 +1475,11 @@ export function AdminEventPage() {
           {receiptLookupError && <p className="error">{receiptLookupError}</p>}
           {receiptLookupResult && (
             receiptLookupResult.found ? (
-              <p className="muted" style={{ marginTop: '0.6rem' }}>
+              <p className="muted space-top-sm">
                 Receipt found. Event: {receiptLookupResult.event_id} | Ballot: {receiptLookupResult.ballot_id} | Round: #{receiptLookupResult.round} | Recorded: {receiptLookupResult.created_at ? new Date(receiptLookupResult.created_at).toLocaleString() : 'N/A'}
               </p>
             ) : (
-              <p className="muted" style={{ marginTop: '0.6rem' }}>No matching receipt found in your organization scope.</p>
+              <p className="muted space-top-sm">No matching receipt found in your organization scope.</p>
             )
           )}
         </div>
@@ -1502,7 +1502,7 @@ export function AdminEventPage() {
           <button className="btn btn-secondary secondary-btn" onClick={onExportResults} disabled={exporting}>
             {exporting ? 'Exporting...' : 'Export All Voting Results (CSV)'}
           </button>
-          <p className="subtitle" style={{ marginTop: '10px' }}>
+          <p className="subtitle space-top-sm">
             JSON is the primary verifiable official record. CSV remains available as a convenience export.
           </p>
         </div>

@@ -759,9 +759,9 @@ export function AdminLoginPage() {
         <details className="event-archive-section">
           <summary>Archived events ({archivedEvents.length})</summary>
           {archivedEvents.length === 0 ? (
-            <p className="muted" style={{ marginTop: '0.6rem' }}>No archived events.</p>
+            <p className="muted space-top-sm">No archived events.</p>
           ) : (
-            <div className="event-list admin-event-list" style={{ marginTop: '0.9rem' }}>
+            <div className="event-list admin-event-list space-top-md">
               {archivedEvents.map((event) => (
                 <div className="event-item admin-event-row" key={event.id}>
                   <div className="event-item-main">
@@ -774,7 +774,7 @@ export function AdminLoginPage() {
                       <span>•</span>
                       <span>{event.date || 'No date set'}</span>
                     </div>
-                    <div className="muted" style={{ marginTop: '0.45rem' }}>
+                    <div className="muted space-top-xs">
                       Archived: {event.archived_at ? new Date(event.archived_at).toLocaleString() : 'N/A'}
                     </div>
                   </div>

@@ -257,7 +257,7 @@ export function AdminSuperOrgPage() {
                 </div>
               </div>
               <div className="super-table-wrap">
-                <table>
+                <table className="data-table">
                   <thead>
                     <tr><th>Action</th><th>Created</th><th>Event</th><th>Ballot</th></tr>
                   </thead>
@@ -294,7 +294,7 @@ export function AdminSuperOrgPage() {
                 </div>
               </div>
               <div className="super-table-wrap">
-                <table>
+                <table className="data-table">
                   <thead>
                     <tr><th>Event</th><th>Date</th><th>Location</th></tr>
                   </thead>

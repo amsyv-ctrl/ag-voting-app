@@ -970,6 +970,30 @@ label.form-row {
   line-height: 1.35;
 }
 
+.space-top-xs {
+  margin-top: 0.45rem !important;
+}
+
+.space-top-sm {
+  margin-top: 0.6rem !important;
+}
+
+.space-top-md {
+  margin-top: 0.8rem !important;
+}
+
+.space-top-lg {
+  margin-top: 1rem !important;
+}
+
+.helper-text-spaced {
+  margin-top: 0.5rem;
+}
+
+.section-note {
+  margin-top: 0.75rem;
+}
+
 .ballot-visibility-fieldset {
   margin: 0;
   padding: 1rem;
@@ -1071,7 +1095,6 @@ label.form-row {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  margin-top: 0.9rem;
   border: 1px solid var(--mv-border-soft);
   border-radius: 14px;
   overflow: hidden;

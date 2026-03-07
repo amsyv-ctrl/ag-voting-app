@@ -753,13 +753,13 @@ export function AdminBallotPage() {
               </div>
             )}
           </div>
-          <div className="admin-pill-row" style={{ marginTop: '0.75rem' }}>
+          <div className="admin-pill-row section-note">
             <span className="admin-pill">Vote #{ballot.vote_round} ({roundLabel(ballot.vote_round)})</span>
             <span className="admin-pill">PIN Required: {ballot.requires_pin ? 'Yes' : 'No'}</span>
             {ballot.incumbent_name ? <span className="admin-pill">Incumbent: {ballot.incumbent_name}</span> : null}
           </div>
           {orgAccess && (
-            <div className={`admin-status-banner ${isReadOnly ? 'admin-status-banner-error' : ''}`} style={{ marginTop: '1rem' }}>
+            <div className={`admin-status-banner ${isReadOnly ? 'admin-status-banner-error' : ''} space-top-lg`}>
               <p className={isReadOnly ? 'error' : 'muted'} style={{ margin: 0 }}>
                 {isReadOnly
                   ? 'Subscription inactive — this event is read-only. You can view/export, but cannot run new votes.'
@@ -887,7 +887,7 @@ export function AdminBallotPage() {
           <span className="accordion-icon">&#9654;</span>
         </button>
         <div className="accordion-content">
-          <form onSubmit={onSaveBallotDetails} className="form-grid" style={{ marginTop: '0.8rem' }}>
+          <form onSubmit={onSaveBallotDetails} className="form-grid space-top-md">
             <label className="inline" style={{ gridColumn: '1 / -1' }}>
               <input
                 type="checkbox"
@@ -1160,7 +1160,7 @@ export function AdminBallotPage() {
             Switch to Manual Count Mode only if there is an internet issue and voters are unable to vote from their phones.
             This is an emergency fallback, not part of the normal workflow.
           </p>
-          <div className="form-actions" style={{ marginBottom: '0.8rem' }}>
+          <div className="form-actions">
             <button
               className="btn btn-secondary secondary"
               onClick={switchToManualFallbackMode}

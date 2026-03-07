@@ -359,7 +359,7 @@ export function AdminOrgPage() {
                       : 'Paid active: full access enabled.'}
                 </p>
               </div>
-              <div className="admin-kv-grid" style={{ marginTop: '1rem' }}>
+              <div className="admin-kv-grid space-top-lg">
                 <div className="admin-kv">
                   <span className="admin-kv-label">Role</span>
                   <span className="admin-kv-value">{role}</span>
@@ -414,7 +414,7 @@ export function AdminOrgPage() {
                 <span className="admin-stat-caption">before overage</span>
               </article>
             </div>
-            <div style={{ marginTop: '1rem' }}>
+            <div className="space-top-lg">
               {usage.overage_votes > 0 ? (
                 <p className="error">
                   <strong>Overage:</strong> {usage.overage_votes} votes (${(usage.estimated_overage_cents / 100).toFixed(2)})
@@ -442,7 +442,7 @@ export function AdminOrgPage() {
             <p className="muted">Built for church governance — not generic polling.</p>
           </div>
         </div>
-        <div className="subscription-grid" style={{ marginTop: '0.2rem' }}>
+        <div className="subscription-grid">
           <article className="ui-card subscription-card">
             <h3 style={{ marginTop: 0 }}>Starter</h3>
             <p className="muted">Best for churches and smaller organizations</p>
@@ -487,13 +487,13 @@ export function AdminOrgPage() {
           </article>
         </div>
         {showManageSubscription && (
-          <div className="form-actions" style={{ marginTop: '0.8rem' }}>
+          <div className="form-actions space-top-md">
             <button className="btn btn-secondary" type="button" onClick={onManageSubscription} disabled={portalLoading}>
               {portalLoading ? 'Opening portal...' : 'Manage subscription'}
             </button>
           </div>
         )}
-        <p className="muted" style={{ marginTop: '0.6rem' }}>
+        <p className="muted space-top-sm">
           You can manage or cancel your subscription anytime. If you cancel, access remains active until the end of your billing period.
         </p>
       </section>

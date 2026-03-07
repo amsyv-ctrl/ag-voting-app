@@ -272,7 +272,7 @@ export function AdminSuperPage() {
                 </div>
               </div>
               <div className="super-table-wrap">
-                <table>
+                <table className="data-table">
                   <thead>
                     <tr><th>Org</th><th>Created</th><th>Mode</th><th>Type</th></tr>
                   </thead>
@@ -309,7 +309,7 @@ export function AdminSuperPage() {
                 </div>
               </div>
               <div className="super-table-wrap">
-                <table>
+                <table className="data-table">
                   <thead>
                     <tr><th>Org</th><th>Status</th><th>Current period end</th></tr>
                   </thead>
@@ -345,7 +345,7 @@ export function AdminSuperPage() {
                 </div>
               </div>
               <div className="super-table-wrap">
-                <table>
+                <table className="data-table">
                   <thead>
                     <tr><th>Org</th><th>Event</th><th>Date</th><th>Location</th></tr>
                   </thead>
@@ -382,7 +382,7 @@ export function AdminSuperPage() {
                 </div>
               </div>
               <div className="super-table-wrap">
-                <table>
+                <table className="data-table">
                   <thead>
                     <tr><th>Org</th><th>Total votes cast</th></tr>
                   </thead>
@@ -419,7 +419,7 @@ export function AdminSuperPage() {
                 </div>
               </div>
               <div className="super-table-wrap">
-                <table>
+                <table className="data-table">
                   <thead>
                     <tr><th>Org</th><th>Issue</th><th>Status</th><th>Period end</th></tr>
                   </thead>
@@ -456,7 +456,7 @@ export function AdminSuperPage() {
                 </div>
               </div>
               <div className="super-table-wrap">
-                <table>
+                <table className="data-table">
                   <thead>
                     <tr><th>Org</th><th>Plan</th><th>Usage</th><th>Overage</th></tr>
                   </thead>
