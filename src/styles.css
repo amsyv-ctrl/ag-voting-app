@@ -2407,6 +2407,13 @@ label.form-row {
   box-shadow: 0 8px 20px rgba(16, 33, 59, 0.08);
 }
 
+.admin-dark-card.ballot-admin-card {
+  background: var(--mv-surface-strong);
+  border-color: rgba(96, 165, 250, 0.16);
+  color: var(--mv-text-inverse);
+  box-shadow: 0 18px 36px rgba(2, 6, 23, 0.22);
+}
+
 .ballot-admin-hero h1,
 .ballot-admin-hero h2 {
   margin-bottom: 0.35rem;
@@ -2482,12 +2489,26 @@ label.form-row {
 
 .ballot-admin-description {
   margin: 0.8rem 0 0.3rem 0;
+  color: var(--mv-text-body);
 }
 
 .ballot-admin-url {
   word-break: break-all;
   margin: 0.35rem 0;
   color: #2c4266;
+}
+
+.admin-dark-card .ballot-admin-description {
+  color: var(--mv-text-inverse);
+}
+
+.admin-dark-card .ballot-admin-url,
+.admin-dark-card .ballot-admin-url a {
+  color: #bfdbfe;
+}
+
+.admin-dark-card .ballot-admin-url a:hover {
+  color: #dbeafe;
 }
 
 .ballot-admin-live-panel {
