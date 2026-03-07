@@ -152,6 +152,7 @@ export function AdminEventPage() {
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [createdBallotId, setCreatedBallotId] = useState<string | null>(null)
   const [orgAccess, setOrgAccess] = useState<OrgAccessRow | null>(null)
   const [eventArchivedAt, setEventArchivedAt] = useState<string | null>(null)
   const [ballotIndicators, setBallotIndicators] = useState<Record<string, BallotIndicator>>({})
@@ -326,6 +327,7 @@ export function AdminEventPage() {
     }
     setError(null)
     setNotice(null)
+    setCreatedBallotId(null)
     if (!resultsVisibility) {
       setError('Choose how results should display while the ballot is open.')
       jumpToCreateBallot()
@@ -402,6 +404,7 @@ export function AdminEventPage() {
       { id: createDraftChoice(), label: '' },
       { id: createDraftChoice(), label: '' }
     ])
+    setCreatedBallotId(data.id)
     setNotice('Ballot created and ready for review or immediate opening.')
     await load()
   }
@@ -965,7 +968,18 @@ export function AdminEventPage() {
       </section>
 
       {error && <p className="error">{error}</p>}
-      {notice && <p className="winner">{notice}</p>}
+      {notice && (
+        <div className="success-box section-note">
+          <p className="winner" style={{ margin: 0 }}>{notice}</p>
+          {createdBallotId ? (
+            <div className="form-actions helper-text-spaced">
+              <Link to={`/admin/ballots/${createdBallotId}`} className="btn btn-primary">
+                Manage this ballot now
+              </Link>
+            </div>
+          ) : null}
+        </div>
+      )}
 
       <section className="admin-page-grid admin-page-grid-two">
         <section className="ui-card admin-surface">
