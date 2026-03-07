@@ -1025,7 +1025,7 @@ export function AdminEventPage() {
               <p className="muted">Generate, export, review, and disable event PINs without leaving the event dashboard.</p>
             </div>
           </div>
-        <div className={`accordion ${pinsOpen ? 'active' : ''}`}>
+        <div id="manage-pins" className={`accordion ${pinsOpen ? 'active' : ''}`}>
           <button type="button" className="accordion-header" onClick={() => setPinsOpen((v) => !v)}>
             <span className="section-title-row">
               Manage PINs
@@ -1313,7 +1313,7 @@ export function AdminEventPage() {
               <InfoTip text="Ballots are individual decisions or elections. Create as many as needed for this event." />
             </span>
           </div>
-          <p className="helper-text">Choose how a winner is determined and how results should appear while the ballot is open. Candidate/option ballots can be created fully here so they are ready to open right away.</p>
+          <p className="helper-text create-ballot-intro">Choose how a winner is determined and how results should appear while the ballot is open. Candidate/option ballots can be created fully here so they are ready to open right away.</p>
           <form onSubmit={onCreateBallot} className="form-grid space-top-md">
             <label className="form-row">
               Ballot title
@@ -1349,7 +1349,7 @@ export function AdminEventPage() {
             </label>
             <fieldset className="form-row form-row-full ballot-visibility-fieldset">
               <legend>When this ballot opens, how should results be displayed?</legend>
-              <label className="ballot-visibility-option">
+              <label className={`ballot-visibility-option ${resultsVisibility === 'LIVE' ? 'is-selected' : ''}`}>
                 <input
                   type="radio"
                   name="create-results-visibility"
@@ -1363,7 +1363,7 @@ export function AdminEventPage() {
                   <small>Use this when the room should watch totals update in real time.</small>
                 </span>
               </label>
-              <label className="ballot-visibility-option">
+              <label className={`ballot-visibility-option ${resultsVisibility === 'CLOSED_ONLY' ? 'is-selected' : ''}`}>
                 <input
                   type="radio"
                   name="create-results-visibility"
@@ -1433,10 +1433,34 @@ export function AdminEventPage() {
             ) : (
               <p className="helper-text form-row-full">This ballot will be created with the standard Yes and No options automatically.</p>
             )}
-            <label className="checkbox-label form-row-full">
-              <input type="checkbox" checked={requiresPin} onChange={(e) => setRequiresPin(e.target.checked)} disabled={!canOperateEvent} />
-              Require PIN for this ballot
-            </label>
+            <div className="form-row-full ballot-pin-card">
+              <label className="checkbox-label ballot-pin-toggle">
+                <input type="checkbox" checked={requiresPin} onChange={(e) => setRequiresPin(e.target.checked)} disabled={!canOperateEvent} />
+                <span>
+                  <strong>Require PIN for this ballot</strong>
+                  <small>Require voters to enter a valid event PIN before submitting this ballot.</small>
+                </span>
+              </label>
+              {requiresPin ? (
+                <div className="admin-status-banner ballot-pin-guidance">
+                  <p>
+                    PIN voting is enabled for this ballot. Before opening voting, make sure event PINs have been generated and distributed to eligible voters.
+                  </p>
+                  <div className="form-actions">
+                    <button
+                      type="button"
+                      className="btn btn-secondary secondary-btn"
+                      onClick={() => {
+                        setPinsOpen(true)
+                        document.getElementById('manage-pins')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                      }}
+                    >
+                      Manage event PINs
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
             <div className="form-actions form-row-full">
               <button className="btn btn-primary" type="submit" disabled={!canOperateEvent}>Create Ballot</button>
             </div>
