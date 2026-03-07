@@ -1353,6 +1353,26 @@ label.form-row {
   color: var(--mv-danger-text);
 }
 
+.admin-empty-note {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem 1.05rem;
+  border-radius: 16px;
+  border: 1px dashed var(--mv-border-soft);
+  background: rgba(248, 251, 255, 0.92);
+}
+
+.admin-empty-note strong {
+  color: var(--mv-text-strong);
+  font-size: 0.98rem;
+}
+
+.admin-empty-note p {
+  margin: 0;
+  color: var(--mv-text-muted);
+  line-height: 1.55;
+}
+
 .admin-page-grid {
   display: grid;
   gap: 1rem;
@@ -1675,6 +1695,73 @@ label.form-row {
   .admin-brand-tagline {
     display: none;
   }
+
+  .admin-page-grid-two,
+  .admin-page-grid-three,
+  .ui-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .super-summary-grid,
+  .admin-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .super-chart-row {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .super-chart-legend {
+    width: 100%;
+  }
+
+  .super-table-wrap {
+    border-radius: 14px;
+  }
+
+  .super-table-wrap table,
+  .super-table-wrap thead,
+  .super-table-wrap tbody,
+  .super-table-wrap tr,
+  .super-table-wrap th,
+  .super-table-wrap td {
+    display: block;
+    width: 100%;
+  }
+
+  .super-table-wrap thead {
+    display: none;
+  }
+
+  .super-table-wrap tbody {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .super-table-wrap tr {
+    border: 1px solid var(--mv-border-soft);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.92);
+    padding: 0.2rem 0;
+  }
+
+  .super-table-wrap td {
+    border-bottom: 0;
+    padding: 0.45rem 0.8rem;
+  }
+
+  .super-table-wrap td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 0.2rem;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--mv-text-subtle);
+  }
 }
 
 .event-item-main {
@@ -1984,6 +2071,36 @@ label.form-row {
 
 .super-table-wrap td {
   color: var(--mv-text-body);
+  line-height: 1.5;
+  vertical-align: top;
+}
+
+.super-table-wrap tbody tr:hover {
+  background: rgba(37, 99, 235, 0.035);
+}
+
+.super-table-wrap td:first-child,
+.super-table-wrap th:first-child {
+  padding-left: 0.9rem;
+}
+
+.super-table-wrap td:last-child,
+.super-table-wrap th:last-child {
+  padding-right: 0.9rem;
+}
+
+.super-table-empty {
+  padding: 1rem 1.05rem;
+}
+
+.super-table-empty p {
+  margin: 0;
+}
+
+.super-table-empty strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--mv-text-strong);
 }
 
 .stripe-modal-backdrop {

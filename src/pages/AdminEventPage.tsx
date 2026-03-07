@@ -1011,7 +1011,10 @@ export function AdminEventPage() {
             <details>
               <summary>View event PINs ({activePins.length})</summary>
               {activePins.length === 0 ? (
-                <p>No PINs yet.</p>
+                <div className="admin-empty-note" style={{ marginTop: '0.75rem' }}>
+                  <strong>No PINs yet</strong>
+                  <p>Generate PINs here if any ballot in this event requires secure delegate access.</p>
+                </div>
               ) : (
                 <ul className="pin-list">
                   {activePins.map((pin) => (
@@ -1080,8 +1083,9 @@ export function AdminEventPage() {
 
         {ballotsView === 'ACTIVE' ? (
           ballots.length === 0 ? (
-            <div className="ballot-item">
-              <p className="muted">No active ballots yet.</p>
+            <div className="ballot-item admin-empty-note">
+              <strong>No active ballots yet</strong>
+              <p>Create your first ballot for this event to begin managing vote and display links.</p>
             </div>
           ) : (
             ballots.map((ballot) => {
@@ -1121,8 +1125,9 @@ export function AdminEventPage() {
           )
         ) : (
           archivedBallots.length === 0 ? (
-            <div className="ballot-item">
-              <p className="muted">No archived ballots.</p>
+            <div className="ballot-item admin-empty-note">
+              <strong>No archived ballots</strong>
+              <p>Archived ballots will appear here so you can restore them or review their last status.</p>
             </div>
           ) : (
             archivedBallots.map((ballot) => (

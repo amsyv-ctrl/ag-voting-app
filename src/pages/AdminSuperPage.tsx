@@ -22,6 +22,21 @@ function formatDateOnly(value: string | null) {
   return date.toLocaleDateString()
 }
 
+function EmptyState({
+  title,
+  copy
+}: {
+  title: string
+  copy: string
+}) {
+  return (
+    <div className="admin-empty-note">
+      <strong>{title}</strong>
+      <p>{copy}</p>
+    </div>
+  )
+}
+
 function DonutChart({
   title,
   data
@@ -66,7 +81,10 @@ function DonutChart({
         </div>
         <div className="super-chart-legend">
           {entries.length === 0 ? (
-            <p className="muted">No data yet.</p>
+            <EmptyState
+              title="No distribution data yet"
+              copy="This chart will populate once organizations begin using this part of the platform."
+            />
           ) : (
             entries.map(([label, value], index) => (
               <div className="super-legend-item" key={label}>
@@ -102,7 +120,10 @@ function BarChart({
       </div>
       <div className="super-bar-chart">
         {entries.length === 0 ? (
-          <p className="muted">No data yet.</p>
+          <EmptyState
+            title="No usage bucket data yet"
+            copy="Estimated voting size trends will show here as organizations complete profile setup."
+          />
         ) : (
           entries.map(([label, value]) => (
             <div className="super-bar-row" key={label}>
@@ -170,7 +191,12 @@ export function AdminSuperPage() {
   if (loading) {
     return (
       <AdminLayout onSignOut={onSignOut}>
-        <section className="ui-card admin-surface"><p>Loading dashboard...</p></section>
+        <section className="ui-card admin-surface">
+          <EmptyState
+            title="Loading dashboard"
+            copy="Pulling platform-wide metrics, organization activity, and billing indicators."
+          />
+        </section>
       </AdminLayout>
     )
   }
@@ -251,14 +277,25 @@ export function AdminSuperPage() {
                     <tr><th>Org</th><th>Created</th><th>Mode</th><th>Type</th></tr>
                   </thead>
                   <tbody>
-                    {data.recent_signups.map((row) => (
-                      <tr key={`${row.org_name}-${row.created_at}`}>
-                        <td><Link to={`/admin/super/org/${row.org_id}`}>{row.org_name}</Link></td>
-                        <td>{formatDate(row.created_at)}</td>
-                        <td>{row.mode}</td>
-                        <td>{row.organization_type || 'N/A'}</td>
+                    {data.recent_signups.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="super-table-empty">
+                          <EmptyState
+                            title="No recent signups"
+                            copy="New organizations will appear here as they register and bootstrap their first workspace."
+                          />
+                        </td>
                       </tr>
-                    ))}
+                    ) : (
+                      data.recent_signups.map((row) => (
+                        <tr key={`${row.org_name}-${row.created_at}`}>
+                          <td data-label="Org"><Link to={`/admin/super/org/${row.org_id}`}>{row.org_name}</Link></td>
+                          <td data-label="Created">{formatDate(row.created_at)}</td>
+                          <td data-label="Mode">{row.mode}</td>
+                          <td data-label="Type">{row.organization_type || 'N/A'}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -277,13 +314,24 @@ export function AdminSuperPage() {
                     <tr><th>Org</th><th>Status</th><th>Current period end</th></tr>
                   </thead>
                   <tbody>
-                    {data.recent_subscriptions.map((row) => (
-                      <tr key={`${row.org_name}-${row.current_period_end}`}>
-                        <td><Link to={`/admin/super/org/${row.org_id}`}>{row.org_name}</Link></td>
-                        <td>{row.subscription_status || 'N/A'}</td>
-                        <td>{formatDate(row.current_period_end)}</td>
+                    {data.recent_subscriptions.length === 0 ? (
+                      <tr>
+                        <td colSpan={3} className="super-table-empty">
+                          <EmptyState
+                            title="No recent subscription activity"
+                            copy="Upgrades, renewals, and paid activations will appear here when billing activity occurs."
+                          />
+                        </td>
                       </tr>
-                    ))}
+                    ) : (
+                      data.recent_subscriptions.map((row) => (
+                        <tr key={`${row.org_name}-${row.current_period_end}`}>
+                          <td data-label="Org"><Link to={`/admin/super/org/${row.org_id}`}>{row.org_name}</Link></td>
+                          <td data-label="Status">{row.subscription_status || 'N/A'}</td>
+                          <td data-label="Current period end">{formatDate(row.current_period_end)}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -302,14 +350,25 @@ export function AdminSuperPage() {
                     <tr><th>Org</th><th>Event</th><th>Date</th><th>Location</th></tr>
                   </thead>
                   <tbody>
-                    {data.upcoming_events.map((row) => (
-                      <tr key={`${row.org_name}-${row.event_name}-${row.date}`}>
-                        <td>{row.org_name}</td>
-                        <td>{row.event_name}</td>
-                        <td>{formatDateOnly(row.date)}</td>
-                        <td>{row.location || 'N/A'}</td>
+                    {data.upcoming_events.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="super-table-empty">
+                          <EmptyState
+                            title="No upcoming events"
+                            copy="Upcoming meetings scheduled within the next 14 days will show here."
+                          />
+                        </td>
                       </tr>
-                    ))}
+                    ) : (
+                      data.upcoming_events.map((row) => (
+                        <tr key={`${row.org_name}-${row.event_name}-${row.date}`}>
+                          <td data-label="Org">{row.org_name}</td>
+                          <td data-label="Event">{row.event_name}</td>
+                          <td data-label="Date">{formatDateOnly(row.date)}</td>
+                          <td data-label="Location">{row.location || 'N/A'}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -328,12 +387,23 @@ export function AdminSuperPage() {
                     <tr><th>Org</th><th>Total votes cast</th></tr>
                   </thead>
                   <tbody>
-                    {data.top_organizations_by_vote_count.map((row) => (
-                      <tr key={row.org_name}>
-                        <td><Link to={`/admin/super/org/${row.org_id}`}>{row.org_name}</Link></td>
-                        <td>{row.total_votes_cast}</td>
+                    {data.top_organizations_by_vote_count.length === 0 ? (
+                      <tr>
+                        <td colSpan={2} className="super-table-empty">
+                          <EmptyState
+                            title="No vote activity yet"
+                            copy="Organizations with recorded vote volume will be ranked here."
+                          />
+                        </td>
                       </tr>
-                    ))}
+                    ) : (
+                      data.top_organizations_by_vote_count.map((row) => (
+                        <tr key={row.org_name}>
+                          <td data-label="Org"><Link to={`/admin/super/org/${row.org_id}`}>{row.org_name}</Link></td>
+                          <td data-label="Total votes cast">{row.total_votes_cast}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -354,14 +424,25 @@ export function AdminSuperPage() {
                     <tr><th>Org</th><th>Issue</th><th>Status</th><th>Period end</th></tr>
                   </thead>
                   <tbody>
-                    {data.billing_issues.map((row) => (
-                      <tr key={`${row.org_id}-${row.issue}`}>
-                        <td><Link to={`/admin/super/org/${row.org_id}`}>{row.org_name}</Link></td>
-                        <td>{row.issue}</td>
-                        <td>{row.subscription_status || 'N/A'}</td>
-                        <td>{formatDate(row.current_period_end)}</td>
+                    {data.billing_issues.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="super-table-empty">
+                          <EmptyState
+                            title="No billing issues"
+                            copy="Past-due, canceled, and inconsistent billing records will surface here when action is needed."
+                          />
+                        </td>
                       </tr>
-                    ))}
+                    ) : (
+                      data.billing_issues.map((row) => (
+                        <tr key={`${row.org_id}-${row.issue}`}>
+                          <td data-label="Org"><Link to={`/admin/super/org/${row.org_id}`}>{row.org_name}</Link></td>
+                          <td data-label="Issue">{row.issue}</td>
+                          <td data-label="Status">{row.subscription_status || 'N/A'}</td>
+                          <td data-label="Period end">{formatDate(row.current_period_end)}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -380,14 +461,25 @@ export function AdminSuperPage() {
                     <tr><th>Org</th><th>Plan</th><th>Usage</th><th>Overage</th></tr>
                   </thead>
                   <tbody>
-                    {data.usage_warnings.map((row) => (
-                      <tr key={row.org_id}>
-                        <td><Link to={`/admin/super/org/${row.org_id}`}>{row.org_name}</Link></td>
-                        <td>{row.plan_name}</td>
-                        <td>{row.votes_used} / {row.allowance}</td>
-                        <td>{row.overage_votes > 0 ? `${row.overage_votes} ($${(row.estimated_overage_cents / 100).toFixed(2)})` : row.warning_80 ? 'Above 80%' : '—'}</td>
+                    {data.usage_warnings.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="super-table-empty">
+                          <EmptyState
+                            title="No usage warnings"
+                            copy="Organizations approaching limits or entering overage will appear here."
+                          />
+                        </td>
                       </tr>
-                    ))}
+                    ) : (
+                      data.usage_warnings.map((row) => (
+                        <tr key={row.org_id}>
+                          <td data-label="Org"><Link to={`/admin/super/org/${row.org_id}`}>{row.org_name}</Link></td>
+                          <td data-label="Plan">{row.plan_name}</td>
+                          <td data-label="Usage">{row.votes_used} / {row.allowance}</td>
+                          <td data-label="Overage">{row.overage_votes > 0 ? `${row.overage_votes} ($${(row.estimated_overage_cents / 100).toFixed(2)})` : row.warning_80 ? 'Above 80%' : '—'}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>

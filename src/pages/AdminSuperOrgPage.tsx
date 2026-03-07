@@ -15,6 +15,21 @@ function formatDate(value: string | null) {
   return date.toLocaleString()
 }
 
+function EmptyState({
+  title,
+  copy
+}: {
+  title: string
+  copy: string
+}) {
+  return (
+    <div className="admin-empty-note">
+      <strong>{title}</strong>
+      <p>{copy}</p>
+    </div>
+  )
+}
+
 export function AdminSuperOrgPage() {
   const navigate = useNavigate()
   const { orgId } = useParams()
@@ -100,7 +115,12 @@ export function AdminSuperOrgPage() {
   if (loading) {
     return (
       <AdminLayout onSignOut={onSignOut}>
-        <section className="ui-card admin-surface"><p>Loading organization...</p></section>
+        <section className="ui-card admin-surface">
+          <EmptyState
+            title="Loading organization"
+            copy="Pulling subscription state, usage, and recent activity for this workspace."
+          />
+        </section>
       </AdminLayout>
     )
   }
@@ -242,14 +262,25 @@ export function AdminSuperOrgPage() {
                     <tr><th>Action</th><th>Created</th><th>Event</th><th>Ballot</th></tr>
                   </thead>
                   <tbody>
-                    {data.recent_activity.map((row, index) => (
-                      <tr key={`${row.action}-${row.created_at}-${index}`}>
-                        <td>{row.action}</td>
-                        <td>{formatDate(row.created_at)}</td>
-                        <td>{row.event_id || '—'}</td>
-                        <td>{row.ballot_id || '—'}</td>
+                    {data.recent_activity.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="super-table-empty">
+                          <EmptyState
+                            title="No recent activity"
+                            copy="Audit activity for this organization will appear here once operators begin using the platform."
+                          />
+                        </td>
                       </tr>
-                    ))}
+                    ) : (
+                      data.recent_activity.map((row, index) => (
+                        <tr key={`${row.action}-${row.created_at}-${index}`}>
+                          <td data-label="Action">{row.action}</td>
+                          <td data-label="Created">{formatDate(row.created_at)}</td>
+                          <td data-label="Event">{row.event_id || '—'}</td>
+                          <td data-label="Ballot">{row.ballot_id || '—'}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -268,13 +299,24 @@ export function AdminSuperOrgPage() {
                     <tr><th>Event</th><th>Date</th><th>Location</th></tr>
                   </thead>
                   <tbody>
-                    {data.upcoming_events.map((row) => (
-                      <tr key={row.id}>
-                        <td>{row.name}</td>
-                        <td>{formatDate(row.date)}</td>
-                        <td>{row.location || 'N/A'}</td>
+                    {data.upcoming_events.length === 0 ? (
+                      <tr>
+                        <td colSpan={3} className="super-table-empty">
+                          <EmptyState
+                            title="No upcoming events"
+                            copy="Scheduled events for this organization will appear here once dates are added."
+                          />
+                        </td>
                       </tr>
-                    ))}
+                    ) : (
+                      data.upcoming_events.map((row) => (
+                        <tr key={row.id}>
+                          <td data-label="Event">{row.name}</td>
+                          <td data-label="Date">{formatDate(row.date)}</td>
+                          <td data-label="Location">{row.location || 'N/A'}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
