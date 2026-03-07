@@ -38,39 +38,52 @@ export function DemoDisplayPage() {
 
   return (
     <main className="display-page">
-      <DemoBanner />
-      <section className="display-main">
-        <h1 className="display-event">MinistryVote Demo</h1>
-        <h2 className="display-ballot-title">{demoBallot.title}</h2>
-        <p className="display-status">Incumbent: {demoBallot.incumbentName}</p>
-        <p className="display-status">{demoMajorityLabel(demoBallot.majorityRule)}</p>
-        <p className="display-status">Total Votes: {state.total}</p>
-        {winner ? (
-          <div className="display-winner-wrap">
-            <p className="display-winner-kicker">Demo Winner (threshold met)</p>
-            <p className="display-winner-name">{winner.label}</p>
-          </div>
-        ) : (
-          <p className="display-threshold">
-            {demoBallot.majorityRule === 'TWO_THIRDS'
-              ? 'Winner requires 2/3 majority; otherwise runoff required.'
-              : 'Winner requires simple majority; otherwise runoff required.'}
-          </p>
-        )}
-        <div className="display-results">
-          {rows.map((row) => (
-            <div key={row.id} className="display-bar-container">
-              <div className="display-bar-label">
-                <span>{row.label}</span>
-                <span>{row.votes} votes ({(row.pct * 100).toFixed(1)}%)</span>
-              </div>
-              <div className="display-bar-track">
-                <div className="display-bar-fill" style={{ width: `${row.pct * 100}%` }} />
-              </div>
+      <div className="demo-stage-shell">
+        <DemoBanner />
+        <section className="display-grid">
+          <section className="display-main">
+            <p className="vote-kicker">MinistryVote Demo Display</p>
+            <h1 className="display-event">MinistryVote Demo</h1>
+            <h2 className="display-ballot-title">{demoBallot.title}</h2>
+            <div className="display-meta-grid">
+              <p className="display-meta-pill">Incumbent: {demoBallot.incumbentName}</p>
+              <p className="display-meta-pill">{demoMajorityLabel(demoBallot.majorityRule)}</p>
+              <p className="display-meta-pill">Total Votes: {state.total}</p>
             </div>
-          ))}
-        </div>
-      </section>
+            {winner ? (
+              <div className="display-winner-wrap">
+                <p className="display-winner-kicker">Demo Winner (threshold met)</p>
+                <p className="display-winner-name">{winner.label}</p>
+              </div>
+            ) : (
+              <p className="display-threshold">
+                {demoBallot.majorityRule === 'TWO_THIRDS'
+                  ? 'Winner requires 2/3 majority; otherwise runoff required.'
+                  : 'Winner requires simple majority; otherwise runoff required.'}
+              </p>
+            )}
+            <div className="display-results">
+              {rows.map((row) => (
+                <div key={row.id} className="display-bar-container">
+                  <div className="display-bar-label">
+                    <span>{row.label}</span>
+                    <span>{row.votes} votes ({(row.pct * 100).toFixed(1)}%)</span>
+                  </div>
+                  <div className="display-bar-track">
+                    <div className="display-bar-fill" style={{ width: `${row.pct * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="display-qr-section">
+            <h2>Demo Mode</h2>
+            <p className="display-hidden-note">Votes are simulated in-browser and are not stored.</p>
+            <p className="display-vote-url">Use the Demo Vote screen to submit sample votes.</p>
+          </section>
+        </section>
+      </div>
     </main>
   )
 }

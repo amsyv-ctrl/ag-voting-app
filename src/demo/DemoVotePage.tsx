@@ -30,13 +30,19 @@ export function DemoVotePage() {
 
   return (
     <main className="vote-page">
-      <DemoBanner />
-      <section className="vote-card">
-        <h1 className="vote-title">{demoBallot.title}</h1>
-        <p className="vote-description">{demoBallot.description}</p>
-        <p className="vote-info">Incumbent: {demoBallot.incumbentName}</p>
-        <p className="vote-info">Threshold: {demoMajorityLabel(demoBallot.majorityRule)}</p>
-        {confirmation ? (
+      <div className="demo-stage-shell">
+        <DemoBanner />
+        <section className="vote-card">
+          <div className="vote-card-header">
+            <p className="vote-kicker">MinistryVote Demo Vote</p>
+            <h1 className="vote-title">{demoBallot.title}</h1>
+            <p className="muted">{demoBallot.description}</p>
+          </div>
+          <div className="admin-pill-row" style={{ marginBottom: '1rem', justifyContent: 'center' }}>
+            <span className="admin-pill">Incumbent: {demoBallot.incumbentName}</span>
+            <span className="admin-pill">{demoMajorityLabel(demoBallot.majorityRule)}</span>
+          </div>
+          {confirmation ? (
           <div className="success-box">
             <h2>Vote received</h2>
             <p>Resetting for the next voter...</p>
@@ -58,12 +64,13 @@ export function DemoVotePage() {
                 </label>
               ))}
             </fieldset>
-            <button type="submit" disabled={submitting || !choiceId}>
+            <button className="btn btn-primary" type="submit" disabled={submitting || !choiceId}>
               {submitting ? 'Submitting...' : 'Submit Demo Vote'}
             </button>
           </form>
         )}
-      </section>
+        </section>
+      </div>
     </main>
   )
 }
