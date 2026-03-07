@@ -15,6 +15,7 @@ type BallotRow = {
   incumbent_name: string | null
   slug: string
   status: 'DRAFT' | 'OPEN' | 'CLOSED' | 'MANUAL_FALLBACK'
+  results_visibility: 'LIVE' | 'CLOSED_ONLY' | null
   requires_pin: boolean
   created_at: string
   deleted_at?: string | null
@@ -109,6 +110,10 @@ function slugify(input: string) {
     .replace(/(^-|-$)/g, '')
 }
 
+function createDraftChoice() {
+  return `${Math.random().toString(36).slice(2, 8)}-${Date.now().toString(36)}`
+}
+
 export function AdminEventPage() {
   const { id } = useParams()
   const eventId = id as string
@@ -128,7 +133,12 @@ export function AdminEventPage() {
   const [incumbentName, setIncumbentName] = useState('')
   const [majorityRule, setMajorityRule] = useState<'SIMPLE' | 'TWO_THIRDS'>('SIMPLE')
   const [ballotType, setBallotType] = useState<'YES_NO' | 'PICK_ONE'>('PICK_ONE')
+  const [resultsVisibility, setResultsVisibility] = useState<'' | 'LIVE' | 'CLOSED_ONLY'>('')
   const [requiresPin, setRequiresPin] = useState(true)
+  const [draftChoices, setDraftChoices] = useState<Array<{ id: string; label: string }>>([
+    { id: createDraftChoice(), label: '' },
+    { id: createDraftChoice(), label: '' }
+  ])
   const [pinCount, setPinCount] = useState(100)
   const [pinsOutput, setPinsOutput] = useState<string[]>([])
   const [pinToDisable, setPinToDisable] = useState('')
@@ -193,7 +203,7 @@ export function AdminEventPage() {
 
     const { data: ballotData, error: ballotError } = await supabase
       .from('ballots')
-      .select('id,title,incumbent_name,slug,status,requires_pin,created_at')
+      .select('id,title,incumbent_name,slug,status,results_visibility,requires_pin,created_at')
       .eq('event_id', eventId)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
@@ -208,7 +218,7 @@ export function AdminEventPage() {
 
     const { data: archivedData, error: archivedError } = await supabase
       .from('ballots')
-      .select('id,title,incumbent_name,slug,status,requires_pin,created_at,deleted_at,deleted_by')
+      .select('id,title,incumbent_name,slug,status,results_visibility,requires_pin,created_at,deleted_at,deleted_by')
       .eq('event_id', eventId)
       .not('deleted_at', 'is', null)
       .order('deleted_at', { ascending: false })
@@ -315,6 +325,31 @@ export function AdminEventPage() {
       return
     }
     setError(null)
+    setNotice(null)
+    if (!resultsVisibility) {
+      setError('Choose how results should display while the ballot is open.')
+      jumpToCreateBallot()
+      return
+    }
+
+    const normalizedChoices = draftChoices
+      .map((choice) => choice.label.trim())
+      .filter(Boolean)
+
+    if (ballotType === 'PICK_ONE') {
+      if (normalizedChoices.length < 2) {
+        setError('Add at least two candidate/option choices before creating this ballot.')
+        jumpToCreateBallot()
+        return
+      }
+
+      if (new Set(normalizedChoices.map((choice) => choice.toLowerCase())).size !== normalizedChoices.length) {
+        setError('Each candidate/option choice must be unique.')
+        jumpToCreateBallot()
+        return
+      }
+    }
+
     const slug = `${slugify(title)}-${Math.random().toString(36).slice(2, 8)}`
 
     const { data, error: createError } = await supabase
@@ -327,6 +362,7 @@ export function AdminEventPage() {
         slug,
         ballot_type: ballotType,
         majority_rule: majorityRule,
+        results_visibility: resultsVisibility,
         requires_pin: requiresPin,
         status: 'DRAFT'
       })
@@ -338,18 +374,59 @@ export function AdminEventPage() {
       return
     }
 
-    if (ballotType === 'YES_NO') {
-      await supabase.from('choices').insert([
-        { ballot_id: data.id, label: 'Yes', sort_order: 1 },
-        { ballot_id: data.id, label: 'No', sort_order: 2 }
-      ])
+    const choicesToInsert =
+      ballotType === 'YES_NO'
+        ? [
+            { ballot_id: data.id, label: 'Yes', sort_order: 1 },
+            { ballot_id: data.id, label: 'No', sort_order: 2 }
+          ]
+        : normalizedChoices.map((label, index) => ({
+            ballot_id: data.id,
+            label,
+            sort_order: index + 1
+          }))
+
+    const { error: choicesError } = await supabase.from('choices').insert(choicesToInsert)
+    if (choicesError) {
+      await supabase.from('ballots').delete().eq('id', data.id)
+      setError(choicesError.message)
+      return
     }
 
     setTitle('')
     setDescription('')
     setIncumbentName('')
+    setResultsVisibility('')
     setRequiresPin(true)
+    setDraftChoices([
+      { id: createDraftChoice(), label: '' },
+      { id: createDraftChoice(), label: '' }
+    ])
+    setNotice('Ballot created and ready for review or immediate opening.')
     await load()
+  }
+
+  function updateDraftChoice(choiceId: string, value: string) {
+    setDraftChoices((current) => current.map((choice) => (choice.id === choiceId ? { ...choice, label: value } : choice)))
+  }
+
+  function addDraftChoice() {
+    setDraftChoices((current) => [...current, { id: createDraftChoice(), label: '' }])
+  }
+
+  function removeDraftChoice(choiceId: string) {
+    setDraftChoices((current) => (current.length <= 2 ? current : current.filter((choice) => choice.id !== choiceId)))
+  }
+
+  function moveDraftChoice(choiceId: string, direction: -1 | 1) {
+    setDraftChoices((current) => {
+      const index = current.findIndex((choice) => choice.id === choiceId)
+      const target = index + direction
+      if (index < 0 || target < 0 || target >= current.length) return current
+      const next = [...current]
+      ;[next[index], next[target]] = [next[target], next[index]]
+      return next
+    })
   }
 
   async function onGeneratePins(e: FormEvent) {
@@ -1088,40 +1165,80 @@ export function AdminEventPage() {
               <p>Create your first ballot for this event to begin managing vote and display links.</p>
             </div>
           ) : (
-            ballots.map((ballot) => {
-              const indicator = ballotIndicators[ballot.id]
-              return (
-                <div className="ballot-item" key={ballot.id}>
-                <div className="ballot-header">
-                  <span>{ballot.title}</span>
-                    <div className="form-actions">
-                      <button
-                        className="btn btn-danger danger-btn"
-                      onClick={() => onArchiveBallot(ballot.id, ballot.title)}
-                      disabled={!canOperateEvent}
-                    >
-                      Archive
-                    </button>
-                    <Link to={`/admin/ballots/${ballot.id}`}>
-                      <button className="btn btn-secondary secondary-btn">Manage</button>
-                    </Link>
+            <div className="admin-list-stack">
+              {ballots.map((ballot) => {
+                const indicator = ballotIndicators[ballot.id]
+                return (
+                  <div className="admin-row-card" key={ballot.id}>
+                    <div className="admin-row-header">
+                      <div className="admin-row-title">
+                        <strong>{ballot.title}</strong>
+                        <div className="admin-row-meta">
+                          <span className={`status-pill status-${ballot.status.toLowerCase()}`}>{ballot.status}</span>
+                          {indicator ? (
+                            <span className={`status-pill ${indicator.winnerLabel ? 'status-open' : 'status-closed'}`}>
+                              {indicator.winnerLabel ? `Election reached: ${indicator.winnerLabel}` : `No election in round ${indicator.voteRound}`}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="form-actions">
+                        <button
+                          className="btn btn-danger danger-btn"
+                          onClick={() => onArchiveBallot(ballot.id, ballot.title)}
+                          disabled={!canOperateEvent}
+                        >
+                          Archive
+                        </button>
+                        <Link to={`/admin/ballots/${ballot.id}`} className="btn btn-secondary secondary-btn">
+                          Manage
+                        </Link>
+                      </div>
+                    </div>
+                    <div className="admin-kv-grid">
+                      <div className="admin-kv">
+                        <span className="admin-kv-label">Incumbent</span>
+                        <span className="admin-kv-value">{ballot.incumbent_name || 'None listed'}</span>
+                      </div>
+                      <div className="admin-kv">
+                        <span className="admin-kv-label">Results display</span>
+                        <span className="admin-kv-value">
+                          {ballot.results_visibility === 'LIVE'
+                            ? 'Show results live while open'
+                            : ballot.results_visibility === 'CLOSED_ONLY'
+                              ? 'Keep results hidden until closed'
+                              : 'Choose before opening'}
+                        </span>
+                      </div>
+                      <div className="admin-kv">
+                        <span className="admin-kv-label">PIN required</span>
+                        <span className="admin-kv-value">{ballot.requires_pin ? 'Yes' : 'No'}</span>
+                      </div>
+                      <div className="admin-kv">
+                        <span className="admin-kv-label">Total votes in latest sealed round</span>
+                        <span className="admin-kv-value">{indicator ? String(indicator.totalVotes) : 'No completed rounds yet'}</span>
+                      </div>
+                      <div className="admin-kv">
+                        <span className="admin-kv-label">Vote URL</span>
+                        <span className="admin-kv-value">
+                          <a className="url" href={`${appBase}/vote/${ballot.slug}`} target="_blank" rel="noreferrer">
+                            {appBase}/vote/{ballot.slug}
+                          </a>
+                        </span>
+                      </div>
+                      <div className="admin-kv">
+                        <span className="admin-kv-label">Display URL</span>
+                        <span className="admin-kv-value">
+                          <a className="url" href={`${appBase}/display/${ballot.slug}`} target="_blank" rel="noreferrer">
+                            {appBase}/display/{ballot.slug}
+                          </a>
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="ballot-details">
-                  Status: {ballot.status}<br />
-                  {indicator ? (
-                    <>
-                      Election reached: {indicator.winnerLabel ? `Yes - ${indicator.winnerLabel}` : `No (Round ${indicator.voteRound})`}<br />
-                    </>
-                  ) : null}
-                  Incumbent: {ballot.incumbent_name || 'N/A'}<br />
-                  PIN required: {ballot.requires_pin ? 'Yes' : 'No'}<br />
-                  Vote URL: <span className="url">{appBase}/vote/{ballot.slug}</span><br />
-                  Display URL: <span className="url">{appBase}/display/{ballot.slug}</span>
-                </div>
-                </div>
-              )
-            })
+                )
+              })}
+            </div>
           )
         ) : (
           archivedBallots.length === 0 ? (
@@ -1130,32 +1247,62 @@ export function AdminEventPage() {
               <p>Archived ballots will appear here so you can restore them or review their last status.</p>
             </div>
           ) : (
-            archivedBallots.map((ballot) => (
-              <div className="ballot-item" key={ballot.id}>
-                <div className="ballot-header">
-                  <span>{ballot.title}</span>
-                  <button
-                    className="btn btn-secondary secondary-btn"
-                    onClick={() => onRestoreBallot(ballot.id, ballot.title)}
-                    disabled={!canOperateEvent}
-                  >
-                    Restore
-                  </button>
+            <div className="admin-list-stack">
+              {archivedBallots.map((ballot) => (
+                <div className="admin-row-card" key={ballot.id}>
+                  <div className="admin-row-header">
+                    <div className="admin-row-title">
+                      <strong>{ballot.title}</strong>
+                      <div className="admin-row-meta">
+                        <span className={`status-pill status-${ballot.status.toLowerCase()}`}>{ballot.status}</span>
+                        {ballotIndicators[ballot.id] ? (
+                          <span className={`status-pill ${ballotIndicators[ballot.id].winnerLabel ? 'status-open' : 'status-closed'}`}>
+                            {ballotIndicators[ballot.id].winnerLabel
+                              ? `Election reached: ${ballotIndicators[ballot.id].winnerLabel}`
+                              : `No election in round ${ballotIndicators[ballot.id].voteRound}`}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                    <button
+                      className="btn btn-secondary secondary-btn"
+                      onClick={() => onRestoreBallot(ballot.id, ballot.title)}
+                      disabled={!canOperateEvent}
+                    >
+                      Restore
+                    </button>
+                  </div>
+                  <div className="admin-kv-grid">
+                    <div className="admin-kv">
+                      <span className="admin-kv-label">Archived</span>
+                      <span className="admin-kv-value">{ballot.deleted_at ? new Date(ballot.deleted_at).toLocaleString() : 'N/A'}</span>
+                    </div>
+                    <div className="admin-kv">
+                      <span className="admin-kv-label">Archived by</span>
+                      <span className="admin-kv-value">{archivedByLabel(ballot)}</span>
+                    </div>
+                    <div className="admin-kv">
+                      <span className="admin-kv-label">Incumbent</span>
+                      <span className="admin-kv-value">{ballot.incumbent_name || 'None listed'}</span>
+                    </div>
+                    <div className="admin-kv">
+                      <span className="admin-kv-label">Results display</span>
+                      <span className="admin-kv-value">
+                        {ballot.results_visibility === 'LIVE'
+                          ? 'Show results live while open'
+                          : ballot.results_visibility === 'CLOSED_ONLY'
+                            ? 'Keep results hidden until closed'
+                            : 'Not set'}
+                      </span>
+                    </div>
+                    <div className="admin-kv">
+                      <span className="admin-kv-label">PIN required</span>
+                      <span className="admin-kv-value">{ballot.requires_pin ? 'Yes' : 'No'}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="ballot-details">
-                  {ballotIndicators[ballot.id] ? (
-                    <>
-                      Election reached: {ballotIndicators[ballot.id].winnerLabel ? `Yes - ${ballotIndicators[ballot.id].winnerLabel}` : `No (Round ${ballotIndicators[ballot.id].voteRound})`}<br />
-                    </>
-                  ) : null}
-                  Archived: {ballot.deleted_at ? new Date(ballot.deleted_at).toLocaleString() : 'N/A'}<br />
-                  Archived by: {archivedByLabel(ballot)}<br />
-                  Last status: {ballot.status}<br />
-                  Incumbent: {ballot.incumbent_name || 'N/A'}<br />
-                  PIN required: {ballot.requires_pin ? 'Yes' : 'No'}
-                </div>
-              </div>
-            ))
+              ))}
+            </div>
           )
         )}
 
@@ -1166,7 +1313,7 @@ export function AdminEventPage() {
               <InfoTip text="Ballots are individual decisions or elections. Create as many as needed for this event." />
             </span>
           </div>
-          <p className="helper-text">Choose how a winner is determined (simple majority or 2/3). If no one meets the threshold, run a runoff round.</p>
+          <p className="helper-text">Choose how a winner is determined and how results should appear while the ballot is open. Candidate/option ballots can be created fully here so they are ready to open right away.</p>
           <form onSubmit={onCreateBallot} className="form-grid" style={{ marginTop: '15px' }}>
             <label className="form-row">
               Ballot title
@@ -1187,9 +1334,9 @@ export function AdminEventPage() {
               />
             </label>
             <label className="form-row">
-              Ballot type
+              Select ballot type
               <select className="select" value={ballotType} onChange={(e) => setBallotType(e.target.value as 'YES_NO' | 'PICK_ONE')} disabled={!canOperateEvent}>
-                <option value="PICK_ONE">Pick one candidate</option>
+                <option value="PICK_ONE">Choose one candidate/option</option>
                 <option value="YES_NO">Yes / No</option>
               </select>
             </label>
@@ -1200,6 +1347,92 @@ export function AdminEventPage() {
                 <option value="TWO_THIRDS">Two thirds (≥66.67%)</option>
               </select>
             </label>
+            <fieldset className="form-row form-row-full ballot-visibility-fieldset">
+              <legend>When this ballot opens, how should results be displayed?</legend>
+              <label className="ballot-visibility-option">
+                <input
+                  type="radio"
+                  name="create-results-visibility"
+                  value="LIVE"
+                  checked={resultsVisibility === 'LIVE'}
+                  onChange={() => setResultsVisibility('LIVE')}
+                  disabled={!canOperateEvent}
+                />
+                <span>
+                  <strong>Show results live while voting is open</strong>
+                  <small>Use this when the room should watch totals update in real time.</small>
+                </span>
+              </label>
+              <label className="ballot-visibility-option">
+                <input
+                  type="radio"
+                  name="create-results-visibility"
+                  value="CLOSED_ONLY"
+                  checked={resultsVisibility === 'CLOSED_ONLY'}
+                  onChange={() => setResultsVisibility('CLOSED_ONLY')}
+                  disabled={!canOperateEvent}
+                />
+                <span>
+                  <strong>Keep results hidden until voting is closed</strong>
+                  <small>Use this for more sensitive votes where totals should stay private until the round ends.</small>
+                </span>
+              </label>
+            </fieldset>
+            {ballotType === 'PICK_ONE' ? (
+              <div className="form-row-full ballot-option-builder">
+                <div className="ballot-option-builder-header">
+                  <div>
+                    <strong>Candidate/option choices</strong>
+                    <p className="helper-text">Add the choices attendees should see. At least two choices are required before this ballot can be created.</p>
+                  </div>
+                  <button type="button" className="btn btn-secondary secondary-btn" onClick={addDraftChoice} disabled={!canOperateEvent}>
+                    Add choice
+                  </button>
+                </div>
+                <div className="ballot-option-list">
+                  {draftChoices.map((choice, index) => (
+                    <div key={choice.id} className="ballot-option-row">
+                      <span className="ballot-option-index">{index + 1}</span>
+                      <input
+                        className="input"
+                        value={choice.label}
+                        onChange={(e) => updateDraftChoice(choice.id, e.target.value)}
+                        placeholder={`Choice ${index + 1}`}
+                        disabled={!canOperateEvent}
+                      />
+                      <div className="form-actions ballot-option-actions">
+                        <button
+                          type="button"
+                          className="btn btn-secondary secondary-btn"
+                          onClick={() => moveDraftChoice(choice.id, -1)}
+                          disabled={!canOperateEvent || index === 0}
+                        >
+                          Up
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary secondary-btn"
+                          onClick={() => moveDraftChoice(choice.id, 1)}
+                          disabled={!canOperateEvent || index === draftChoices.length - 1}
+                        >
+                          Down
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-danger danger-btn"
+                          onClick={() => removeDraftChoice(choice.id)}
+                          disabled={!canOperateEvent || draftChoices.length <= 2}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="helper-text form-row-full">This ballot will be created with the standard Yes and No options automatically.</p>
+            )}
             <label className="checkbox-label form-row-full">
               <input type="checkbox" checked={requiresPin} onChange={(e) => setRequiresPin(e.target.checked)} disabled={!canOperateEvent} />
               Require PIN for this ballot

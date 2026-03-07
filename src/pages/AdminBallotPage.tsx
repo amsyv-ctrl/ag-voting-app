@@ -1040,7 +1040,7 @@ export function AdminBallotPage() {
               ) : (
                 <p className="muted">No winner yet{results.has_tie ? ' (tie)' : ''}.</p>
               )}
-              <table>
+              <table className="data-table">
                 <thead>
                   <tr><th>Choice</th><th>Votes</th><th>%</th></tr>
                 </thead>
@@ -1127,7 +1127,7 @@ export function AdminBallotPage() {
                 ) : (
                   <p className="muted">No winner reached in this vote.</p>
                 )}
-                <table>
+                <table className="data-table">
                   <thead>
                     <tr><th>Choice</th><th>Votes</th><th>%</th></tr>
                   </thead>
