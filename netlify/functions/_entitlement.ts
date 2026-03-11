@@ -50,13 +50,15 @@ export async function getEntitlementFromAuthHeader(authHeader: string | undefine
   if (orgError || !orgData) return null
 
   const org = orgData as OrgRow
+  const role = ((membership.role as Role) ?? 'OWNER')
+  const isOrgAdmin = role === 'OWNER' || role === 'ADMIN'
   const isPaidActive = org.mode === 'PAID' && org.is_active
   const isTrialOpenForOneEvent =
     org.mode === 'TRIAL' &&
     org.trial_event_id == null &&
     org.trial_votes_used < org.trial_votes_limit
 
-  const canCreateEvents = isPaidActive || isTrialOpenForOneEvent
+  const canCreateEvents = isOrgAdmin && (isPaidActive || isTrialOpenForOneEvent)
   const isReadOnly = !(isPaidActive || (org.mode === 'TRIAL' && org.trial_votes_used < org.trial_votes_limit))
   const reason = isPaidActive
     ? 'PAID_ACTIVE'
@@ -69,12 +71,13 @@ export async function getEntitlementFromAuthHeader(authHeader: string | undefine
   return {
     userId,
     orgId: org.id,
-    role: (membership.role as Role) ?? 'OWNER',
+    role,
     org,
     canCreateEvents,
     isReadOnly,
     reason,
     canOperateEvent: async (eventId: string) => {
+      if (!isOrgAdmin) return { allowed: false, reason: 'INSUFFICIENT_ROLE' }
       if (isPaidActive) return { allowed: true, reason: 'PAID_ACTIVE' }
 
       const { data: eventRow } = await supabaseAdmin
