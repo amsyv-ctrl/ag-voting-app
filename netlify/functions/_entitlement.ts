@@ -78,7 +78,6 @@ export async function getEntitlementFromAuthHeader(authHeader: string | undefine
     reason,
     canOperateEvent: async (eventId: string) => {
       if (!isOrgAdmin) return { allowed: false, reason: 'INSUFFICIENT_ROLE' }
-      if (isPaidActive) return { allowed: true, reason: 'PAID_ACTIVE' }
 
       const { data: eventRow } = await supabaseAdmin
         .from('events')
@@ -87,6 +86,8 @@ export async function getEntitlementFromAuthHeader(authHeader: string | undefine
         .maybeSingle()
 
       if (!eventRow || eventRow.org_id !== org.id) return { allowed: false, reason: 'EVENT_NOT_IN_ORG' }
+
+      if (isPaidActive) return { allowed: true, reason: 'PAID_ACTIVE' }
 
       if (
         org.mode === 'TRIAL' &&
