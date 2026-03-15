@@ -77,6 +77,7 @@ export function AdminBallotPage() {
   const [voteQrDataUrl, setVoteQrDataUrl] = useState<string | null>(null)
   const [secondsToClose, setSecondsToClose] = useState<number | null>(null)
   const [eligiblePins, setEligiblePins] = useState<number>(0)
+  const [lastVoteAt, setLastVoteAt] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [orgAccess, setOrgAccess] = useState<OrgAccessRow | null>(null)
@@ -226,6 +227,22 @@ export function AdminBallotPage() {
     }
     setEligiblePins(pinCount ?? 0)
 
+    const { data: latestVote, error: latestVoteError } = await supabase
+      .from('votes')
+      .select('created_at')
+      .eq('ballot_id', ballotData.id)
+      .eq('vote_round', ballotData.vote_round ?? 1)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (latestVoteError) {
+      setError(latestVoteError.message)
+      setLoading(false)
+      return
+    }
+    setLastVoteAt(latestVote?.created_at ?? null)
+
     await loadResults(ballotData.slug)
     await loadRoundHistory(ballotData.id, ballotData.majority_rule, ballotData.vote_round ?? 1, ballotData.status)
     setLoading(false)
@@ -314,7 +331,8 @@ export function AdminBallotPage() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'votes', filter: `ballot_id=eq.${ballot.id}` },
-        async () => {
+        async (payload) => {
+          setLastVoteAt(typeof payload.new?.created_at === 'string' ? payload.new.created_at : new Date().toISOString())
           await loadResults(ballot.slug)
           await loadRoundHistory(ballot.id, ballot.majority_rule, ballot.vote_round, ballot.status)
         }
@@ -793,6 +811,15 @@ export function AdminBallotPage() {
               {results?.winner_label ? (
                 <span className="admin-stat-caption">Leader: {results.winner_label}</span>
               ) : null}
+            </article>
+            <article className="admin-stat-card">
+              <span className="admin-stat-label">Last vote received</span>
+              <span className="admin-stat-value">
+                {lastVoteAt ? new Date(lastVoteAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }) : 'Awaiting first vote'}
+              </span>
+              <span className="admin-stat-caption">
+                {ballot.status === 'OPEN' ? 'Ballot is live and accepting submissions.' : 'Open the ballot to begin receiving votes.'}
+              </span>
             </article>
           </div>
           {ballot.status === 'CLOSED' && results?.winner_label && (
